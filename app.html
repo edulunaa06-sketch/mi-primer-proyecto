@@ -1,4 +1,4 @@
-<title>Bocado Kcal</title>
+<title>Kcalia</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
 /* Layout: app de una columna al estilo iOS — título grande, tarjetas agrupadas, anillos tipo Actividad y barra de pestañas inferior con botón de cámara. */
@@ -183,12 +183,17 @@ textarea::placeholder { color: var(--label3); }
 
 /* Desglose del plato */
 .chip { font-size: 11px; font-weight: 600; padding: 3px 7px; border-radius: 6px; white-space: nowrap; color: var(--cc); background: color-mix(in srgb, var(--cc) 16%, transparent); }
-.list > .item.fi { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 4px 10px; align-items: center; }
+.list > .item.fi { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px 10px; align-items: center; }
 .fi .nm { font-size: 15px; font-weight: 500; min-width: 0; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.fi .sub { grid-column: 1 / 2; font-size: 12px; color: var(--label2); }
-.fi .gr { display: flex; align-items: center; gap: 3px; font-size: 13px; color: var(--label2); grid-row: 1 / 3; grid-column: 2; }
-.fi .gr input { width: 3.6em; border: 0; border-radius: 8px; background: var(--fill); color: var(--label); font: 600 15px var(--f-round); text-align: right; padding: 6px 6px; }
-.fi .kc { grid-row: 1 / 3; grid-column: 3; font-weight: 600; font-size: 15px; text-align: right; min-width: 4.6em; white-space: nowrap; }
+.fi .kc { font-weight: 600; font-size: 15px; text-align: right; white-space: nowrap; }
+.fi .x { border: 0; background: var(--fill); color: var(--label2); width: 26px; height: 26px; border-radius: 50%; font-size: 17px; line-height: 1; cursor: pointer; }
+.fi .ctl { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.fi .sub { font-size: 12px; color: var(--label2); flex: 1 1 10em; min-width: 0; }
+.fi .gr { display: flex; align-items: center; gap: 3px; font-size: 13px; color: var(--label2); }
+.fi .gr input { width: 3.8em; border: 0; border-radius: 8px; background: var(--fill); color: var(--label); font: 600 15px var(--f-round); text-align: right; padding: 6px; }
+.step { display: inline-flex; align-items: center; background: var(--fill); border-radius: 8px; }
+.step button { border: 0; background: none; font: 600 18px var(--f-round); color: var(--blue); width: 34px; height: 32px; cursor: pointer; }
+.step span { min-width: 4.6em; text-align: center; font: 600 14px var(--f-round); color: var(--label); }
 .split { display: grid; gap: 8px; }
 .split .bar { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--fill); }
 .split .bar i { display: block; height: 100%; }
@@ -196,17 +201,12 @@ textarea::placeholder { color: var(--label3); }
 .split .lg b { color: var(--label); font-weight: 600; }
 .split .lg span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cc); margin-right: 5px; }
 .types { display: flex; gap: 6px; flex-wrap: wrap; }
-.qty { display: flex; gap: 8px; flex-wrap: wrap; }
-.qty button { border: 0; font: inherit; font-size: 14px; font-weight: 600; color: var(--blue); background: color-mix(in srgb, var(--blue) 12%, transparent); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
-.food { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
-.food .thumb { width: 36px; height: 36px; border-radius: 8px; }
-.food .n { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.food .m { font-size: 12px; color: var(--label2); }
-.breakdown { grid-column: 1 / -1; display: grid; gap: 6px; padding: 8px 0 2px 56px; }
-.breakdown .r { display: flex; gap: 8px; align-items: center; font-size: 13px; }
-.breakdown .r .grow { flex: 1; min-width: 0; color: var(--label); }
 .meal .mid { cursor: pointer; }
 .meal .mid .more { font-size: 12px; color: var(--blue); }
+.item input.switch { appearance: none; -webkit-appearance: none; width: 51px; height: 31px; padding: 0; border-radius: 16px; background: var(--fill); position: relative; flex: none; cursor: pointer; transition: background .2s; }
+.item input.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); transition: transform .2s; }
+.item input.switch:checked { background: #34c759; }
+.item input.switch:checked::after { transform: translateX(20px); }
 
 .toast { position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 60; background: var(--card); color: var(--label); padding: 10px 18px; border-radius: 999px; font-size: 15px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,0.18); max-width: calc(100% - 32px); }
 .install ol { margin: 6px 0 0; padding-left: 20px; color: var(--label2); font-size: 15px; display: grid; gap: 4px; }
@@ -382,7 +382,7 @@ a { color: var(--blue); }
   </nav>
 </div>
 
-<!-- Hoja: añadir comida -->
+<!-- Hoja: añadir o editar comida -->
 <div class="scrim" id="scrim" hidden></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" hidden>
   <div class="inner">
@@ -392,59 +392,68 @@ a { color: var(--blue); }
       <h2 id="sheetTitle">Añadir comida</h2>
       <button class="btn plain" id="sheetSave" type="button" style="font-weight:700" disabled>Guardar</button>
     </div>
-    <div class="seg" role="group" aria-label="Modo">
-      <button type="button" data-mode="foto" aria-pressed="true">Plato</button>
-      <button type="button" data-mode="producto" aria-pressed="false">Producto</button>
-      <button type="button" data-mode="texto" aria-pressed="false">Describir</button>
-      <button type="button" data-mode="manual" aria-pressed="false">Manual</button>
+    <div class="seg" role="group" aria-label="Cómo añadir" id="modeSeg">
+      <button type="button" data-mode="foto" aria-pressed="true">Con foto</button>
+      <button type="button" data-mode="manual" aria-pressed="false">A mano</button>
     </div>
 
     <div id="mFoto" class="view" style="gap:12px">
       <div class="photo" id="photoBox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        <span id="photoHint">Haz una foto de tu plato desde arriba</span>
+        <span>Haz una foto de tu plato desde arriba</span>
         <img id="preview" alt="Foto de la comida" hidden>
       </div>
       <div class="pick">
         <label class="btn tint" for="camInput">Cámara<input id="camInput" type="file" accept="image/*" capture="environment"></label>
         <label class="btn tint" for="galInput">Galería<input id="galInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic"></label>
       </div>
+      <textarea id="hint" rows="2" placeholder="Detalles opcionales: «frito con poco aceite», «el arroz eran 200 g»"></textarea>
+      <div class="card list">
+        <label class="item" for="advSw"><span class="grow"><span>Análisis avanzado</span><br><span class="small muted">Cuenta las piezas y calcula el volumen de cada alimento. Más preciso, tarda un poco más.</span></span><input type="checkbox" id="advSw" class="switch" checked></label>
+      </div>
+      <button class="btn" id="analyzeBtn" type="button" disabled>Analizar plato</button>
     </div>
-    <div class="section" id="myFoodsSec" hidden>
-      <div class="hd">Mis productos</div>
-      <div class="card list" id="myFoods"></div>
-      <div class="ft">Los productos que escaneas se guardan aquí. Tócalo para añadirlo y ajusta los gramos.</div>
+
+    <div id="mManual" class="view" style="gap:12px" hidden>
+      <textarea id="desc" rows="2" placeholder="¿Qué comiste? «2 huevos fritos y una tostada con aceite»"></textarea>
+      <button class="btn tint" id="descBtn" type="button" disabled>Calcular con IA</button>
+      <div class="ft" style="padding:0 4px">O escribe tú directamente las calorías y los macros abajo.</div>
     </div>
-    <textarea id="hint" rows="2" placeholder="Detalles opcionales: «150 g de arroz, con aceite, sin refresco»"></textarea>
-    <button class="btn" id="analyzeBtn" type="button" disabled>Calcular calorías</button>
+
     <div class="status" id="aiStatus" hidden><span class="spin"></span><span id="aiStatusTxt">Analizando…</span></div>
     <button class="btn plain" id="stopBtn" type="button" hidden style="justify-self:center">Detener</button>
     <div class="err" id="aiErr" hidden></div>
 
-    <div id="resultBox" class="view" style="gap:12px" hidden>
+    <div id="resultBox" class="view" style="gap:18px" hidden>
       <div class="section">
-        <div class="hd" style="display:flex;justify-content:space-between;padding-right:16px"><span>Estimación</span><span class="badge" id="rConf"></span></div>
+        <div class="hd" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-right:16px"><span>En el plato</span><span class="badge" id="rConf"></span></div>
         <div class="card list items" id="rItems"></div>
-        <div class="qty" id="qtyBtns" hidden></div>
         <div class="ft" id="rNote"></div>
       </div>
-      <div class="section">
-        <div class="hd">Composición del plato</div>
-        <div class="card pad split" id="rSplit"></div>
-        <div class="ft">Toca los gramos de cada alimento para ajustarlos; las calorías y los macros se recalculan solos.</div>
+      <div class="section" id="fixSec">
+        <div class="hd">¿Algo no cuadra?</div>
+        <textarea id="fixTxt" rows="2" placeholder="Ej.: «eran 3 piezas de pollo, no 2», «no llevaba salsa», «falta una Coca-Cola»"></textarea>
+        <button class="btn tint" id="fixBtn" type="button" disabled>Corregir con IA</button>
+        <div class="ft">También puedes cambiar piezas y gramos tú mismo, o quitar un alimento con ×.</div>
       </div>
     </div>
 
+    <div class="section" id="splitSec" hidden>
+      <div class="hd">Composición</div>
+      <div class="card pad split" id="rSplit"></div>
+    </div>
+
     <div class="section" id="editBox" hidden>
-      <div class="hd">Ajusta si hace falta</div>
+      <div class="hd">Totales</div>
       <div class="card list">
-        <label class="item" for="eN"><span>Nombre</span><input id="eN" type="text" style="width:auto;flex:1" placeholder="Ej.: Yogur griego"></label>
+        <label class="item" for="eN"><span>Nombre</span><input id="eN" type="text" style="width:auto;flex:1" placeholder="Ej.: Pollo con arroz"></label>
         <label class="item" for="eK"><span class="grow">Calorías</span><input id="eK" type="number" inputmode="numeric" min="0" placeholder="kcal"></label>
         <label class="item" for="eP"><span class="grow">Proteína</span><input id="eP" type="number" inputmode="numeric" min="0" placeholder="g"></label>
         <label class="item" for="eC"><span class="grow">Carbohidratos</span><input id="eC" type="number" inputmode="numeric" min="0" placeholder="g"></label>
         <label class="item" for="eG"><span class="grow">Grasa</span><input id="eG" type="number" inputmode="numeric" min="0" placeholder="g"></label>
       </div>
     </div>
+    <button class="btn plain danger" id="delMealBtn" type="button" hidden style="justify-self:center">Eliminar comida</button>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -460,7 +469,6 @@ const inClaude = !!window.claude?.use;
 let profile = null;
 let meals = [];
 let creatine = {};      // {"YYYY-MM-DD": número de tomas}
-let foods = [];         // productos escaneados: {name, tipo, per100:{k,p,c,g}, racion_g, racion_desc, unidad_g, thumb}
 let photoFile = null, thumbData = "", ctl = null, mode = "foto", lastThumb = "";
 
 /* ---------- Almacenamiento: base de datos privada de Claude o el propio móvil ---------- */
@@ -470,7 +478,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 const normCrea = (d) => { const o = {}; for (const [k, v] of Object.entries(d || {})) o[k] = v > 50 ? 1 : Number(v) || 0; return o; };
 const store = {
   mode: "local",
-  saveLocal() { lsSet(LS, JSON.stringify({ profile, meals, creatine, foods })); },
+  saveLocal() { lsSet(LS, JSON.stringify({ profile, meals, creatine })); },
   async init() {
     if (inClaude) {
       try {
@@ -483,18 +491,21 @@ const store = {
       const pRef = this.db.doc(this.root + "/profile");
       pRef.onSnapshot((s) => { profile = s.exists ? s.data() : null; fillProfile(); render(); }, onDbErr);
       this.db.doc(this.root + "/creatine").onSnapshot((s) => { creatine = normCrea(s.exists && s.data().days); render(); }, onDbErr);
-      this.db.doc(this.root + "/foods").onSnapshot((s) => { foods = (s.exists && s.data().list) || []; renderFoods(); }, onDbErr);
       pRef.collection("meals").orderBy("ts", "desc").limit(800).onSnapshot((s) => { meals = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, onDbErr);
       $("storeNote").textContent = "Tus datos se guardan de forma privada en tu cuenta de Claude.";
     } else {
       let l = {}; try { l = JSON.parse(lsGet(LS)) || {}; } catch {}
-      profile = l.profile || null; meals = l.meals || []; creatine = normCrea(l.creatine); foods = l.foods || []; renderFoods();
+      profile = l.profile || null; meals = l.meals || []; creatine = normCrea(l.creatine);
       fillProfile(); render();
       $("storeNote").textContent = "Tus datos se guardan solo en este dispositivo.";
     }
   },
   async setProfile(p) { profile = p; if (this.mode === "db") await this.db.doc(this.root + "/profile").set(p); else this.saveLocal(); render(); },
-  async setFoods(list) { foods = list; if (this.mode === "db") await this.db.doc(this.root + "/foods").set({ list }); else this.saveLocal(); renderFoods(); },
+  async updateMeal(m) {
+    const { id, ...data } = m;
+    if (this.mode === "db") await this.db.doc(this.root + "/profile").collection("meals").doc(id).set(data);
+    else { meals = meals.map((x) => (x.id === id ? m : x)); this.saveLocal(); render(); }
+  },
   async setCreatine(days) { creatine = days; if (this.mode === "db") await this.db.doc(this.root + "/creatine").set({ days }); else this.saveLocal(); render(); },
   async addMeal(m) {
     if (this.mode === "db") await this.db.doc(this.root + "/profile").collection("meals").add(m);
@@ -590,7 +601,6 @@ function render() {
   renderCrea(now, plan);
 }
 
-const openMeals = new Set();
 function renderMeals(todays) {
   const list = $("meals"); list.textContent = "";
   if (!todays.length) {
@@ -611,21 +621,10 @@ function renderMeals(todays) {
     meta.textContent = new Date(m.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) + " · P " + fmt(m.p || 0) + " · C " + fmt(m.c || 0) + " · G " + fmt(m.g || 0);
     mid.append(n, meta);
     const its = Array.isArray(m.items) ? m.items : [];
-    let bd = null;
-    if (its.length) {
-      const more = document.createElement("div"); more.className = "more"; mid.append(more);
-      bd = document.createElement("div"); bd.className = "breakdown";
-      for (const it of its) {
-        const r = document.createElement("div"); r.className = "r";
-        const nm = document.createElement("span"); nm.className = "grow"; nm.textContent = it.n;
-        const gr = document.createElement("span"); gr.className = "muted num"; gr.textContent = it.gr ? it.gr + " g" : "";
-        const k = document.createElement("span"); k.className = "num"; k.style.fontWeight = "600"; k.textContent = it.k + " kcal";
-        r.append(chip(it.t || "otro"), nm, gr, k); bd.append(r);
-      }
-      const sync = () => { bd.hidden = !openMeals.has(m.id); more.textContent = bd.hidden ? its.length + " alimentos · ver desglose" : "Ocultar desglose"; };
-      mid.onclick = () => { openMeals.has(m.id) ? openMeals.delete(m.id) : openMeals.add(m.id); sync(); };
-      sync();
-    }
+    const more = document.createElement("div"); more.className = "more";
+    more.textContent = (its.length ? its.length + (its.length === 1 ? " alimento" : " alimentos") + " · " : "") + "toca para ver o corregir";
+    mid.append(more);
+    mid.onclick = () => openSheet(m);
     const right = document.createElement("div"); right.style.cssText = "display:grid;justify-items:end";
     const k = document.createElement("span"); k.className = "kc num"; k.textContent = fmt(m.kcal) + " kcal";
     const del = document.createElement("button"); del.className = "del"; del.type = "button"; del.textContent = "Eliminar";
@@ -634,7 +633,7 @@ function renderMeals(todays) {
       else { del.dataset.armed = "1"; del.textContent = "¿Seguro?"; setTimeout(() => { delete del.dataset.armed; del.textContent = "Eliminar"; }, 3000); }
     };
     right.append(k, del);
-    row.append(th, mid, right); if (bd) row.append(bd); list.append(row);
+    row.append(th, mid, right); list.append(row);
   }
 }
 
@@ -772,12 +771,12 @@ const icsDate = (d) => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0
 function gcalUrl(time, g) {
   const s = nextStart(time), e = new Date(s.getTime() + 5 * 60000);
   return "https://calendar.google.com/calendar/render?action=TEMPLATE&text=" + encodeURIComponent("Tomar creatina (" + g + " g)") +
-    "&dates=" + icsDate(s) + "/" + icsDate(e) + "&recur=" + encodeURIComponent("RRULE:FREQ=DAILY") + "&details=" + encodeURIComponent("Recordatorio de Bocado Kcal");
+    "&dates=" + icsDate(s) + "/" + icsDate(e) + "&recur=" + encodeURIComponent("RRULE:FREQ=DAILY") + "&details=" + encodeURIComponent("Recordatorio de Kcalia");
 }
 function buildIcs(time, g) {
   const s = nextStart(time), stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
-  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Bocado Kcal//ES", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
-    "UID:creatina-" + Date.now() + "@bocado", "DTSTAMP:" + stamp, "DTSTART:" + icsDate(s), "DURATION:PT5M", "RRULE:FREQ=DAILY",
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Kcalia//ES", "CALSCALE:GREGORIAN", "BEGIN:VEVENT",
+    "UID:creatina-" + Date.now() + "@kcalia", "DTSTAMP:" + stamp, "DTSTART:" + icsDate(s), "DURATION:PT5M", "RRULE:FREQ=DAILY",
     "SUMMARY:Tomar creatina (" + String(g).replace(".", ",") + " g)", "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Hora de tomar la creatina", "TRIGGER:PT0M", "END:VALARM",
     "END:VEVENT", "END:VCALENDAR"].join("\r\n");
 }
@@ -853,99 +852,28 @@ $("apiKey").addEventListener("change", () => {
   refreshAiState();
 })();
 
-const PROMPT = (hint, withImage) =>
-  "Eres un nutricionista experto en estimar raciones a ojo. " +
+const JSON_SHAPE =
+  "Responde en español con SOLO un objeto JSON con esta forma: " +
+  '{"nombre":"Muslos de pollo con arroz","items":[{"alimento":"muslo de pollo asado","tipo":"proteína","unidades":2,"gramos_por_unidad":110,"gramos":220,"porcion":"2 muslos medianos","kcal":460,"proteina_g":52,"carbos_g":0,"grasa_g":28}],"racion":"normal","confianza":"media","nota":"una frase breve sobre la estimación y qué la haría más precisa"}. ' +
+  "unidades es el número de piezas contadas (null si el alimento no va en piezas, como el arroz o la salsa). " +
+  'racion es "pequeña", "normal" o "grande" comparada con una ración típica de adulto. confianza es "alta", "media" o "baja". ' +
+  "Tipos válidos: proteína, hidratos, grasa, verdura, fruta, lácteo, bebida, salsa, otro. Si no es comida, devuelve items vacío y explícalo en nota.";
+const PROMPT = (hint, withImage, adv) =>
+  "Eres un nutricionista experto en estimar raciones a partir de fotos. " +
   (withImage
-    ? "La imagen adjunta es una foto de una comida. Identifica por separado CADA alimento visible (no los agrupes: arroz, pollo, aceite, salsa y ensalada van en líneas distintas). Estima los gramos de cada uno comparándolo con referencias de la foto: diámetro del plato (normalmente 24-27 cm), cubiertos, manos, vasos. Si hay varias raciones, cuenta solo lo que parece una ración para una persona salvo que el usuario diga otra cosa. "
-    : "Estima a partir de esta descripción de una comida, separando cada alimento. ") +
-  (hint ? "Detalles que da el usuario (tienen prioridad sobre lo que veas): \"" + hint.slice(0, 600) + "\". " : "") +
-  "Incluye aceite de cocinar, salsas y aliños probables como alimentos aparte. Usa valores nutricionales de tablas estándar (alimento cocinado si está cocinado). " +
-  "Para cada alimento indica su tipo principal: \"proteína\" (carne, pescado, huevo, tofu, legumbre si es la base proteica), \"hidratos\" (arroz, pasta, pan, patata, cereales), \"grasa\" (aceite, mantequilla, frutos secos, aguacate), \"verdura\", \"fruta\", \"lácteo\", \"bebida\", \"salsa\" u \"otro\". " +
-  "Responde en español con SOLO un objeto JSON con esta forma: " +
-  '{"nombre":"Arroz con pollo","items":[{"alimento":"pechuga de pollo a la plancha","tipo":"proteína","porcion":"1 filete del tamaño de la palma","gramos":150,"kcal":248,"proteina_g":46,"carbos_g":0,"grasa_g":5.4}],"racion":"normal","confianza":"media","nota":"una frase breve sobre la estimación y qué la haría más precisa"}. ' +
-  'racion es "pequeña", "normal" o "grande" comparada con una ración típica de adulto. confianza es "alta", "media" o "baja". Si no es comida, devuelve items vacío y explícalo en nota.';
-
-const PROMPT_PRODUCT = (hint) =>
-  "La imagen adjunta es la foto de un producto envasado o de su etiqueta de información nutricional. " +
-  "Lee los valores POR 100 g (o 100 ml) de la tabla nutricional: energía en kcal, proteínas, hidratos de carbono y grasas. " +
-  "Si la etiqueta no se ve, identifica el producto y marca por el envase y usa sus valores típicos conocidos (pon confianza \"baja\"). " +
-  "Busca también el tamaño de la ración que indica el envase y, si el producto viene en unidades (galletas, barritas, lonchas), el peso de una unidad. " +
-  (hint ? "El usuario dice cuánto comió: \"" + hint.slice(0, 300) + "\". Conviértelo a gramos en cantidad_g. " : "Si no sabes cuánto comió, pon en cantidad_g una ración. ") +
-  "Clasifica su tipo principal: proteína, hidratos, grasa, verdura, fruta, lácteo, bebida, salsa u otro. " +
-  "Responde en español con SOLO un objeto JSON con esta forma: " +
-  '{"nombre":"Barrita de avena y chocolate","marca":"Marca","tipo":"hidratos","por100":{"kcal":420,"proteina_g":7,"carbos_g":62,"grasa_g":15},"racion_g":30,"racion_desc":"1 barrita","unidad_g":30,"cantidad_g":30,"leido_de_etiqueta":true,"confianza":"alta","nota":"frase breve"}. ' +
-  "unidad_g puede ser null. confianza es \"alta\" si leíste la tabla, \"media\" o \"baja\" si la estimaste.";
-
-let pendingFood = null;
-function showProduct(r) {
-  const n = (v) => Math.max(0, Number(v) || 0);
-  const per = r.por100 || {};
-  const food = {
-    name: [String(r.nombre || "Producto"), r.marca ? String(r.marca) : ""].filter(Boolean).join(" · ").slice(0, 90),
-    tipo: normTipo(r.tipo),
-    per100: { k: n(per.kcal), p: n(per.proteina_g), c: n(per.carbos_g), g: n(per.grasa_g) },
-    racion_g: Math.round(n(r.racion_g)) || 0, racion_desc: String(r.racion_desc || "").slice(0, 40),
-    unidad_g: Math.round(n(r.unidad_g)) || 0, thumb: thumbData || "",
-  };
-  pendingFood = food;
-  const conf = String(r.confianza || "media");
-  $("rConf").textContent = r.leido_de_etiqueta ? "Leído de la etiqueta" : "Valores estimados · confianza " + conf;
-  $("rConf").className = "badge" + (r.leido_de_etiqueta || conf === "alta" ? " ok" : conf === "baja" ? " low" : "");
-  loadFood(food, Math.round(n(r.cantidad_g)) || food.racion_g || 100);
-  $("rNote").textContent = (r.nota ? String(r.nota) + " " : "") + "Se guardará en «Mis productos» al añadirlo.";
-}
-function loadFood(food, grams) {
-  const pg = { k: food.per100.k / 100, p: food.per100.p / 100, c: food.per100.c / 100, g: food.per100.g / 100 };
-  const desc = "100 g = " + Math.round(food.per100.k) + " kcal";
-  resItems = [{ name: food.name, tipo: food.tipo, porcion: desc, gr: grams, k: pg.k * grams, p: pg.p * grams, c: pg.c * grams, g: pg.g * grams, per: pg }];
-  $("eN").value = food.name;
-  renderResItems(); applyTotals();
-  const q = $("qtyBtns"); q.textContent = "";
-  const opts = [];
-  if (food.racion_g) opts.push([(food.racion_desc || "1 ración") + " · " + food.racion_g + " g", food.racion_g], ["2 raciones", food.racion_g * 2]);
-  if (food.unidad_g && food.unidad_g !== food.racion_g) opts.push(["1 unidad · " + food.unidad_g + " g", food.unidad_g]);
-  opts.push(["100 g", 100]);
-  for (const [label, g] of opts) {
-    const b = document.createElement("button"); b.type = "button"; b.textContent = label;
-    b.onclick = () => { const inp = $("gr0"); inp.value = String(g); inp.dispatchEvent(new Event("input")); };
-    q.append(b);
-  }
-  q.hidden = false;
-  $("rNote").textContent = "";
-  $("resultBox").hidden = false; $("editBox").hidden = false;
-  updateAnalyze();
-}
-function renderFoods() {
-  const box = $("myFoods"); if (!box) return;
-  box.textContent = "";
-  for (const f of foods) {
-    const row = document.createElement("div"); row.className = "item";
-    const b = document.createElement("button"); b.type = "button"; b.className = "food";
-    let th;
-    if (f.thumb) { th = document.createElement("img"); th.src = f.thumb; th.alt = ""; }
-    else { th = document.createElement("div"); th.textContent = f.name.charAt(0).toUpperCase(); }
-    th.className = "thumb";
-    const mid = document.createElement("div"); mid.style.minWidth = "0";
-    const n = document.createElement("div"); n.className = "n"; n.textContent = f.name;
-    const m = document.createElement("div"); m.className = "m num";
-    m.textContent = Math.round(f.per100.k) + " kcal/100 g" + (f.racion_g ? " · ración " + f.racion_g + " g" : "");
-    mid.append(n, m);
-    b.append(th, mid, chip(f.tipo));
-    b.onclick = () => {
-      pendingFood = f; lastThumb = f.thumb || "";
-      $("rConf").textContent = "Mis productos"; $("rConf").className = "badge";
-      loadFood(f, f.racion_g || 100);
-    };
-    const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "Quitar";
-    del.style.cssText = "border:0;background:none;color:var(--red);font:inherit;font-size:13px;cursor:pointer;margin-left:8px";
-    del.onclick = () => {
-      if (del.dataset.armed) store.setFoods(foods.filter((x) => x !== f)).catch(() => toast("No se pudo quitar"));
-      else { del.dataset.armed = "1"; del.textContent = "¿Seguro?"; setTimeout(() => { delete del.dataset.armed; del.textContent = "Quitar"; }, 3000); }
-    };
-    row.append(b, del); box.append(row);
-  }
-  if (mode === "manual") $("myFoodsSec").hidden = !foods.length;
-}
+    ? "La imagen adjunta es una foto de un plato de comida. Analízala paso a paso: " +
+      "1) Identifica CADA alimento por separado (pollo, arroz, aceite, salsa y ensalada van en líneas distintas). " +
+      "2) CUENTA las piezas de todo lo que va en unidades (trozos o muslos de pollo, filetes, huevos, croquetas, albóndigas, nuggets, rebanadas de pan, gambas, galletas): si ves 2 piezas de pollo, unidades = 2, y estima el peso de UNA pieza según su tamaño. " +
+      "3) Para lo que no va en piezas (arroz, pasta, puré, legumbres, ensalada, salsa) estima el volumen usando el diámetro del plato (normalmente 24-27 cm) y la altura del montón, y conviértelo a gramos. " +
+      "4) Ten en cuenta cómo está cocinado y la grasa añadida (lo frito absorbe aceite; añade el aceite o la mantequilla probables como línea aparte). " +
+      (adv ? "5) Antes de responder, revisa tu estimación: vuelve a contar las piezas, comprueba que los gramos encajan con el tamaño del plato y de los cubiertos, y corrige lo que no cuadre. " : "")
+    : "Estima a partir de esta descripción de lo que comió el usuario, separando cada alimento y contando las piezas si las menciona. ") +
+  (hint ? "Información del usuario (tiene prioridad sobre lo que veas): \"" + hint.slice(0, 600) + "\". " : "") +
+  "Usa valores nutricionales de tablas estándar del alimento cocinado. " + JSON_SHAPE;
+const FIX_PROMPT = (prev, fix, withImage) =>
+  "Eres un nutricionista. Esta es una estimación previa de una comida" + (withImage ? " hecha a partir de la foto adjunta" : "") + ": " + JSON.stringify(prev).slice(0, 6000) + ". " +
+  "El usuario dice que hay que corregir esto: \"" + fix.slice(0, 600) + "\". " +
+  "Aplica la corrección (cambia piezas, gramos, añade o quita alimentos) y recalcula las calorías y macros de lo que cambie. Mantén lo que no haya que cambiar. Devuelve la estimación completa corregida. " + JSON_SHAPE;
 
 function parseJson(t) {
   try { return JSON.parse(t); } catch {}
@@ -968,8 +896,8 @@ function toJpegB64(file) {
     im.src = url;
   });
 }
-async function estimate(prompt, image, signal) {
-  if (sample) return sample.json(prompt, { signal, images: image ? [image] : undefined });
+async function estimate(prompt, image, signal, adv) {
+  if (sample) return sample.json(prompt, { signal, images: image ? [image] : undefined, modelTier: adv ? "complex" : "default" });
   const key = getKey();
   if (!key) throw { code: "no_key" };
   const { default: Anthropic } = await import("https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.39.0/+esm");
@@ -980,7 +908,7 @@ async function estimate(prompt, image, signal) {
   let msg;
   try {
     msg = await client.messages.create(
-      { model: "claude-opus-5-5", max_tokens: 16000, output_config: { effort: "low" }, fallbacks: "default", messages: [{ role: "user", content }] },
+      { model: "claude-opus-5-5", max_tokens: 16000, output_config: { effort: adv ? "high" : "low" }, fallbacks: "default", messages: [{ role: "user", content }] },
       { signal, headers: { "anthropic-beta": "server-side-fallback-2026-07-01" } });
   } catch (e) {
     if (signal?.aborted) throw { code: "cancelled" };
@@ -1007,50 +935,72 @@ const ERR = {
   network: "Sin conexión. Revisa tu internet e inténtalo de nuevo.",
 };
 
-/* ---------- Hoja de añadir ---------- */
-function openSheet() {
+/* ---------- Hoja: añadir o editar una comida ---------- */
+let editingId = null, editingMeal = null;
+$("advSw").checked = lsGet("bocado.adv") !== "0";
+$("advSw").onchange = () => lsSet("bocado.adv", $("advSw").checked ? "1" : "0");
+
+function openSheet(meal) {
+  resetSheet();
+  editingMeal = meal && meal.id ? meal : null;
+  editingId = editingMeal ? editingMeal.id : null;
+  $("sheetTitle").textContent = editingMeal ? "Editar comida" : "Añadir comida";
+  $("modeSeg").hidden = !!editingMeal; $("delMealBtn").hidden = !editingMeal;
+  if (editingMeal) {
+    setMode("edit");
+    lastThumb = editingMeal.thumb || "";
+    resItems = (editingMeal.items || []).map(fromStored);
+    $("eN").value = editingMeal.name || "";
+    $("eK").value = Math.round(editingMeal.kcal || 0); $("eP").value = Math.round(editingMeal.p || 0);
+    $("eC").value = Math.round(editingMeal.c || 0); $("eG").value = Math.round(editingMeal.g || 0);
+    if (resItems.length) {
+      $("rConf").textContent = "Guardada"; $("rConf").className = "badge";
+      $("rNote").textContent = "Cambia piezas o gramos, quita lo que sobre o corrige con la IA.";
+      renderResItems(); $("resultBox").hidden = false;
+    }
+    renderSplit(); $("editBox").hidden = false;
+  }
   $("scrim").hidden = false; $("sheet").hidden = false;
   requestAnimationFrame(() => { $("scrim").classList.add("open"); $("sheet").classList.add("open"); });
+  updateAnalyze();
 }
 function closeSheet() {
   ctl?.abort();
   $("scrim").classList.remove("open"); $("sheet").classList.remove("open");
-  setTimeout(() => { $("scrim").hidden = true; $("sheet").hidden = true; resetSheet(); }, 320);
+  setTimeout(() => { $("scrim").hidden = true; $("sheet").hidden = true; }, 320);
 }
 function resetSheet() {
-  photoFile = null; thumbData = ""; lastThumb = "";
+  photoFile = null; thumbData = ""; lastThumb = ""; resItems = []; editingId = null; editingMeal = null;
   $("preview").hidden = true; $("preview").removeAttribute("src");
-  $("camInput").value = ""; $("galInput").value = ""; $("hint").value = "";
-  $("resultBox").hidden = true; $("aiErr").hidden = true; $("aiStatus").hidden = true; resItems = []; pendingFood = null;
-  $("qtyBtns").hidden = true; $("rSplit").textContent = "";
+  $("camInput").value = ""; $("galInput").value = ""; $("hint").value = ""; $("desc").value = ""; $("fixTxt").value = "";
+  $("resultBox").hidden = true; $("aiErr").hidden = true; $("aiStatus").hidden = true; $("rSplit").textContent = "";
   ["eN", "eK", "eP", "eC", "eG"].forEach((i) => ($(i).value = ""));
   setMode("foto");
 }
 function setMode(m) {
   mode = m;
   document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
-  $("mFoto").hidden = m !== "foto" && m !== "producto";
-  $("photoHint").textContent = m === "producto" ? "Haz una foto a la etiqueta nutricional o al paquete" : "Haz una foto de tu plato desde arriba";
-  $("hint").hidden = m === "manual";
-  $("hint").placeholder = m === "texto" ? "Describe lo que comiste: «2 huevos revueltos, 1 tostada con aguacate»"
-    : m === "producto" ? "¿Cuánto comiste? «1 barrita», «40 g», «medio paquete»"
-    : "Detalles opcionales: «150 g de arroz, con aceite, sin refresco»";
-  $("myFoodsSec").hidden = m !== "manual" || !foods.length;
-  $("analyzeBtn").hidden = m === "manual";
-  $("editBox").hidden = m !== "manual" && $("resultBox").hidden;
+  $("mFoto").hidden = m !== "foto";
+  $("mManual").hidden = m !== "manual";
+  $("editBox").hidden = m === "foto" && $("resultBox").hidden;
   updateAnalyze();
 }
 function updateAnalyze() {
-  $("analyzeBtn").disabled = aiAvailable() && (mode === "foto" || mode === "producto" ? !photoFile : !$("hint").value.trim());
-  $("analyzeBtn").textContent = aiAvailable() ? "Calcular calorías" : "Configura la IA en Perfil";
+  const ai = aiAvailable();
+  $("analyzeBtn").disabled = ai && !photoFile;
+  $("analyzeBtn").textContent = ai ? ($("advSw").checked ? "Analizar plato (avanzado)" : "Analizar plato") : "Configura la IA en Perfil";
+  $("descBtn").disabled = ai && !$("desc").value.trim();
+  $("descBtn").hidden = !ai;
+  $("fixBtn").disabled = !$("fixTxt").value.trim();
+  $("fixSec").hidden = !ai;
   $("sheetSave").disabled = !(Number($("eK").value) > 0);
 }
 document.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => setMode(b.dataset.mode)));
-$("addBtn").onclick = openSheet;
+$("addBtn").onclick = () => openSheet();
 $("sheetCancel").onclick = closeSheet;
 $("scrim").onclick = closeSheet;
-$("hint").addEventListener("input", updateAnalyze);
-["eK"].forEach((i) => $(i).addEventListener("input", updateAnalyze));
+["desc", "fixTxt", "eK"].forEach((i) => $(i).addEventListener("input", updateAnalyze));
+$("advSw").addEventListener("change", updateAnalyze);
 
 function setPhoto(file) {
   if (!file) return;
@@ -1079,33 +1029,48 @@ pb.addEventListener("dragover", (e) => { e.preventDefault(); pb.classList.add("o
 pb.addEventListener("dragleave", () => pb.classList.remove("over"));
 pb.addEventListener("drop", (e) => { e.preventDefault(); pb.classList.remove("over"); setPhoto(e.dataTransfer.files[0]); });
 
-$("analyzeBtn").onclick = async () => {
-  if (!aiAvailable()) { closeSheet(); go("perfil"); return; }
-  const withImage = mode === "foto" || mode === "producto";
+async function runAI(prompt, image, statusText) {
+  if (!aiAvailable()) { closeSheet(); go("perfil"); return null; }
+  const adv = $("advSw").checked;
   ctl = new AbortController();
-  $("analyzeBtn").disabled = true; $("aiErr").hidden = true; $("resultBox").hidden = true;
-  $("aiStatus").hidden = false; $("stopBtn").hidden = false; $("aiStatusTxt").textContent = mode === "producto" ? "Leyendo la etiqueta…" : "Analizando tu comida…";
+  ["analyzeBtn", "descBtn", "fixBtn"].forEach((i) => ($(i).disabled = true));
+  $("aiErr").hidden = true;
+  $("aiStatus").hidden = false; $("stopBtn").hidden = false;
+  $("aiStatusTxt").textContent = statusText + (adv ? " (análisis avanzado, puede tardar un poco)" : "");
   try {
-    const prompt = mode === "producto" ? PROMPT_PRODUCT($("hint").value.trim()) : PROMPT($("hint").value.trim(), withImage);
-    const r = await estimate(prompt, withImage ? photoFile : null, ctl.signal);
+    const r = await estimate(prompt, image, ctl.signal, adv);
     if (!r || typeof r !== "object") throw { code: "invalid_json" };
-    lastThumb = withImage ? thumbData : "";
-    if (mode === "producto") showProduct(r); else showResult(r);
+    return r;
   } catch (e) {
     $("aiErr").textContent = ERR[e?.code] || (e?.code === "api_400" ? "La API rechazó la petición: " + (e.message || "") : "Algo falló al analizar. Inténtalo otra vez.");
     $("aiErr").hidden = false;
+    return null;
   } finally {
     $("aiStatus").hidden = true; $("stopBtn").hidden = true; updateAnalyze();
   }
+}
+$("analyzeBtn").onclick = async () => {
+  const r = await runAI(PROMPT($("hint").value.trim(), true, $("advSw").checked), photoFile, "Analizando tu plato…");
+  if (r) { lastThumb = thumbData; showResult(r); }
+};
+$("descBtn").onclick = async () => {
+  const r = await runAI(PROMPT($("desc").value.trim(), false, $("advSw").checked), null, "Calculando…");
+  if (r) showResult(r);
+};
+$("fixBtn").onclick = async () => {
+  const prev = { nombre: $("eN").value, items: resItems.map(toAi) };
+  const r = await runAI(FIX_PROMPT(prev, $("fixTxt").value.trim(), !!photoFile), photoFile || null, "Corrigiendo…");
+  if (r) { $("fixTxt").value = ""; showResult(r); toast("Estimación corregida"); }
 };
 $("stopBtn").onclick = () => ctl?.abort();
 
+/* ---------- Desglose del plato ---------- */
 const TIPOS = {
   "proteína": "var(--ring-p)", "hidratos": "var(--orange)", "grasa": "var(--ring-c)", "verdura": "var(--mint)",
   "fruta": "var(--pink)", "lácteo": "var(--indigo)", "bebida": "var(--gray)", "salsa": "var(--gray)", "otro": "var(--gray)",
 };
 function normTipo(t) {
-  t = String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  t = String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const map = { proteina: "proteína", hidratos: "hidratos", carbohidratos: "hidratos", grasa: "grasa", grasas: "grasa", verdura: "verdura", verduras: "verdura",
     fruta: "fruta", lacteo: "lácteo", lacteos: "lácteo", bebida: "bebida", salsa: "salsa" };
   return map[t] || "otro";
@@ -1113,19 +1078,30 @@ function normTipo(t) {
 function chip(tipo) { const c = document.createElement("span"); c.className = "chip"; c.style.setProperty("--cc", TIPOS[tipo] || TIPOS.otro); c.textContent = tipo; return c; }
 const r1 = (x) => Math.round(x * 10) / 10;
 let resItems = [];
+function mkItem(name, tipo, porcion, u, gr, k, p, c, g) {
+  return { name, tipo, porcion, u, gr, k, p, c, g, per: gr > 0 ? { k: k / gr, p: p / gr, c: c / gr, g: g / gr } : null };
+}
+function fromStored(it) { return mkItem(it.n || "Alimento", it.t || "otro", it.d || "", it.u || 0, it.gr || 0, it.k || 0, it.p || 0, it.c || 0, it.g || 0); }
+function toStored(it) { return { n: it.name.slice(0, 80), t: it.tipo, d: it.porcion.slice(0, 60), u: it.u || 0, gr: Math.round(it.gr), k: Math.round(it.k), p: r1(it.p), c: r1(it.c), g: r1(it.g) }; }
+function toAi(it) { return { alimento: it.name, tipo: it.tipo, porcion: it.porcion, unidades: it.u || null, gramos: Math.round(it.gr), kcal: Math.round(it.k), proteina_g: r1(it.p), carbos_g: r1(it.c), grasa_g: r1(it.g) }; }
+function setGrams(it, gr) {
+  it.gr = Math.max(0, gr);
+  if (it.per) { it.k = it.per.k * it.gr; it.p = it.per.p * it.gr; it.c = it.per.c * it.gr; it.g = it.per.g * it.gr; }
+}
+
 function showResult(r) {
   const n = (v) => Math.max(0, Number(v) || 0);
-  const conf = String(r.confianza || "media");
-  const racion = String(r.racion || "");
+  const conf = String(r.confianza || "media"), racion = String(r.racion || "");
   $("rConf").textContent = (racion ? "Ración " + racion + " · " : "") + "confianza " + conf;
   $("rConf").className = "badge" + (conf === "alta" ? " ok" : conf === "baja" ? " low" : "");
-  resItems = (Array.isArray(r.items) ? r.items.slice(0, 15) : []).map((it) => {
-    const gr = Math.round(n(it.gramos)), k = n(it.kcal), p = n(it.proteina_g), c = n(it.carbos_g), g = n(it.grasa_g);
-    return { name: String(it.alimento || "Alimento"), tipo: normTipo(it.tipo), porcion: String(it.porcion || ""), gr, k, p, c, g,
-      per: gr > 0 ? { k: k / gr, p: p / gr, c: c / gr, g: g / gr } : null };
+  resItems = (Array.isArray(r.items) ? r.items.slice(0, 20) : []).map((it) => {
+    const u = Math.round(n(it.unidades));
+    let gr = Math.round(n(it.gramos));
+    if (!gr && u && n(it.gramos_por_unidad)) gr = Math.round(u * n(it.gramos_por_unidad));
+    return mkItem(String(it.alimento || "Alimento"), normTipo(it.tipo), String(it.porcion || ""), u, gr, n(it.kcal), n(it.proteina_g), n(it.carbos_g), n(it.grasa_g));
   });
   $("rNote").textContent = r.nota ? String(r.nota) : "";
-  $("eN").value = String(r.nombre || "Comida");
+  $("eN").value = String(r.nombre || $("eN").value || "Comida");
   renderResItems();
   if (resItems.length) applyTotals();
   else { $("eK").value = Math.round(n(r.kcal)); $("eP").value = Math.round(n(r.proteina_g)); $("eC").value = Math.round(n(r.carbos_g)); $("eG").value = Math.round(n(r.grasa_g)); renderSplit(); }
@@ -1138,22 +1114,38 @@ function renderResItems() {
     const row = document.createElement("div"); row.className = "item fi";
     const nm = document.createElement("div"); nm.className = "nm";
     const t = document.createElement("span"); t.textContent = it.name; nm.append(chip(it.tipo), t);
-    const sub = document.createElement("div"); sub.className = "sub num";
-    sub.textContent = (it.porcion ? it.porcion + " · " : "") + "P " + r1(it.p) + " · C " + r1(it.c) + " · G " + r1(it.g);
+    const kc = document.createElement("div"); kc.className = "kc num"; kc.textContent = Math.round(it.k) + " kcal";
+    const x = document.createElement("button"); x.type = "button"; x.className = "x"; x.textContent = "×"; x.setAttribute("aria-label", "Quitar " + it.name);
+    x.onclick = () => { resItems.splice(i, 1); renderResItems(); applyTotals(); };
+    const ctlRow = document.createElement("div"); ctlRow.className = "ctl";
+    if (it.u > 0) {
+      const st = document.createElement("div"); st.className = "step";
+      const minus = document.createElement("button"); minus.type = "button"; minus.textContent = "−"; minus.setAttribute("aria-label", "Una pieza menos");
+      const val = document.createElement("span"); val.textContent = it.u + (it.u === 1 ? " pieza" : " piezas");
+      const plus = document.createElement("button"); plus.type = "button"; plus.textContent = "+"; plus.setAttribute("aria-label", "Una pieza más");
+      const change = (d) => {
+        const nu = it.u + d; if (nu < 1) return;
+        const per = it.gr / it.u; it.u = nu; setGrams(it, Math.round(per * nu));
+        it.porcion = "≈" + Math.round(per) + " g por pieza";
+        renderResItems(); applyTotals();
+      };
+      minus.onclick = () => change(-1); plus.onclick = () => change(1);
+      st.append(minus, val, plus); ctlRow.append(st);
+    }
     const gr = document.createElement("label"); gr.className = "gr";
     const inp = document.createElement("input"); inp.type = "number"; inp.inputMode = "numeric"; inp.min = "0"; inp.id = "gr" + i;
-    inp.value = String(it.gr); inp.setAttribute("aria-label", "Gramos de " + it.name);
-    inp.disabled = !it.per;
-    const kc = document.createElement("div"); kc.className = "kc num"; kc.textContent = Math.round(it.k) + " kcal";
+    inp.value = String(Math.round(it.gr)); inp.setAttribute("aria-label", "Gramos de " + it.name); inp.disabled = !it.per;
+    gr.append(inp, "g");
+    const sub = document.createElement("span"); sub.className = "sub num";
+    const subTxt = () => (it.porcion ? it.porcion + " · " : "") + "P " + r1(it.p) + " · C " + r1(it.c) + " · G " + r1(it.g);
+    sub.textContent = subTxt();
     inp.addEventListener("input", () => {
-      const v = Math.max(0, Number(inp.value) || 0);
-      it.gr = v; it.k = it.per.k * v; it.p = it.per.p * v; it.c = it.per.c * v; it.g = it.per.g * v;
-      kc.textContent = Math.round(it.k) + " kcal";
-      sub.textContent = (it.porcion ? it.porcion + " · " : "") + "P " + r1(it.p) + " · C " + r1(it.c) + " · G " + r1(it.g);
+      setGrams(it, Number(inp.value) || 0);
+      kc.textContent = Math.round(it.k) + " kcal"; sub.textContent = subTxt();
       applyTotals();
     });
-    gr.append(inp, "g");
-    row.append(nm, gr, kc, sub);
+    ctlRow.append(gr, sub);
+    row.append(nm, kc, x, ctlRow);
     box.append(row);
   });
 }
@@ -1165,7 +1157,7 @@ function applyTotals() {
 function renderSplit() {
   const p = Number($("eP").value) || 0, c = Number($("eC").value) || 0, g = Number($("eG").value) || 0;
   const kp = p * 4, kc = c * 4, kg = g * 9, tot = kp + kc + kg, box = $("rSplit");
-  box.textContent = "";
+  box.textContent = ""; $("splitSec").hidden = !tot;
   const bar = document.createElement("div"); bar.className = "bar";
   const lg = document.createElement("div"); lg.className = "lg";
   [["Proteína", kp, p, "var(--ring-p)"], ["Hidratos", kc, c, "var(--orange)"], ["Grasa", kg, g, "var(--ring-c)"]].forEach(([name, k, grams, col]) => {
@@ -1180,7 +1172,7 @@ function renderSplit() {
     for (const it of resItems) byType[it.tipo] = (byType[it.tipo] || 0) + it.k;
     const tw = document.createElement("div"); tw.className = "types";
     Object.entries(byType).sort((a, b) => b[1] - a[1]).forEach(([tipo, k]) => {
-      const c = chip(tipo); c.textContent = tipo + " " + Math.round(k) + " kcal"; tw.append(c);
+      const ch = chip(tipo); ch.textContent = tipo + " " + Math.round(k) + " kcal"; tw.append(ch);
     });
     box.append(tw);
   }
@@ -1188,15 +1180,21 @@ function renderSplit() {
 ["eP", "eC", "eG"].forEach((i) => $(i).addEventListener("input", renderSplit));
 
 $("sheetSave").onclick = () => {
-  const now = Date.now();
-  const m = { date: dayKey(), ts: now, name: ($("eN").value || "Comida").slice(0, 120), kcal: Number($("eK").value) || 0,
-    p: Number($("eP").value) || 0, c: Number($("eC").value) || 0, g: Number($("eG").value) || 0, thumb: mode === "manual" && !pendingFood ? "" : lastThumb,
-    items: $("resultBox").hidden ? [] : resItems.map((it) => ({ n: it.name.slice(0, 80), t: it.tipo, gr: Math.round(it.gr), k: Math.round(it.k), p: r1(it.p), c: r1(it.c), g: r1(it.g) })) };
-  if (pendingFood) {
-    const f = pendingFood, rest = foods.filter((x) => x.name.toLowerCase() !== f.name.toLowerCase());
-    store.setFoods([f, ...rest].slice(0, 60)).catch(() => {});
+  const data = { name: ($("eN").value || "Comida").slice(0, 120), kcal: Number($("eK").value) || 0,
+    p: Number($("eP").value) || 0, c: Number($("eC").value) || 0, g: Number($("eG").value) || 0,
+    items: resItems.map(toStored) };
+  if (editingMeal) {
+    store.updateMeal({ ...editingMeal, ...data }).then(() => { toast("Comida actualizada"); closeSheet(); }).catch(() => toast("No se pudo guardar"));
+    return;
   }
+  const m = { date: dayKey(), ts: Date.now(), thumb: mode === "foto" ? lastThumb : "", ...data };
   store.addMeal(m).then(() => { toast("+" + fmt(m.kcal) + " kcal añadidas"); closeSheet(); go("hoy"); }).catch(() => toast("No se pudo guardar"));
+};
+$("delMealBtn").onclick = () => {
+  const b = $("delMealBtn");
+  if (!b.dataset.armed) { b.dataset.armed = "1"; b.textContent = "Toca otra vez para eliminar"; setTimeout(() => { delete b.dataset.armed; b.textContent = "Eliminar comida"; }, 3000); return; }
+  delete b.dataset.armed; b.textContent = "Eliminar comida";
+  if (editingId) store.delMeal(editingId).then(() => { toast("Comida eliminada"); closeSheet(); }).catch(() => toast("No se pudo eliminar"));
 };
 
 /* ---------- Instalación (solo fuera de Claude) ---------- */

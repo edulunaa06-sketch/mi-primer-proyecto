@@ -1,4 +1,4 @@
-# Bocado Kcal
+# Kcalia
 
 Contador de calorías con estilo iOS:
 
