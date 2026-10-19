@@ -196,6 +196,12 @@ textarea::placeholder { color: var(--label3); }
 .split .lg b { color: var(--label); font-weight: 600; }
 .split .lg span::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--cc); margin-right: 5px; }
 .types { display: flex; gap: 6px; flex-wrap: wrap; }
+.qty { display: flex; gap: 8px; flex-wrap: wrap; }
+.qty button { border: 0; font: inherit; font-size: 14px; font-weight: 600; color: var(--blue); background: color-mix(in srgb, var(--blue) 12%, transparent); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+.food { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; border: 0; background: none; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.food .thumb { width: 36px; height: 36px; border-radius: 8px; }
+.food .n { font-size: 15px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.food .m { font-size: 12px; color: var(--label2); }
 .breakdown { grid-column: 1 / -1; display: grid; gap: 6px; padding: 8px 0 2px 56px; }
 .breakdown .r { display: flex; gap: 8px; align-items: center; font-size: 13px; }
 .breakdown .r .grow { flex: 1; min-width: 0; color: var(--label); }
@@ -387,7 +393,8 @@ a { color: var(--blue); }
       <button class="btn plain" id="sheetSave" type="button" style="font-weight:700" disabled>Guardar</button>
     </div>
     <div class="seg" role="group" aria-label="Modo">
-      <button type="button" data-mode="foto" aria-pressed="true">Foto</button>
+      <button type="button" data-mode="foto" aria-pressed="true">Plato</button>
+      <button type="button" data-mode="producto" aria-pressed="false">Producto</button>
       <button type="button" data-mode="texto" aria-pressed="false">Describir</button>
       <button type="button" data-mode="manual" aria-pressed="false">Manual</button>
     </div>
@@ -395,7 +402,7 @@ a { color: var(--blue); }
     <div id="mFoto" class="view" style="gap:12px">
       <div class="photo" id="photoBox">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>
-        <span>Haz una foto de tu plato desde arriba</span>
+        <span id="photoHint">Haz una foto de tu plato desde arriba</span>
         <img id="preview" alt="Foto de la comida" hidden>
       </div>
       <div class="pick">
@@ -403,7 +410,11 @@ a { color: var(--blue); }
         <label class="btn tint" for="galInput">Galería<input id="galInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic"></label>
       </div>
     </div>
-    <div id="mTexto" hidden></div>
+    <div class="section" id="myFoodsSec" hidden>
+      <div class="hd">Mis productos</div>
+      <div class="card list" id="myFoods"></div>
+      <div class="ft">Los productos que escaneas se guardan aquí. Tócalo para añadirlo y ajusta los gramos.</div>
+    </div>
     <textarea id="hint" rows="2" placeholder="Detalles opcionales: «150 g de arroz, con aceite, sin refresco»"></textarea>
     <button class="btn" id="analyzeBtn" type="button" disabled>Calcular calorías</button>
     <div class="status" id="aiStatus" hidden><span class="spin"></span><span id="aiStatusTxt">Analizando…</span></div>
@@ -414,6 +425,7 @@ a { color: var(--blue); }
       <div class="section">
         <div class="hd" style="display:flex;justify-content:space-between;padding-right:16px"><span>Estimación</span><span class="badge" id="rConf"></span></div>
         <div class="card list items" id="rItems"></div>
+        <div class="qty" id="qtyBtns" hidden></div>
         <div class="ft" id="rNote"></div>
       </div>
       <div class="section">
@@ -448,6 +460,7 @@ const inClaude = !!window.claude?.use;
 let profile = null;
 let meals = [];
 let creatine = {};      // {"YYYY-MM-DD": número de tomas}
+let foods = [];         // productos escaneados: {name, tipo, per100:{k,p,c,g}, racion_g, racion_desc, unidad_g, thumb}
 let photoFile = null, thumbData = "", ctl = null, mode = "foto", lastThumb = "";
 
 /* ---------- Almacenamiento: base de datos privada de Claude o el propio móvil ---------- */
@@ -457,7 +470,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 const normCrea = (d) => { const o = {}; for (const [k, v] of Object.entries(d || {})) o[k] = v > 50 ? 1 : Number(v) || 0; return o; };
 const store = {
   mode: "local",
-  saveLocal() { lsSet(LS, JSON.stringify({ profile, meals, creatine })); },
+  saveLocal() { lsSet(LS, JSON.stringify({ profile, meals, creatine, foods })); },
   async init() {
     if (inClaude) {
       try {
@@ -470,16 +483,18 @@ const store = {
       const pRef = this.db.doc(this.root + "/profile");
       pRef.onSnapshot((s) => { profile = s.exists ? s.data() : null; fillProfile(); render(); }, onDbErr);
       this.db.doc(this.root + "/creatine").onSnapshot((s) => { creatine = normCrea(s.exists && s.data().days); render(); }, onDbErr);
+      this.db.doc(this.root + "/foods").onSnapshot((s) => { foods = (s.exists && s.data().list) || []; renderFoods(); }, onDbErr);
       pRef.collection("meals").orderBy("ts", "desc").limit(800).onSnapshot((s) => { meals = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, onDbErr);
       $("storeNote").textContent = "Tus datos se guardan de forma privada en tu cuenta de Claude.";
     } else {
       let l = {}; try { l = JSON.parse(lsGet(LS)) || {}; } catch {}
-      profile = l.profile || null; meals = l.meals || []; creatine = normCrea(l.creatine);
+      profile = l.profile || null; meals = l.meals || []; creatine = normCrea(l.creatine); foods = l.foods || []; renderFoods();
       fillProfile(); render();
       $("storeNote").textContent = "Tus datos se guardan solo en este dispositivo.";
     }
   },
   async setProfile(p) { profile = p; if (this.mode === "db") await this.db.doc(this.root + "/profile").set(p); else this.saveLocal(); render(); },
+  async setFoods(list) { foods = list; if (this.mode === "db") await this.db.doc(this.root + "/foods").set({ list }); else this.saveLocal(); renderFoods(); },
   async setCreatine(days) { creatine = days; if (this.mode === "db") await this.db.doc(this.root + "/creatine").set({ days }); else this.saveLocal(); render(); },
   async addMeal(m) {
     if (this.mode === "db") await this.db.doc(this.root + "/profile").collection("meals").add(m);
@@ -850,6 +865,88 @@ const PROMPT = (hint, withImage) =>
   '{"nombre":"Arroz con pollo","items":[{"alimento":"pechuga de pollo a la plancha","tipo":"proteína","porcion":"1 filete del tamaño de la palma","gramos":150,"kcal":248,"proteina_g":46,"carbos_g":0,"grasa_g":5.4}],"racion":"normal","confianza":"media","nota":"una frase breve sobre la estimación y qué la haría más precisa"}. ' +
   'racion es "pequeña", "normal" o "grande" comparada con una ración típica de adulto. confianza es "alta", "media" o "baja". Si no es comida, devuelve items vacío y explícalo en nota.';
 
+const PROMPT_PRODUCT = (hint) =>
+  "La imagen adjunta es la foto de un producto envasado o de su etiqueta de información nutricional. " +
+  "Lee los valores POR 100 g (o 100 ml) de la tabla nutricional: energía en kcal, proteínas, hidratos de carbono y grasas. " +
+  "Si la etiqueta no se ve, identifica el producto y marca por el envase y usa sus valores típicos conocidos (pon confianza \"baja\"). " +
+  "Busca también el tamaño de la ración que indica el envase y, si el producto viene en unidades (galletas, barritas, lonchas), el peso de una unidad. " +
+  (hint ? "El usuario dice cuánto comió: \"" + hint.slice(0, 300) + "\". Conviértelo a gramos en cantidad_g. " : "Si no sabes cuánto comió, pon en cantidad_g una ración. ") +
+  "Clasifica su tipo principal: proteína, hidratos, grasa, verdura, fruta, lácteo, bebida, salsa u otro. " +
+  "Responde en español con SOLO un objeto JSON con esta forma: " +
+  '{"nombre":"Barrita de avena y chocolate","marca":"Marca","tipo":"hidratos","por100":{"kcal":420,"proteina_g":7,"carbos_g":62,"grasa_g":15},"racion_g":30,"racion_desc":"1 barrita","unidad_g":30,"cantidad_g":30,"leido_de_etiqueta":true,"confianza":"alta","nota":"frase breve"}. ' +
+  "unidad_g puede ser null. confianza es \"alta\" si leíste la tabla, \"media\" o \"baja\" si la estimaste.";
+
+let pendingFood = null;
+function showProduct(r) {
+  const n = (v) => Math.max(0, Number(v) || 0);
+  const per = r.por100 || {};
+  const food = {
+    name: [String(r.nombre || "Producto"), r.marca ? String(r.marca) : ""].filter(Boolean).join(" · ").slice(0, 90),
+    tipo: normTipo(r.tipo),
+    per100: { k: n(per.kcal), p: n(per.proteina_g), c: n(per.carbos_g), g: n(per.grasa_g) },
+    racion_g: Math.round(n(r.racion_g)) || 0, racion_desc: String(r.racion_desc || "").slice(0, 40),
+    unidad_g: Math.round(n(r.unidad_g)) || 0, thumb: thumbData || "",
+  };
+  pendingFood = food;
+  const conf = String(r.confianza || "media");
+  $("rConf").textContent = r.leido_de_etiqueta ? "Leído de la etiqueta" : "Valores estimados · confianza " + conf;
+  $("rConf").className = "badge" + (r.leido_de_etiqueta || conf === "alta" ? " ok" : conf === "baja" ? " low" : "");
+  loadFood(food, Math.round(n(r.cantidad_g)) || food.racion_g || 100);
+  $("rNote").textContent = (r.nota ? String(r.nota) + " " : "") + "Se guardará en «Mis productos» al añadirlo.";
+}
+function loadFood(food, grams) {
+  const pg = { k: food.per100.k / 100, p: food.per100.p / 100, c: food.per100.c / 100, g: food.per100.g / 100 };
+  const desc = "100 g = " + Math.round(food.per100.k) + " kcal";
+  resItems = [{ name: food.name, tipo: food.tipo, porcion: desc, gr: grams, k: pg.k * grams, p: pg.p * grams, c: pg.c * grams, g: pg.g * grams, per: pg }];
+  $("eN").value = food.name;
+  renderResItems(); applyTotals();
+  const q = $("qtyBtns"); q.textContent = "";
+  const opts = [];
+  if (food.racion_g) opts.push([(food.racion_desc || "1 ración") + " · " + food.racion_g + " g", food.racion_g], ["2 raciones", food.racion_g * 2]);
+  if (food.unidad_g && food.unidad_g !== food.racion_g) opts.push(["1 unidad · " + food.unidad_g + " g", food.unidad_g]);
+  opts.push(["100 g", 100]);
+  for (const [label, g] of opts) {
+    const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+    b.onclick = () => { const inp = $("gr0"); inp.value = String(g); inp.dispatchEvent(new Event("input")); };
+    q.append(b);
+  }
+  q.hidden = false;
+  $("rNote").textContent = "";
+  $("resultBox").hidden = false; $("editBox").hidden = false;
+  updateAnalyze();
+}
+function renderFoods() {
+  const box = $("myFoods"); if (!box) return;
+  box.textContent = "";
+  for (const f of foods) {
+    const row = document.createElement("div"); row.className = "item";
+    const b = document.createElement("button"); b.type = "button"; b.className = "food";
+    let th;
+    if (f.thumb) { th = document.createElement("img"); th.src = f.thumb; th.alt = ""; }
+    else { th = document.createElement("div"); th.textContent = f.name.charAt(0).toUpperCase(); }
+    th.className = "thumb";
+    const mid = document.createElement("div"); mid.style.minWidth = "0";
+    const n = document.createElement("div"); n.className = "n"; n.textContent = f.name;
+    const m = document.createElement("div"); m.className = "m num";
+    m.textContent = Math.round(f.per100.k) + " kcal/100 g" + (f.racion_g ? " · ración " + f.racion_g + " g" : "");
+    mid.append(n, m);
+    b.append(th, mid, chip(f.tipo));
+    b.onclick = () => {
+      pendingFood = f; lastThumb = f.thumb || "";
+      $("rConf").textContent = "Mis productos"; $("rConf").className = "badge";
+      loadFood(f, f.racion_g || 100);
+    };
+    const del = document.createElement("button"); del.type = "button"; del.className = "del"; del.textContent = "Quitar";
+    del.style.cssText = "border:0;background:none;color:var(--red);font:inherit;font-size:13px;cursor:pointer;margin-left:8px";
+    del.onclick = () => {
+      if (del.dataset.armed) store.setFoods(foods.filter((x) => x !== f)).catch(() => toast("No se pudo quitar"));
+      else { del.dataset.armed = "1"; del.textContent = "¿Seguro?"; setTimeout(() => { delete del.dataset.armed; del.textContent = "Quitar"; }, 3000); }
+    };
+    row.append(b, del); box.append(row);
+  }
+  if (mode === "manual") $("myFoodsSec").hidden = !foods.length;
+}
+
 function parseJson(t) {
   try { return JSON.parse(t); } catch {}
   const f = t.match(/```(?:json)?\s*([\s\S]*?)```/); if (f) { try { return JSON.parse(f[1]); } catch {} }
@@ -924,22 +1021,27 @@ function resetSheet() {
   photoFile = null; thumbData = ""; lastThumb = "";
   $("preview").hidden = true; $("preview").removeAttribute("src");
   $("camInput").value = ""; $("galInput").value = ""; $("hint").value = "";
-  $("resultBox").hidden = true; $("aiErr").hidden = true; $("aiStatus").hidden = true; resItems = [];
+  $("resultBox").hidden = true; $("aiErr").hidden = true; $("aiStatus").hidden = true; resItems = []; pendingFood = null;
+  $("qtyBtns").hidden = true; $("rSplit").textContent = "";
   ["eN", "eK", "eP", "eC", "eG"].forEach((i) => ($(i).value = ""));
   setMode("foto");
 }
 function setMode(m) {
   mode = m;
   document.querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === m)));
-  $("mFoto").hidden = m !== "foto";
+  $("mFoto").hidden = m !== "foto" && m !== "producto";
+  $("photoHint").textContent = m === "producto" ? "Haz una foto a la etiqueta nutricional o al paquete" : "Haz una foto de tu plato desde arriba";
   $("hint").hidden = m === "manual";
-  $("hint").placeholder = m === "texto" ? "Describe lo que comiste: «2 huevos revueltos, 1 tostada con aguacate»" : "Detalles opcionales: «150 g de arroz, con aceite, sin refresco»";
+  $("hint").placeholder = m === "texto" ? "Describe lo que comiste: «2 huevos revueltos, 1 tostada con aguacate»"
+    : m === "producto" ? "¿Cuánto comiste? «1 barrita», «40 g», «medio paquete»"
+    : "Detalles opcionales: «150 g de arroz, con aceite, sin refresco»";
+  $("myFoodsSec").hidden = m !== "manual" || !foods.length;
   $("analyzeBtn").hidden = m === "manual";
   $("editBox").hidden = m !== "manual" && $("resultBox").hidden;
   updateAnalyze();
 }
 function updateAnalyze() {
-  $("analyzeBtn").disabled = aiAvailable() && (mode === "foto" ? !photoFile : !$("hint").value.trim());
+  $("analyzeBtn").disabled = aiAvailable() && (mode === "foto" || mode === "producto" ? !photoFile : !$("hint").value.trim());
   $("analyzeBtn").textContent = aiAvailable() ? "Calcular calorías" : "Configura la IA en Perfil";
   $("sheetSave").disabled = !(Number($("eK").value) > 0);
 }
@@ -979,15 +1081,16 @@ pb.addEventListener("drop", (e) => { e.preventDefault(); pb.classList.remove("ov
 
 $("analyzeBtn").onclick = async () => {
   if (!aiAvailable()) { closeSheet(); go("perfil"); return; }
-  const withImage = mode === "foto";
+  const withImage = mode === "foto" || mode === "producto";
   ctl = new AbortController();
   $("analyzeBtn").disabled = true; $("aiErr").hidden = true; $("resultBox").hidden = true;
-  $("aiStatus").hidden = false; $("stopBtn").hidden = false; $("aiStatusTxt").textContent = "Analizando tu comida…";
+  $("aiStatus").hidden = false; $("stopBtn").hidden = false; $("aiStatusTxt").textContent = mode === "producto" ? "Leyendo la etiqueta…" : "Analizando tu comida…";
   try {
-    const r = await estimate(PROMPT($("hint").value.trim(), withImage), withImage ? photoFile : null, ctl.signal);
+    const prompt = mode === "producto" ? PROMPT_PRODUCT($("hint").value.trim()) : PROMPT($("hint").value.trim(), withImage);
+    const r = await estimate(prompt, withImage ? photoFile : null, ctl.signal);
     if (!r || typeof r !== "object") throw { code: "invalid_json" };
     lastThumb = withImage ? thumbData : "";
-    showResult(r);
+    if (mode === "producto") showProduct(r); else showResult(r);
   } catch (e) {
     $("aiErr").textContent = ERR[e?.code] || (e?.code === "api_400" ? "La API rechazó la petición: " + (e.message || "") : "Algo falló al analizar. Inténtalo otra vez.");
     $("aiErr").hidden = false;
@@ -1087,8 +1190,12 @@ function renderSplit() {
 $("sheetSave").onclick = () => {
   const now = Date.now();
   const m = { date: dayKey(), ts: now, name: ($("eN").value || "Comida").slice(0, 120), kcal: Number($("eK").value) || 0,
-    p: Number($("eP").value) || 0, c: Number($("eC").value) || 0, g: Number($("eG").value) || 0, thumb: mode === "manual" ? "" : lastThumb,
-    items: mode === "manual" || $("resultBox").hidden ? [] : resItems.map((it) => ({ n: it.name.slice(0, 80), t: it.tipo, gr: Math.round(it.gr), k: Math.round(it.k), p: r1(it.p), c: r1(it.c), g: r1(it.g) })) };
+    p: Number($("eP").value) || 0, c: Number($("eC").value) || 0, g: Number($("eG").value) || 0, thumb: mode === "manual" && !pendingFood ? "" : lastThumb,
+    items: $("resultBox").hidden ? [] : resItems.map((it) => ({ n: it.name.slice(0, 80), t: it.tipo, gr: Math.round(it.gr), k: Math.round(it.k), p: r1(it.p), c: r1(it.c), g: r1(it.g) })) };
+  if (pendingFood) {
+    const f = pendingFood, rest = foods.filter((x) => x.name.toLowerCase() !== f.name.toLowerCase());
+    store.setFoods([f, ...rest].slice(0, 60)).catch(() => {});
+  }
   store.addMeal(m).then(() => { toast("+" + fmt(m.kcal) + " kcal añadidas"); closeSheet(); go("hoy"); }).catch(() => toast("No se pudo guardar"));
 };
 
