@@ -1,0 +1,629 @@
+<title>Bocado Kcal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: una columna tipo app móvil; resumen del día arriba, acciones en medio, historial abajo. En escritorio, dos columnas. */
+:root {
+  --bg: #f3f5ef;
+  --surface: #ffffff;
+  --ink: #1d2a1f;
+  --muted: #5d6b5f;
+  --line: #dde3d6;
+  --accent: #3f7d2c;
+  --accent-soft: #e2eed9;
+  --amber: #b86b00;
+  --amber-soft: #fbecd2;
+  --danger: #b3261e;
+  --ring-track: #e4e9de;
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121712; --surface: #1b221c; --ink: #e6ede4; --muted: #9aa99b; --line: #2c372d;
+  --accent: #8ccf6c; --accent-soft: #23331f; --amber: #f0b45a; --amber-soft: #3a2c15; --danger: #f2a49d; --ring-track: #273027;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121712; --surface: #1b221c; --ink: #e6ede4; --muted: #9aa99b; --line: #2c372d;
+  --accent: #8ccf6c; --accent-soft: #23331f; --amber: #f0b45a; --amber-soft: #3a2c15; --danger: #f2a49d; --ring-track: #273027;
+  color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1040px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; display: grid; gap: 16px; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font-family: var(--f-display); font-weight: 800; font-size: 1.9rem; letter-spacing: -0.02em; margin: 0; }
+h1 span { color: var(--accent); }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: 1.15rem; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 0.85rem; }
+.cols { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 860px) { .cols { grid-template-columns: 1.05fr 0.95fr; align-items: start; } }
+.col { display: grid; gap: 16px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.num { font-family: var(--f-num); font-variant-numeric: tabular-nums; }
+.label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+
+button, .btn { font: inherit; font-weight: 600; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 10px 14px; cursor: pointer; }
+button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+button.ghost { background: transparent; }
+button:disabled { opacity: 0.55; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .btn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 9px 10px; width: 100%; min-width: 0; }
+textarea { resize: vertical; min-height: 44px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field span { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+.grid2 { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid3 { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 420px) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* Resumen del día */
+.today { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; }
+@media (max-width: 420px) { .today { grid-template-columns: 1fr; justify-items: center; } }
+.ring { position: relative; width: 168px; height: 168px; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring .center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.ring .big { font-family: var(--f-display); font-weight: 800; font-size: 2.1rem; line-height: 1; }
+.stats { display: grid; gap: 10px; min-width: 0; width: 100%; }
+.stat { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+.stat:last-child { border-bottom: 0; }
+.macros { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+.macro { display: grid; gap: 4px; }
+.bar { height: 6px; border-radius: 3px; background: var(--ring-track); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+
+/* Creatina */
+.creatine { background: var(--amber-soft); border-color: transparent; }
+.creatine h2 { color: var(--amber); }
+.creatine.done { background: var(--surface); border-color: var(--line); }
+.creatine.done h2 { color: var(--accent); }
+.dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.dot { width: 26px; display: grid; justify-items: center; gap: 2px; font-size: 0.68rem; color: var(--muted); }
+.dot b { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--amber); }
+.dot b.on { background: var(--amber); }
+.creatine.done .dot b { border-color: var(--accent); }
+.creatine.done .dot b.on { background: var(--accent); }
+.pulse { animation: pulse 1.8s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+
+/* Foto */
+.drop { border: 2px dashed var(--line); border-radius: 12px; padding: 18px; display: grid; gap: 10px; justify-items: center; text-align: center; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop img { max-height: 220px; border-radius: 10px; object-fit: cover; }
+.btn input { display: none; }
+.result { display: grid; gap: 10px; border-radius: 12px; background: var(--accent-soft); padding: 14px; }
+.items { display: grid; gap: 4px; font-size: 0.9rem; }
+.items div { display: flex; justify-content: space-between; gap: 8px; }
+.status { font-size: 0.88rem; color: var(--muted); }
+.err { color: var(--danger); font-size: 0.88rem; }
+
+/* Lista de comidas */
+.meals { display: grid; gap: 8px; }
+.meal { display: grid; grid-template-columns: 48px 1fr auto; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; border: 1px solid var(--line); }
+.meal .thumb { width: 48px; height: 48px; border-radius: 8px; background: var(--accent-soft); object-fit: cover; display: grid; place-content: center; font-family: var(--f-display); font-weight: 800; color: var(--accent); }
+.meal .name { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.meal .meta { font-size: 0.78rem; color: var(--muted); }
+.meal button { padding: 4px 8px; font-size: 0.8rem; }
+.empty { color: var(--muted); font-size: 0.9rem; padding: 10px 0; }
+
+/* Semana */
+.week { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 6px; align-items: end; height: 140px; position: relative; }
+.wk { display: grid; gap: 4px; justify-items: center; height: 100%; grid-template-rows: 1fr auto auto; }
+.wk .col-bar { width: 70%; max-width: 34px; align-self: end; border-radius: 6px 6px 2px 2px; background: var(--accent); min-height: 2px; }
+.wk .col-bar.over { background: var(--amber); }
+.wk .d { font-size: 0.72rem; color: var(--muted); }
+.wk .k { font-size: 0.68rem; }
+.target-line { position: absolute; left: 0; right: 0; border-top: 1.5px dashed var(--muted); pointer-events: none; }
+.target-line span { position: absolute; right: 0; top: -18px; font-size: 0.68rem; color: var(--muted); background: var(--surface); padding: 0 4px; }
+
+.pill { display: inline-block; font-size: 0.75rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+.pill.warn { background: var(--amber-soft); color: var(--amber); }
+details summary { cursor: pointer; font-weight: 600; }
+.note { font-size: 0.8rem; color: var(--muted); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-weight: 600; font-size: 0.9rem; z-index: 20; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Bocado<span>.</span></h1>
+    <div class="sub" id="todayLabel"></div>
+  </header>
+
+  <div class="card creatine" id="creatineCard">
+    <div class="row between">
+      <div style="display:grid;gap:2px;min-width:0">
+        <h2 id="creaTitle">Creatina de hoy</h2>
+        <div class="sub" id="creaSub">Toma tu dosis diaria.</div>
+      </div>
+      <button class="primary" id="creaBtn">Ya la tomé</button>
+    </div>
+    <div class="dots" id="creaDots"></div>
+  </div>
+
+  <div class="cols">
+    <div class="col">
+      <section class="card">
+        <div class="row between">
+          <h2>Hoy</h2>
+          <span class="pill" id="deficitPill">Sin objetivo</span>
+        </div>
+        <div class="today">
+          <div class="ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle cx="60" cy="60" r="50" fill="none" stroke="var(--ring-track)" stroke-width="12"></circle>
+              <circle id="ringArc" cx="60" cy="60" r="50" fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16"></circle>
+            </svg>
+            <div class="center">
+              <div class="big num" id="leftBig">—</div>
+              <div class="sub" id="leftLabel">kcal restantes</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat"><span>Objetivo</span><b class="num" id="sTarget">—</b></div>
+            <div class="stat"><span>Comido</span><b class="num" id="sEaten">0</b></div>
+            <div class="stat"><span>Mantenimiento</span><b class="num" id="sTdee">—</b></div>
+            <div class="macros">
+              <div class="macro"><span class="label">Proteína</span><span class="num" id="mP">0 g</span><div class="bar"><i id="bP" style="width:0"></i></div></div>
+              <div class="macro"><span class="label">Carbos</span><span class="num" id="mC">0 g</span><div class="bar"><i id="bC" style="width:0"></i></div></div>
+              <div class="macro"><span class="label">Grasa</span><span class="num" id="mG">0 g</span><div class="bar"><i id="bG" style="width:0"></i></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="photoCard">
+        <h2>Añadir comida</h2>
+        <div class="drop" id="drop">
+          <img id="preview" alt="Foto de la comida" hidden>
+          <div class="sub" id="dropHint">Sube o toma una foto de tu plato y la IA calcula las calorías aproximadas.</div>
+          <label class="btn primary" for="photoInput">📷 Foto del plato<input type="file" id="photoInput" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment"></label>
+        </div>
+        <label class="field"><span>Detalles opcionales (mejoran la estimación)</span>
+          <textarea id="hint" rows="2" placeholder="Ej.: 150 g de arroz, frito con aceite, sin refresco"></textarea></label>
+        <div class="row">
+          <button class="primary" id="analyzeBtn" disabled>Calcular calorías</button>
+          <button class="ghost" id="textBtn">Describir sin foto</button>
+          <button class="ghost" id="stopBtn" hidden>Detener</button>
+        </div>
+        <div class="status" id="aiStatus" hidden></div>
+        <div class="result" id="result" hidden>
+          <div class="row between"><b id="rName"></b><span class="pill" id="rConf"></span></div>
+          <div class="items" id="rItems"></div>
+          <div class="grid3">
+            <label class="field"><span>kcal</span><input id="rK" type="number" inputmode="numeric" min="0"></label>
+            <label class="field"><span>Proteína g</span><input id="rP" type="number" inputmode="numeric" min="0"></label>
+            <label class="field"><span>Carbos g</span><input id="rC" type="number" inputmode="numeric" min="0"></label>
+            <label class="field"><span>Grasa g</span><input id="rG" type="number" inputmode="numeric" min="0"></label>
+            <label class="field" style="grid-column:span 2"><span>Nombre</span><input id="rN" type="text"></label>
+          </div>
+          <div class="note" id="rNote"></div>
+          <div class="row"><button class="primary" id="saveMeal">Guardar en el día</button><button class="ghost" id="discard">Descartar</button></div>
+        </div>
+        <details>
+          <summary>Añadir a mano</summary>
+          <div class="grid3" style="margin-top:10px">
+            <label class="field" style="grid-column:1/-1"><span>Comida</span><input id="manN" type="text" placeholder="Ej.: Yogur griego"></label>
+            <label class="field"><span>kcal</span><input id="manK" type="number" inputmode="numeric" min="0"></label>
+            <label class="field"><span>Proteína g</span><input id="manP" type="number" inputmode="numeric" min="0"></label>
+            <label class="field"><span>Carbos g</span><input id="manC" type="number" inputmode="numeric" min="0"></label>
+            <label class="field"><span>Grasa g</span><input id="manG" type="number" inputmode="numeric" min="0"></label>
+          </div>
+          <div class="row" style="margin-top:10px"><button id="manSave">Añadir</button></div>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>Comidas de hoy</h2>
+        <div class="meals" id="meals"><div class="empty">Cargando…</div></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card">
+        <div class="row between"><h2>Últimos 7 días</h2><span class="pill" id="weekPill">—</span></div>
+        <div class="week" id="week"></div>
+        <div class="grid2">
+          <div><div class="label">Déficit acumulado</div><div class="num" style="font-size:1.4rem" id="accDef">—</div></div>
+          <div><div class="label">Grasa estimada</div><div class="num" style="font-size:1.4rem" id="accFat">—</div></div>
+        </div>
+        <div class="note">Cuenta solo los días en que registraste comida. 7.700 kcal de déficit ≈ 1 kg de grasa.</div>
+      </section>
+
+      <section class="card">
+        <h2>Tu perfil</h2>
+        <form id="profile" class="grid2">
+          <label class="field"><span>Sexo</span><select id="pSex"><option value="h">Hombre</option><option value="m">Mujer</option></select></label>
+          <label class="field"><span>Edad</span><input id="pAge" type="number" inputmode="numeric" min="14" max="99" placeholder="años" required></label>
+          <label class="field"><span>Peso (kg)</span><input id="pW" type="number" inputmode="decimal" step="0.1" min="30" max="300" placeholder="kg" required></label>
+          <label class="field"><span>Altura (cm)</span><input id="pH" type="number" inputmode="numeric" min="120" max="230" placeholder="cm" required></label>
+          <label class="field"><span>Complexión</span><select id="pBody">
+            <option value="ecto">Delgada (ectomorfo)</option>
+            <option value="meso" selected>Media / atlética (mesomorfo)</option>
+            <option value="endo">Robusta (endomorfo)</option></select></label>
+          <label class="field"><span>Actividad</span><select id="pAct">
+            <option value="1.2">Sedentaria</option>
+            <option value="1.375" selected>Ligera (1-3 días/sem)</option>
+            <option value="1.55">Moderada (3-5 días/sem)</option>
+            <option value="1.725">Alta (6-7 días/sem)</option>
+            <option value="1.9">Muy alta (doble sesión)</option></select></label>
+          <label class="field"><span>Déficit</span><select id="pDef">
+            <option value="300">Suave (−300 kcal)</option>
+            <option value="500" selected>Moderado (−500 kcal)</option>
+            <option value="750">Agresivo (−750 kcal)</option></select></label>
+          <label class="field"><span>Recordar creatina a las</span><input id="pCrea" type="time" value="09:00"></label>
+          <label class="field"><span>Dosis de creatina (g)</span><input id="pDose" type="number" inputmode="numeric" min="1" max="20" value="5"></label>
+          <div class="field" style="align-self:end"><button class="primary" type="submit" id="pSave">Calcular y guardar</button></div>
+        </form>
+        <div class="note" id="profileOut">Rellena tus datos para calcular tus calorías.</div>
+        <div class="note" id="storeNote"></div>
+      </section>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => Math.round(n).toLocaleString("es-ES");
+const dayKey = (d = new Date()) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+const DOW = ["D", "L", "M", "X", "J", "V", "S"];
+
+let profile = null;
+let meals = [];          // {id, date, ts, name, kcal, p, c, g, thumb}
+let creatine = {};       // {"YYYY-MM-DD": ts}
+let photoFile = null, thumbData = "", pending = null, ctl = null;
+
+/* ---------- Almacenamiento: base de datos privada de Claude, o el navegador ---------- */
+const LS = "bocado.v1";
+const store = {
+  mode: "local", root: null,
+  loadLocal() { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; } },
+  saveLocal() { try { localStorage.setItem(LS, JSON.stringify({ profile, meals, creatine })); } catch {} },
+  async init() {
+    const use = window.claude?.use;
+    if (use) {
+      try {
+        const [db, user] = await Promise.all([use("db"), use("user")]);
+        const id = db && user ? await user.id() : null;
+        if (id) { this.root = "data/users/" + id; this.db = db; this.mode = "db"; }
+      } catch {}
+    }
+    if (this.mode === "db") {
+      this.db.doc(this.root + "/profile").onSnapshot((s) => { profile = s.exists ? s.data() : null; fillProfile(); render(); }, onDbErr);
+      this.db.doc(this.root + "/creatine").onSnapshot((s) => { creatine = (s.exists && s.data().days) || {}; render(); }, onDbErr);
+      this.db.doc(this.root + "/profile").collection("meals").orderBy("ts", "desc").limit(600)
+        .onSnapshot((s) => { meals = s.docs.map((d) => ({ id: d.id, ...d.data() })); render(); }, onDbErr);
+      $("storeNote").textContent = "Tus datos se guardan de forma privada en tu cuenta de Claude.";
+    } else {
+      const l = this.loadLocal();
+      profile = l.profile || null; meals = l.meals || []; creatine = l.creatine || {};
+      fillProfile(); render();
+      $("storeNote").textContent = "Tus datos se guardan solo en este navegador.";
+    }
+  },
+  async setProfile(p) { profile = p; if (this.mode === "db") await this.db.doc(this.root + "/profile").set(p); else this.saveLocal(); render(); },
+  async setCreatine(days) { creatine = days; if (this.mode === "db") await this.db.doc(this.root + "/creatine").set({ days }); else this.saveLocal(); render(); },
+  async addMeal(m) {
+    if (this.mode === "db") await this.db.doc(this.root + "/profile").collection("meals").add(m);
+    else { meals.unshift({ id: "m" + m.ts, ...m }); this.saveLocal(); render(); }
+  },
+  async delMeal(id) {
+    if (this.mode === "db") await this.db.doc(this.root + "/profile").collection("meals").doc(id).delete();
+    else { meals = meals.filter((m) => m.id !== id); this.saveLocal(); render(); }
+  },
+};
+function onDbErr(e) { toast("No se pudieron leer tus datos (" + (e?.code || "error") + ")."); }
+
+/* ---------- Cálculo de calorías ---------- */
+function calc(p) {
+  if (!p || !p.w || !p.h || !p.age) return null;
+  // Mifflin-St Jeor
+  const bmr = 10 * p.w + 6.25 * p.h - 5 * p.age + (p.sex === "m" ? -161 : 5);
+  const bodyAdj = { ecto: 1.05, meso: 1.0, endo: 0.95 }[p.body] ?? 1;
+  const tdee = bmr * p.act * bodyAdj;
+  const floor = p.sex === "m" ? 1200 : 1500;
+  const target = Math.max(floor, tdee - p.def);
+  const protein = Math.round(p.w * (p.body === "endo" ? 1.8 : 2.0));
+  const fat = Math.round((target * 0.27) / 9);
+  const carbs = Math.max(0, Math.round((target - protein * 4 - fat * 9) / 4));
+  return { bmr, tdee, target, protein, fat, carbs, floored: target === floor && tdee - p.def < floor };
+}
+
+/* ---------- Render ---------- */
+function render() {
+  const now = new Date(), today = dayKey(now);
+  $("todayLabel").textContent = now.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+  const c = calc(profile);
+  const todays = meals.filter((m) => m.date === today).sort((a, b) => a.ts - b.ts);
+  const sum = (arr, k) => arr.reduce((s, m) => s + (Number(m[k]) || 0), 0);
+  const eaten = sum(todays, "kcal");
+
+  $("sEaten").textContent = fmt(eaten);
+  $("sTarget").textContent = c ? fmt(c.target) : "—";
+  $("sTdee").textContent = c ? fmt(c.tdee) : "—";
+  const arc = $("ringArc"), C = 314.16;
+  if (c) {
+    const left = c.target - eaten, frac = Math.min(1, eaten / c.target);
+    $("leftBig").textContent = fmt(Math.abs(left));
+    $("leftLabel").textContent = left >= 0 ? "kcal restantes" : "kcal de más";
+    arc.style.strokeDashoffset = String(C * (1 - frac));
+    arc.style.stroke = left >= 0 ? "var(--accent)" : "var(--amber)";
+    const pill = $("deficitPill");
+    pill.textContent = eaten > c.tdee ? "Superávit" : left >= 0 ? "En déficit" : "Déficit menor";
+    pill.className = "pill" + (left < 0 ? " warn" : "");
+    setMacro("P", sum(todays, "p"), c.protein); setMacro("C", sum(todays, "c"), c.carbs); setMacro("G", sum(todays, "g"), c.fat);
+  } else {
+    $("leftBig").textContent = "—"; $("leftLabel").textContent = "completa tu perfil";
+    arc.style.strokeDashoffset = String(C);
+    setMacro("P", sum(todays, "p"), 0); setMacro("C", sum(todays, "c"), 0); setMacro("G", sum(todays, "g"), 0);
+  }
+
+  // Comidas
+  const list = $("meals"); list.textContent = "";
+  if (!todays.length) {
+    const e = document.createElement("div"); e.className = "empty";
+    e.textContent = "Aún no hay comidas hoy. Sube una foto de tu plato para empezar.";
+    list.append(e);
+  }
+  for (const m of todays) {
+    const row = document.createElement("div"); row.className = "meal";
+    let th;
+    if (m.thumb) { th = document.createElement("img"); th.src = m.thumb; th.alt = ""; }
+    else { th = document.createElement("div"); th.textContent = (m.name || "?").trim().charAt(0).toUpperCase(); }
+    th.className = "thumb";
+    const mid = document.createElement("div"); mid.style.minWidth = "0";
+    const n = document.createElement("div"); n.className = "name"; n.textContent = m.name || "Comida";
+    const meta = document.createElement("div"); meta.className = "meta";
+    meta.textContent = new Date(m.ts).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) + " · P " + fmt(m.p || 0) + " · C " + fmt(m.c || 0) + " · G " + fmt(m.g || 0);
+    mid.append(n, meta);
+    const right = document.createElement("div"); right.style.cssText = "display:grid;gap:4px;justify-items:end";
+    const k = document.createElement("b"); k.className = "num"; k.textContent = fmt(m.kcal) + " kcal";
+    const del = document.createElement("button"); del.className = "ghost"; del.textContent = "Quitar";
+    del.onclick = () => {
+      if (del.dataset.armed) { store.delMeal(m.id).catch(() => toast("No se pudo quitar.")); }
+      else { del.dataset.armed = "1"; del.textContent = "¿Seguro?"; setTimeout(() => { delete del.dataset.armed; del.textContent = "Quitar"; }, 3000); }
+    };
+    right.append(k, del);
+    row.append(th, mid, right); list.append(row);
+  }
+
+  // Semana
+  const wk = $("week"); wk.textContent = "";
+  const days = [];
+  for (let i = 6; i >= 0; i--) { const d = new Date(now); d.setDate(d.getDate() - i); days.push(d); }
+  const totals = days.map((d) => sum(meals.filter((m) => m.date === dayKey(d)), "kcal"));
+  const max = Math.max(c ? c.tdee : 0, ...totals, 1) * 1.08;
+  days.forEach((d, i) => {
+    const t = totals[i];
+    const col = document.createElement("div"); col.className = "wk";
+    const bar = document.createElement("div"); bar.className = "col-bar" + (c && t > c.target ? " over" : "");
+    bar.style.height = (t / max * 100) + "%";
+    bar.title = fmt(t) + " kcal";
+    const k = document.createElement("div"); k.className = "k num"; k.textContent = t ? fmt(t) : "·";
+    const lab = document.createElement("div"); lab.className = "d"; lab.textContent = DOW[d.getDay()] + d.getDate();
+    col.append(bar, k, lab); wk.append(col);
+  });
+  if (c) {
+    const line = document.createElement("div"); line.className = "target-line";
+    // la zona de barras ocupa la altura total menos las dos líneas de etiquetas (~36px)
+    line.style.bottom = "calc(36px + (100% - 36px) * " + (c.target / max).toFixed(4) + ")";
+    const s = document.createElement("span"); s.textContent = "objetivo " + fmt(c.target); line.append(s);
+    wk.append(line);
+  }
+  // Déficit acumulado (todos los días registrados)
+  if (c) {
+    const byDay = {};
+    for (const m of meals) byDay[m.date] = (byDay[m.date] || 0) + (Number(m.kcal) || 0);
+    const logged = Object.keys(byDay);
+    const acc = logged.reduce((s, d) => s + (c.tdee - byDay[d]), 0);
+    $("accDef").textContent = (acc >= 0 ? "" : "+") + fmt(Math.abs(acc)) + " kcal";
+    $("accFat").textContent = (acc >= 0 ? "−" : "+") + (Math.abs(acc) / 7700).toFixed(2) + " kg";
+    const wkLogged = totals.filter((t) => t > 0);
+    const avg = wkLogged.length ? wkLogged.reduce((a, b) => a + b, 0) / wkLogged.length : 0;
+    $("weekPill").textContent = wkLogged.length ? "media " + fmt(avg) + " kcal" : "sin registros";
+    $("weekPill").className = "pill" + (avg > c.target ? " warn" : "");
+  } else { $("accDef").textContent = "—"; $("accFat").textContent = "—"; $("weekPill").textContent = "—"; }
+
+  renderCreatine(now);
+}
+function setMacro(k, v, goal) {
+  $("m" + k).textContent = fmt(v) + (goal ? " / " + fmt(goal) + " g" : " g");
+  $("b" + k).style.width = goal ? Math.min(100, v / goal * 100) + "%" : "0";
+}
+
+function renderCreatine(now) {
+  const today = dayKey(now), done = !!creatine[today];
+  const card = $("creatineCard"), btn = $("creaBtn");
+  const time = profile?.crea || "09:00", dose = profile?.dose || 5;
+  const [hh, mm] = time.split(":").map(Number);
+  const due = now.getHours() * 60 + now.getMinutes() >= hh * 60 + mm;
+  card.classList.toggle("done", done);
+  $("creaTitle").textContent = done ? "Creatina tomada ✓" : due ? "¡Te toca la creatina!" : "Creatina de hoy";
+  $("creaTitle").classList.toggle("pulse", !done && due);
+  let streak = 0;
+  for (let d = new Date(now); ; d.setDate(d.getDate() - 1)) {
+    if (creatine[dayKey(d)]) streak++; else if (dayKey(d) !== today) break;
+    if (streak > 400) break;
+  }
+  $("creaSub").textContent = done
+    ? "Hoy a las " + new Date(creatine[today]).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) + " · racha de " + streak + (streak === 1 ? " día" : " días")
+    : dose + " g · recordatorio a las " + time + (streak ? " · racha de " + streak + " días" : "");
+  btn.textContent = done ? "Deshacer" : "Ya la tomé (" + dose + " g)";
+  btn.className = done ? "ghost" : "primary";
+  const dots = $("creaDots"); dots.textContent = "";
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(now); d.setDate(d.getDate() - i);
+    const w = document.createElement("div"); w.className = "dot";
+    const b = document.createElement("b"); if (creatine[dayKey(d)]) b.className = "on";
+    const s = document.createElement("span"); s.textContent = DOW[d.getDay()];
+    w.title = d.toLocaleDateString("es-ES");
+    w.append(b, s); dots.append(w);
+  }
+}
+
+/* ---------- Perfil ---------- */
+function fillProfile() {
+  if (!profile) { $("profileOut").textContent = "Rellena tus datos para calcular tus calorías."; return; }
+  $("pSex").value = profile.sex; $("pAge").value = profile.age; $("pW").value = profile.w; $("pH").value = profile.h;
+  $("pBody").value = profile.body; $("pAct").value = String(profile.act); $("pDef").value = String(profile.def);
+  $("pCrea").value = profile.crea || "09:00"; $("pDose").value = profile.dose || 5;
+  const c = calc(profile);
+  if (c) {
+    $("profileOut").textContent = "Metabolismo basal " + fmt(c.bmr) + " kcal · mantenimiento " + fmt(c.tdee) +
+      " kcal · objetivo " + fmt(c.target) + " kcal (proteína " + c.protein + " g, carbos " + c.carbs + " g, grasa " + c.fat + " g)." +
+      (c.floored ? " Se aplicó un mínimo seguro de calorías." : "") +
+      " Ritmo esperado ≈ " + ((c.tdee - c.target) * 7 / 7700).toFixed(2) + " kg/semana.";
+  }
+}
+$("profile").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const p = {
+    sex: $("pSex").value, age: Number($("pAge").value), w: Number($("pW").value), h: Number($("pH").value),
+    body: $("pBody").value, act: Number($("pAct").value), def: Number($("pDef").value),
+    crea: $("pCrea").value || "09:00", dose: Number($("pDose").value) || 5, updated: Date.now(),
+  };
+  store.setProfile(p).then(() => { fillProfile(); toast("Perfil guardado"); }).catch(() => toast("No se pudo guardar el perfil."));
+});
+
+/* ---------- Creatina ---------- */
+$("creaBtn").onclick = () => {
+  const t = dayKey(), days = { ...creatine };
+  if (days[t]) delete days[t]; else days[t] = Date.now();
+  store.setCreatine(days).then(() => toast(days[t] ? "Creatina registrada 💪" : "Desmarcada")).catch(() => toast("No se pudo guardar."));
+};
+
+/* ---------- Foto + IA ---------- */
+let sample = null;
+(async () => {
+  try { sample = await window.claude?.use?.("sample"); } catch { sample = null; }
+  if (!sample) {
+    $("analyzeBtn").hidden = true; $("textBtn").hidden = true;
+    $("dropHint").textContent = "El análisis con IA solo funciona abierto en Claude. Puedes añadir comidas a mano.";
+    return;
+  }
+  const lim = await sample.limits().catch(() => null);
+  if (!lim?.images) { $("dropHint").textContent = "Esta vista no puede enviar fotos a la IA. Describe la comida con texto."; }
+})();
+
+function setPhoto(file) {
+  if (!file || !file.type.startsWith("image/")) return;
+  photoFile = file;
+  const url = URL.createObjectURL(file);
+  const img = $("preview"); img.src = url; img.hidden = false;
+  $("analyzeBtn").disabled = false;
+  makeThumb(url).then((t) => (thumbData = t)).catch(() => (thumbData = ""));
+}
+function makeThumb(url) {
+  return new Promise((res, rej) => {
+    const im = new Image();
+    im.onload = () => {
+      const s = 96, cv = document.createElement("canvas"); cv.width = cv.height = s;
+      const r = Math.max(s / im.width, s / im.height), w = im.width * r, h = im.height * r;
+      cv.getContext("2d").drawImage(im, (s - w) / 2, (s - h) / 2, w, h);
+      res(cv.toDataURL("image/jpeg", 0.7));
+    };
+    im.onerror = rej; im.src = url;
+  });
+}
+$("photoInput").onchange = (e) => setPhoto(e.target.files[0]);
+const drop = $("drop");
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => { e.preventDefault(); drop.classList.remove("over"); setPhoto(e.dataTransfer.files[0]); });
+
+const PROMPT = (hint, withImage) =>
+  "Eres un nutricionista que estima calorías de comidas. " +
+  (withImage ? "La imagen adjunta es una foto de una comida. Identifica cada alimento visible y estima su porción en gramos usando referencias visuales (plato, cubiertos, manos). " : "Estima a partir de esta descripción de una comida. ") +
+  (hint ? "Detalles que da el usuario (tienen prioridad sobre lo que veas): \"" + hint.slice(0, 600) + "\". " : "") +
+  "Incluye aceites y salsas probables. Responde en español con SOLO un objeto JSON con esta forma: " +
+  '{"nombre":"Arroz con pollo","items":[{"alimento":"arroz blanco","gramos":180,"kcal":234}],"kcal":520,"proteina_g":35,"carbos_g":60,"grasa_g":14,"confianza":"media","nota":"una frase breve sobre la estimación"}. ' +
+  'confianza es "alta", "media" o "baja". Si no es comida, devuelve kcal 0 y explícalo en nota.';
+
+async function analyze(withImage) {
+  if (!sample) return;
+  const hint = $("hint").value.trim();
+  if (!withImage && !hint) { toast("Escribe qué comiste en el cuadro de detalles."); $("hint").focus(); return; }
+  ctl = new AbortController();
+  $("analyzeBtn").disabled = true; $("textBtn").disabled = true; $("stopBtn").hidden = false;
+  $("result").hidden = true;
+  const st = $("aiStatus"); st.hidden = false; st.className = "status"; st.textContent = "Analizando tu comida…";
+  try {
+    const r = await sample.json(PROMPT(hint, withImage), {
+      signal: ctl.signal, images: withImage ? [photoFile] : undefined, modelTier: "default",
+      onText: () => { st.textContent = "Calculando…"; },
+    });
+    if (!r || typeof r !== "object") throw { code: "invalid_json" };
+    pending = { thumb: withImage ? thumbData : "" };
+    showResult(r);
+    st.hidden = true;
+  } catch (e) {
+    st.className = "err";
+    st.textContent = ({
+      cancelled: "Análisis detenido.",
+      not_granted: "No diste permiso para usar Claude. Puedes añadir comidas a mano.",
+      rate_limited: "Demasiadas peticiones. Espera un poco y vuelve a intentarlo.",
+      image_rejected: "No se pudo leer esa imagen. Prueba con otra foto (JPG o PNG).",
+      images_unavailable: "Esta vista no puede enviar fotos. Usa \"Describir sin foto\".",
+      invalid_json: "La respuesta llegó incompleta. Pulsa de nuevo para reintentar.",
+      refused: "La IA no pudo analizar esta imagen. Prueba con otra foto.",
+      session_expired: "Tu sesión caducó. Vuelve a iniciar sesión en Claude.",
+    })[e?.code] || "Algo falló al analizar. Inténtalo otra vez.";
+  } finally {
+    $("analyzeBtn").disabled = !photoFile; $("textBtn").disabled = false; $("stopBtn").hidden = true;
+  }
+}
+$("analyzeBtn").onclick = () => analyze(true);
+$("textBtn").onclick = () => analyze(false);
+$("stopBtn").onclick = () => ctl?.abort();
+
+function showResult(r) {
+  const n = (v) => Math.max(0, Math.round(Number(v) || 0));
+  $("rName").textContent = String(r.nombre || "Comida");
+  $("rN").value = String(r.nombre || "Comida");
+  const conf = String(r.confianza || "media");
+  $("rConf").textContent = "confianza " + conf;
+  $("rConf").className = "pill" + (conf === "baja" ? " warn" : "");
+  const items = $("rItems"); items.textContent = "";
+  for (const it of Array.isArray(r.items) ? r.items.slice(0, 12) : []) {
+    const d = document.createElement("div");
+    const a = document.createElement("span"); a.textContent = String(it.alimento || "") + (it.gramos ? " · " + n(it.gramos) + " g" : "");
+    const b = document.createElement("span"); b.className = "num"; b.textContent = n(it.kcal) + " kcal";
+    d.append(a, b); items.append(d);
+  }
+  $("rK").value = n(r.kcal); $("rP").value = n(r.proteina_g); $("rC").value = n(r.carbos_g); $("rG").value = n(r.grasa_g);
+  $("rNote").textContent = r.nota ? String(r.nota) + " Puedes ajustar los números antes de guardar." : "Puedes ajustar los números antes de guardar.";
+  $("result").hidden = false;
+}
+function resetPhoto() {
+  $("result").hidden = true; pending = null; photoFile = null; thumbData = "";
+  $("preview").hidden = true; $("preview").removeAttribute("src"); $("photoInput").value = ""; $("hint").value = "";
+  $("analyzeBtn").disabled = true;
+}
+$("discard").onclick = resetPhoto;
+$("saveMeal").onclick = () => {
+  const m = mealFrom($("rN").value, $("rK").value, $("rP").value, $("rC").value, $("rG").value, pending?.thumb || "");
+  store.addMeal(m).then(() => { toast("+" + fmt(m.kcal) + " kcal guardadas"); resetPhoto(); }).catch(() => toast("No se pudo guardar."));
+};
+$("manSave").onclick = () => {
+  if (!$("manK").value) { toast("Pon las kcal."); $("manK").focus(); return; }
+  const m = mealFrom($("manN").value, $("manK").value, $("manP").value, $("manC").value, $("manG").value, "");
+  store.addMeal(m).then(() => { toast("+" + fmt(m.kcal) + " kcal guardadas"); ["manN", "manK", "manP", "manC", "manG"].forEach((i) => ($(i).value = "")); })
+    .catch(() => toast("No se pudo guardar."));
+};
+function mealFrom(name, k, p, c, g, thumb) {
+  const now = Date.now();
+  return { date: dayKey(), ts: now, name: (name || "Comida").slice(0, 120), kcal: Number(k) || 0, p: Number(p) || 0, c: Number(c) || 0, g: Number(g) || 0, thumb };
+}
+
+let tt;
+function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => (t.hidden = true), 2600); }
+
+render();
+store.init();
+setInterval(render, 60000); // refresca el aviso de creatina y el cambio de día
+})();
+</script>
