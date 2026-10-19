@@ -18,4 +18,4 @@ Contador de calorías con estilo iOS:
 1. Publica el repositorio con GitHub Pages (Settings → Pages → Deploy from a branch → `main` / root).
 2. Abre `https://edulunaa06-sketch.github.io/mi-primer-proyecto/` en el móvil.
 3. iPhone: Safari → Compartir → «Añadir a pantalla de inicio». Android: Chrome → ⋮ → «Instalar aplicación».
-4. En Perfil, pega tu clave de la API de Anthropic para analizar fotos (se guarda solo en el móvil).
+4. En Perfil, activa la IA gratis: crea una clave en https://aistudio.google.com/apikey y pégala (se guarda solo en el móvil). También acepta una clave de la API de Anthropic (de pago).

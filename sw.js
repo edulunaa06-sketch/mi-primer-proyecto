@@ -1,5 +1,5 @@
 // Guarda la app para que abra sin conexión. Sube VERSION al publicar cambios.
-const VERSION = "kcalia-v5";
+const VERSION = "kcalia-v6";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

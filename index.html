@@ -226,6 +226,7 @@ textarea::placeholder { color: var(--label3); }
 .item input.switch:checked::after { transform: translateX(20px); }
 
 .toast { position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); z-index: 60; background: var(--card); color: var(--label); padding: 10px 18px; border-radius: 999px; font-size: 15px; font-weight: 600; box-shadow: 0 6px 24px rgba(0,0,0,0.18); max-width: calc(100% - 32px); }
+.steps { margin: 8px 0; padding-left: 20px; display: grid; gap: 6px; font-size: 15px; }
 .install ol { margin: 6px 0 0; padding-left: 20px; color: var(--label2); font-size: 15px; display: grid; gap: 4px; }
 a { color: var(--blue); }
 </style>
@@ -238,6 +239,11 @@ a { color: var(--blue); }
       <h1>Resumen</h1>
     </div>
 
+    <button class="banner" id="aiSetup" type="button" hidden>
+      <span class="ic" style="background:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+      <span class="grow"><span class="t">Activa el análisis de fotos</span><br><span class="s">Gratis con una clave de Google, en 2 minutos</span></span>
+      <span class="chev">›</span>
+    </button>
     <button class="banner" id="creaBanner" type="button">
       <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="8" y="3" width="8" height="18" rx="4"/><path d="M8 12h8"/></svg></span>
       <span class="grow"><span class="t" id="bnT">Creatina</span><br><span class="s" id="bnS"></span></span>
@@ -366,9 +372,18 @@ a { color: var(--blue); }
       <div class="hd">Análisis de fotos con IA</div>
       <div class="card list">
         <div class="item"><span class="grow">Estado</span><span class="val" id="aiState">—</span></div>
-        <label class="item" for="apiKey" id="keyRow"><span class="grow">Clave API</span><input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…"></label>
+        <label class="item" for="apiKey" id="keyRow"><span class="grow">Clave de IA</span><input id="apiKey" type="password" autocomplete="off" placeholder="Pega tu clave"></label>
       </div>
-      <div class="ft" id="aiHelp">En la app instalada, la IA usa tu propia clave de la API de Anthropic (créala en console.anthropic.com). Se guarda solo en este móvil. Cada foto cuesta alrededor de un céntimo.</div>
+      <div class="ft" id="aiHelp"></div>
+      <div class="card pad" id="keySteps" hidden>
+        <b>Activa la IA gratis (2 minutos)</b>
+        <ol class="steps">
+          <li>Abre <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> e inicia sesión con tu cuenta de Google.</li>
+          <li>Toca <b>«Create API key»</b> (Crear clave de API).</li>
+          <li>Copia la clave (empieza por <span class="num">AIza</span>) y pégala arriba, en «Clave de IA».</li>
+        </ol>
+        <div class="small muted">Es gratis con un límite diario de peticiones, de sobra para tus comidas. En el plan gratuito Google puede usar las fotos que envías para mejorar sus productos. La clave se guarda solo en este móvil.</div>
+      </div>
     </div>
 
     <div class="section install" id="installSec" hidden>
@@ -766,6 +781,7 @@ $("tomaBtn").onclick = () => {
   store.setCreatine(days).then(() => toast(done + 1 >= plan.tomas ? "Creatina completada hoy 💪" : "Toma " + (done + 1) + " registrada")).catch(() => toast("No se pudo guardar"));
 };
 $("creaBanner").onclick = () => go("crea");
+$("aiSetup").onclick = () => { go("perfil"); setTimeout(() => $("aiSection").scrollIntoView({ behavior: "smooth" }), 50); };
 function setPhase(m) {
   const p = { ...(profile || {}) , creaMode: m };
   if (m === "carga") p.loadStart = dayKey();
@@ -849,11 +865,15 @@ let sample = null;
 const getKey = () => lsGet("bocado.apikey") || "";
 function aiAvailable() { return !!sample || !!getKey(); }
 function refreshAiState() {
-  $("aiState").textContent = sample ? "Usando Claude" : getKey() ? "Clave guardada" : "Sin configurar";
+  const key = getKey(), gem = key.startsWith("AIza");
+  $("aiState").textContent = sample ? "Usando Claude" : key ? (gem ? "Gemini (gratis) ✓" : "Claude (de pago) ✓") : "Sin activar";
   $("keyRow").hidden = !!sample;
+  $("keySteps").hidden = !!sample || !!key;
   $("aiHelp").textContent = sample
     ? "Dentro de Claude la IA funciona con tu cuenta, sin clave. La primera vez te pedirá permiso."
-    : "En la app instalada, la IA usa tu propia clave de la API de Anthropic (créala en console.anthropic.com → API Keys). Se guarda solo en este dispositivo. Cada foto cuesta alrededor de un céntimo.";
+    : key ? (gem ? "Usando la IA gratuita de Google Gemini. Para cambiarla, borra la clave y pega otra." : "Usando tu clave de la API de Anthropic (de pago, ~1 céntimo por foto).")
+    : "Para analizar fotos en la app instalada necesitas una clave de IA. Puedes conseguir una gratis de Google:";
+  $("aiSetup").hidden = inClaude || !!sample || !!key;
   updateAnalyze();
 }
 $("apiKey").value = getKey() ? "••••••••••••" : "";
@@ -917,6 +937,7 @@ async function estimate(prompt, image, signal, adv) {
   if (sample) return sample.json(prompt, { signal, images: image ? [image] : undefined, modelTier: adv ? "complex" : "default" });
   const key = getKey();
   if (!key) throw { code: "no_key" };
+  if (key.startsWith("AIza")) return estimateGemini(key, prompt, image, signal);
   const { default: Anthropic } = await import("https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.39.0/+esm");
   const client = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
   const content = [];
@@ -938,12 +959,38 @@ async function estimate(prompt, image, signal, adv) {
   if (msg.stop_reason === "refusal") throw { code: "refused" };
   return parseJson(msg.content.filter((b) => b.type === "text").map((b) => b.text).join(""));
 }
+async function estimateGemini(key, prompt, image, signal) {
+  const parts = [];
+  if (image) parts.push({ inline_data: { mime_type: "image/jpeg", data: await toJpegB64(image) } });
+  parts.push({ text: prompt });
+  let res;
+  try {
+    res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent", {
+      method: "POST", signal,
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig: { responseMimeType: "application/json" } }),
+    });
+  } catch (e) {
+    throw { code: signal?.aborted ? "cancelled" : "network" };
+  }
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = body?.error?.message || "";
+    if (res.status === 429) throw { code: "rate_limited" };
+    if (res.status === 403 || /API key/i.test(msg)) throw { code: "bad_key" };
+    if (res.status >= 500) throw { code: "upstream_error" };
+    throw { code: "api_400", message: msg };
+  }
+  const cand = body?.candidates?.[0];
+  if (!cand || cand.finishReason === "SAFETY" || body?.promptFeedback?.blockReason) throw { code: "refused" };
+  return parseJson((cand.content?.parts || []).map((p) => p.text || "").join(""));
+}
 const ERR = {
   cancelled: "Análisis detenido.",
-  no_key: "Para analizar fotos en la app instalada, añade tu clave API en Perfil. También puedes usar el modo Manual.",
+  no_key: "Activa la IA gratis en Perfil para analizar fotos. Mientras, puedes añadirlo a mano.",
   bad_key: "La clave API no es válida. Revísala en Perfil.",
   not_granted: "No diste permiso para usar Claude. Puedes usar el modo Manual.",
-  rate_limited: "Demasiadas peticiones. Espera un poco y vuelve a intentarlo.",
+  rate_limited: "Has llegado al límite de peticiones por ahora. Espera un minuto y vuelve a intentarlo.",
   image_rejected: "No se pudo leer esa imagen. Prueba con otra foto.",
   images_unavailable: "Esta vista no puede enviar fotos. Usa «Describir».",
   invalid_json: "La respuesta llegó incompleta. Toca de nuevo para reintentar.",
