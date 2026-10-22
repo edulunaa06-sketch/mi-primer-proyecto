@@ -124,6 +124,23 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(exLog.targetSets, 5)
     }
 
+    // MARK: Nombres de sesión
+
+    func testRenameSessionKeepsIdAndCanRestore() throws {
+        DataStore.renameSession("tue-push-a", to: "  Pecho y hombro  ", in: context)
+        var titles = try context.fetch(FetchDescriptor<SessionTitle>())
+        let push = try XCTUnwrap(WeeklyRoutine.session(id: "tue-push-a"))
+        XCTAssertEqual(push.resolved(with: [], titles: titles).title, "Pecho y hombro")
+        XCTAssertEqual(push.resolved(with: [], titles: titles).id, "tue-push-a")
+        DataStore.renameSession("tue-push-a", to: "Torso", in: context)
+        titles = try context.fetch(FetchDescriptor<SessionTitle>())
+        XCTAssertEqual(titles.count, 1)
+        XCTAssertEqual(push.renamed(titles).title, "Torso")
+        DataStore.renameSession("tue-push-a", to: "", in: context)
+        titles = try context.fetch(FetchDescriptor<SessionTitle>())
+        XCTAssertEqual(push.renamed(titles).title, push.title)
+    }
+
     // MARK: Perfil y objetivos
 
     func testAutoTargetsRecalculateOnNewWeight() {

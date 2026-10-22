@@ -4,9 +4,13 @@ import SwiftUI
 /// Calendario semanal. Cada semana (lunes a domingo) tiene sus propios registros:
 /// al empezar una semana nueva las casillas aparecen vacías y el historial anterior se conserva.
 struct TrainingView: View {
+    @Environment(\.modelContext) private var context
     @Query private var weekLogs: [WorkoutSessionLog]
     @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
+    @Query private var titles: [SessionTitle]
     @State private var path: [String] = []
+    @State private var renaming: SessionDefinition?
+    @State private var newTitle = ""
 
     private let weekStart: Date
     private let todayWeekday: Int
@@ -49,6 +53,14 @@ struct TrainingView: View {
                 if let session = WeeklyRoutine.session(id: sessionID) {
                     SessionDestination(session: session, weekStart: weekStart)
                 }
+            }
+            .alert("Nombre de la sesión", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
+                TextField("Nombre", text: $newTitle)
+                Button("Guardar") { if let s = renaming { DataStore.renameSession(s.id, to: newTitle, in: context) } }
+                Button("Nombre original") { if let s = renaming { DataStore.renameSession(s.id, to: "", in: context) } }
+                Button("Cancelar", role: .cancel) {}
+            } message: {
+                Text("El historial y los registros de la sesión se conservan.")
             }
             #if DEBUG
             .onAppear {
@@ -111,13 +123,19 @@ struct TrainingView: View {
                     sessionRow(session)
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    Button {
+                        newTitle = session.renamed(titles).title
+                        renaming = session
+                    } label: { Label("Cambiar nombre", systemImage: "pencil") }
+                }
             }
         }
         .card()
     }
 
     private func sessionRow(_ base: SessionDefinition) -> some View {
-        let session = base.resolved(with: routine)
+        let session = base.resolved(with: routine, titles: titles)
         let log = log(for: session)
         let progress = SessionProgress(session: session, log: log)
         return HStack(spacing: 12) {
@@ -172,11 +190,36 @@ struct SessionDestination: View {
     let session: SessionDefinition
     let weekStart: Date
 
+    @Environment(\.modelContext) private var context
+    @Query private var titles: [SessionTitle]
+    @State private var renaming = false
+    @State private var newTitle = ""
+
     var body: some View {
-        switch session.kind {
-        case .strength: StrengthSessionView(session: session, weekStart: weekStart)
-        case .run: RunSessionView(session: session, weekStart: weekStart)
-        case .rest: RestDayView(session: session)
+        let named = session.renamed(titles)
+        Group {
+            switch session.kind {
+            case .strength: StrengthSessionView(session: named, weekStart: weekStart)
+            case .run: RunSessionView(session: named, weekStart: weekStart)
+            case .rest: RestDayView(session: named)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    newTitle = named.title
+                    renaming = true
+                } label: { Image(systemName: "pencil") }
+                .accessibilityLabel("Cambiar nombre de la sesión")
+            }
+        }
+        .alert("Nombre de la sesión", isPresented: $renaming) {
+            TextField("Nombre", text: $newTitle)
+            Button("Guardar") { DataStore.renameSession(session.id, to: newTitle, in: context) }
+            Button("Nombre original") { DataStore.renameSession(session.id, to: "", in: context) }
+            Button("Cancelar", role: .cancel) {}
+        } message: {
+            Text("Original: \(session.title). El historial se conserva.")
         }
     }
 }

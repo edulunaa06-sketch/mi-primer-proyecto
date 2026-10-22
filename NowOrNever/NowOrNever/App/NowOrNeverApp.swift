@@ -18,6 +18,7 @@ struct NowOrNeverApp: App {
         WorkoutSessionLog.self,
         ExerciseLog.self,
         RoutineExercise.self,
+        SessionTitle.self,
         SetLog.self,
         FoodItem.self,
         MenuPlan.self,

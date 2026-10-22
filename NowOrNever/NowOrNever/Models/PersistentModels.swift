@@ -122,12 +122,30 @@ final class RoutineExercise {
     }
 }
 
+/// Nombre personalizado de una sesión («Push A» → «Pecho y hombro»). El id de la sesión no cambia,
+/// así que el historial se conserva.
+@Model
+final class SessionTitle {
+    @Attribute(.unique) var sessionID: String = ""
+    var title: String = ""
+
+    init(sessionID: String, title: String) {
+        self.sessionID = sessionID
+        self.title = title
+    }
+}
+
 extension SessionDefinition {
-    /// Aplica la rutina personalizada guardada (si la sesión es de fuerza).
-    func resolved(with routine: [RoutineExercise]) -> SessionDefinition {
-        guard kind == .strength else { return self }
+    /// Aplica la rutina personalizada guardada (si la sesión es de fuerza) y el nombre personalizado.
+    func resolved(with routine: [RoutineExercise], titles: [SessionTitle] = []) -> SessionDefinition {
+        let named = renamed(titles)
+        guard kind == .strength else { return named }
         let mine = routine.filter { $0.sessionID == id }.sorted { $0.order < $1.order }
-        return with(exercises: mine.map(\.definition))
+        return named.with(exercises: mine.map(\.definition))
+    }
+
+    func renamed(_ titles: [SessionTitle]) -> SessionDefinition {
+        with(title: titles.first { $0.sessionID == id }?.title)
     }
 }
 

@@ -47,6 +47,13 @@ struct SessionDefinition: Identifiable, Hashable {
     func with(exercises custom: [ExerciseDefinition]) -> SessionDefinition {
         SessionDefinition(id: id, title: title, kind: kind, weekday: weekday, detail: detail, exercises: custom)
     }
+
+    /// Misma sesión con el nombre que le ha puesto el usuario (vacío = nombre original).
+    func with(title custom: String?) -> SessionDefinition {
+        let trimmed = custom?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else { return self }
+        return SessionDefinition(id: id, title: String(trimmed.prefix(40)), kind: kind, weekday: weekday, detail: detail, exercises: exercises)
+    }
 }
 
 enum WeeklyRoutine {

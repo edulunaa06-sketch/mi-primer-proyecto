@@ -4,6 +4,7 @@ import SwiftUI
 /// Historial por semanas. Solo lectura: nunca se borra al cambiar de semana.
 struct TrainingHistoryView: View {
     @Query(sort: \WorkoutSessionLog.weekStart, order: .reverse) private var logs: [WorkoutSessionLog]
+    @Query private var titles: [SessionTitle]
 
     private var weeks: [(start: Date, logs: [WorkoutSessionLog])] {
         let grouped = Dictionary(grouping: logs.filter(\.hasUserData)) { $0.weekStart }
@@ -19,7 +20,7 @@ struct TrainingHistoryView: View {
             ForEach(weeks, id: \.start) { week in
                 Section {
                     ForEach(week.logs.sorted(by: sessionOrder)) { log in
-                        if let session = WeeklyRoutine.session(id: log.sessionID) {
+                        if let session = WeeklyRoutine.session(id: log.sessionID)?.renamed(titles) {
                             NavigationLink {
                                 SessionHistoryDetail(session: session, log: log)
                             } label: {

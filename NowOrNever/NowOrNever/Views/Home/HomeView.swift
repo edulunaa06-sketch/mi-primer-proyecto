@@ -3,6 +3,7 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(HealthKitManager.self) private var health
+    @Query private var sessionTitles: [SessionTitle]
     @Environment(AppRouter.self) private var router
 
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
@@ -25,7 +26,7 @@ struct HomeView: View {
 
     private var settings: UserSettings? { settingsList.first }
     private var todaySessions: [SessionDefinition] {
-        WeeklyRoutine.sessions(forWeekday: DateUtils.weekdayMondayBased(today)).map { $0.resolved(with: routine) }
+        WeeklyRoutine.sessions(forWeekday: DateUtils.weekdayMondayBased(today)).map { $0.resolved(with: routine, titles: sessionTitles) }
     }
     private var trainableToday: [SessionDefinition] { todaySessions.filter { $0.kind != .rest } }
 
