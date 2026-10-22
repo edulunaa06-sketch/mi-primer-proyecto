@@ -130,3 +130,25 @@ final class FoodSearchTests: XCTestCase {
         XCTAssertFalse(FoodSearch.matches(name: "Arroz", query: "macarrones"))
     }
 }
+
+final class ManualKcalMacrosTests: XCTestCase {
+    func testMacrosFromKcalAddUpAndUseWeight() {
+        let m = EnergyCalculator.macros(forKcal: 2500, weightKg: 80, goal: .recomposition)
+        XCTAssertEqual(m.protein, 160)            // 2,0 g/kg × 80
+        XCTAssertEqual(m.fat, 69)                 // 25 % de 2500 / 9
+        XCTAssertEqual(m.protein * 4 + m.carbs * 4 + m.fat * 9, 2500, accuracy: 10)
+    }
+
+    func testMacrosFromKcalWithoutWeight() {
+        let m = EnergyCalculator.macros(forKcal: 2000, weightKg: nil, goal: .loseFat)
+        XCTAssertEqual(m.protein, 150)            // 30 %
+        XCTAssertEqual(m.fat, 56)                 // 25 %
+        XCTAssertEqual(m.protein * 4 + m.carbs * 4 + m.fat * 9, 2000, accuracy: 10)
+    }
+
+    func testLowKcalNeverLeavesNegativeCarbs() {
+        let m = EnergyCalculator.macros(forKcal: 1200, weightKg: 110, goal: .loseFat)
+        XCTAssertLessThanOrEqual(m.protein * 4, 1200 * 0.40 + 2)
+        XCTAssertGreaterThan(m.carbs, 0)
+    }
+}

@@ -124,6 +124,24 @@ enum EnergyCalculator {
         let carbs = max((kcal - protein * 4 - fat * 9) / 4, 0).rounded()
         return EnergyTargets(bmr: basal, tdee: tdee, kcal: kcal, protein: protein, carbs: carbs, fat: fat)
     }
+
+    /// Reparte unas kcal elegidas a mano en macros, con el criterio del cálculo automático.
+    /// Sin peso conocido: 30 % proteína, 25 % grasa y el resto carbohidratos.
+    /// La proteína nunca pasa del 40 % de las kcal, para que siempre queden carbohidratos.
+    static func macros(forKcal kcal: Double, weightKg: Double?, goal: FitnessGoal) -> (protein: Double, carbs: Double, fat: Double) {
+        guard kcal > 0 else { return (0, 0, 0) }
+        let protein: Double
+        let fat: Double
+        if let w = weightKg, w > 0 {
+            protein = min(w * goal.proteinPerKg, kcal * 0.40 / 4).rounded()
+            fat = min(max(kcal * fatShare / 9, w * minFatPerKg), kcal * 0.35 / 9).rounded()
+        } else {
+            protein = (kcal * 0.30 / 4).rounded()
+            fat = (kcal * fatShare / 9).rounded()
+        }
+        let carbs = max((kcal - protein * 4 - fat * 9) / 4, 0).rounded()
+        return (protein, carbs, fat)
+    }
 }
 
 /// Ajuste proporcional de un menú a un objetivo de kcal.

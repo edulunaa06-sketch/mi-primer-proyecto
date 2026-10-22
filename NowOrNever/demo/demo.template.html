@@ -292,6 +292,12 @@ function energy(p) {
   const fat = Math.round(Math.max(kcal * 0.25 / 9, w * 0.6)), carbs = Math.round(Math.max((kcal - protein * 4 - fat * 9) / 4, 0));
   return { bmr, tdee, kcal, protein, carbs, fat };
 }
+function macrosForKcal(kcal) {
+  const w = latestWeight() || S.profile.weight, g = GOAL[S.profile.goal] || GOAL.recomposition;
+  const protein = w ? Math.round(Math.min(w * g[1], kcal * 0.40 / 4)) : Math.round(kcal * 0.30 / 4);
+  const fat = w ? Math.round(Math.min(Math.max(kcal * 0.25 / 9, w * 0.6), kcal * 0.35 / 9)) : Math.round(kcal * 0.25 / 9);
+  return { protein, fat, carbs: Math.max(Math.round((kcal - protein * 4 - fat * 9) / 4), 0) };
+}
 function recalc() { const e = energy({ ...S.profile, weight: latestWeight() }); if (e && S.profile.auto) Object.assign(S.targets, { kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat }); return e; }
 function addWeight(dk, kg, waist) {
   S.weights.push({ date: dk, kg, waist: waist || null });
@@ -549,7 +555,7 @@ function viewProfile() {
   <section class="card"><h3>Objetivos diarios</h3>
     <div class="grid2"><label class="field">Kcal<input id="tK" inputmode="numeric" value="${T.kcal}"></label><label class="field">Proteínas (g)<input id="tP" inputmode="numeric" value="${T.protein}"></label>
     <label class="field">Carbohidratos (g)<input id="tC" inputmode="numeric" value="${T.carbs}"></label><label class="field">Grasas (g)<input id="tF" inputmode="numeric" value="${T.fat}"></label></div>
-    <button class="ghost" data-act="saveTargets">Guardar objetivos a mano</button><p class="tiny dim">Si los editas a mano, dejan de ser automáticos.</p></section>
+    <button class="ghost" data-act="saveTargets">Guardar objetivos a mano</button><p class="tiny dim">Al escribir las kcal, las proteínas, los carbohidratos y las grasas se calculan solos (proteína según tu peso y objetivo, 25 % grasa, resto carbohidratos); luego puedes retocarlos. Si los editas a mano, dejan de ser automáticos.</p></section>
   <section class="card"><h3>Claude (IA)</h3>
     <p class="small muted">${mode === "claude.ai" ? "Activo: dentro de claude.ai Claude funciona sin clave." : mode === "key" ? "Activo con tu clave (guardada solo en este navegador)." : "Fuera de claude.ai necesita tu clave de la API de Claude (console.anthropic.com, coste por uso)."}</p>
     ${sample ? "" : `<label class="field">Clave de la API<input id="cKey" type="password" placeholder="sk-ant-…" autocomplete="off"></label><div class="row"><button class="ghost" data-act="saveKey">Guardar clave</button>${claudeKey() ? '<button class="danger" data-act="delKey">Borrar clave</button>' : ""}</div>`}</section>
@@ -753,7 +759,9 @@ document.addEventListener("change", e => {
   if (t.id === "importFile" && t.files[0]) { const r = new FileReader(); r.onload = () => { try { const x = JSON.parse(r.result); if (!x || !x.targets || !x.days) throw 0; S = normalize(x); save(); render(); toast("Copia importada"); } catch (err) { toast("Ese archivo no es una copia de Now or Never"); } }; r.readAsText(t.files[0]); return; }
   onEdit(t);
 });
-document.addEventListener("input", e => { if (e.target.id === "cSearch") { sheetState.q = e.target.value; const pos = e.target.selectionStart; renderSheet(); const n = document.getElementById("cSearch"); n.focus(); n.setSelectionRange(pos, pos); } });
+document.addEventListener("input", e => {
+  if (e.target.id === "tK") { const k = num(e.target.value); if (k >= 800 && k <= 6000) { const m = macrosForKcal(k); [["tP", m.protein], ["tC", m.carbs], ["tF", m.fat]].forEach(([id, v]) => { const n = document.getElementById(id); if (n) n.value = v; }); } return; }
+  if (e.target.id === "cSearch") { sheetState.q = e.target.value; const pos = e.target.selectionStart; renderSheet(); const n = document.getElementById("cSearch"); n.focus(); n.setSelectionRange(pos, pos); } });
 
 /* ===== Arranque ===== */
 S = normalize(readLocal());

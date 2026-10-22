@@ -121,6 +121,7 @@ private struct SettingsForm: View {
     private var goalsSection: some View {
         Section {
             numberRow("Calorías (kcal)", $kcal)
+                .onChange(of: kcal) { _, newValue in fillMacros(fromKcal: newValue) }
             numberRow("Proteínas (g)", $protein)
             numberRow("Carbohidratos (g)", $carbs)
             numberRow("Grasas (g)", $fat)
@@ -130,9 +131,10 @@ private struct SettingsForm: View {
         } header: {
             Text("Objetivos diarios")
         } footer: {
-            Text(settings.autoTargets
+            Text((settings.autoTargets
                  ? "Calculados automáticamente desde tu perfil. Si los cambias y guardas aquí pasarán a ser manuales. No son una recomendación clínica."
                  : "Valores manuales (iniciales provisionales: 2.300 kcal, 180 g P, 250 g C, 65 g G, 8.000 pasos). No son una recomendación clínica.")
+                + " Al escribir las calorías, las proteínas, los carbohidratos y las grasas se calculan solos (proteína según tu peso y objetivo, 25 % grasa, resto carbohidratos); luego puedes retocarlos.")
         }
     }
 
@@ -413,6 +415,21 @@ private struct SettingsForm: View {
     }
 
     // MARK: Utilidades
+
+    /// Escribir las kcal rellena los macros. Al cargar (kcal igual a la guardada) se respetan los macros guardados.
+    private func fillMacros(fromKcal value: Double?) {
+        guard let value, value >= 800, value <= 6000 else { return }
+        if value == settings.kcalTarget {
+            protein = settings.proteinTarget
+            carbs = settings.carbsTarget
+            fat = settings.fatTarget
+            return
+        }
+        let m = EnergyCalculator.macros(forKcal: value, weightKg: weights.first?.weightKg, goal: settings.goal)
+        protein = m.protein
+        carbs = m.carbs
+        fat = m.fat
+    }
 
     private func numberRow(_ title: String, _ binding: Binding<Double?>) -> some View {
         HStack {
