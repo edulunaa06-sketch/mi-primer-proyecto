@@ -140,7 +140,7 @@ final class UserFlowUITests: XCTestCase {
         // Cuatro pasos: desayuno, comida, merienda y cena; en cada uno se elige la primera opción.
         for meal in ["desayuno", "comida", "merienda", "cena"] {
             assertAppears(element(containing: "Objetivo para tu \(meal)"), "Paso de \(meal)")
-            let options = app.buttons.matching(identifier: "Elegir esta opción")
+            let options = app.buttons.matching(NSPredicate(format: "label == %@", "Elegir esta opción"))
             XCTAssertGreaterThanOrEqual(options.count, 4, "Al menos 4 opciones de \(meal)")
             options.firstMatch.tap()
         }
@@ -152,7 +152,7 @@ final class UserFlowUITests: XCTestCase {
         XCTAssertTrue(scrollTo(swap).exists)
         swap.tap()
         assertAppears(element(containing: "Objetivo para tu comida"), "Selector de comida")
-        app.buttons.matching(identifier: "Elegir esta opción").element(boundBy: 1).tap()
+        app.buttons.matching(NSPredicate(format: "label == %@", "Elegir esta opción")).element(boundBy: 1).tap()
         XCTAssertTrue(scrollTo(app.buttons["Volver al menú"].firstMatch).exists)
     }
 }
