@@ -46,10 +46,12 @@ enum SocialAPI {
         let id: String
         let username: String
         let displayName: String
+        var avatarPath: String? = nil
 
         enum CodingKeys: String, CodingKey {
             case id, username
             case displayName = "display_name"
+            case avatarPath = "avatar_path"
         }
 
         var shownName: String { displayName.isEmpty ? "@\(username)" : displayName }
@@ -271,14 +273,14 @@ enum SocialAPI {
 
     static func profiles(_ config: Config, session: Session, ids: [String]) -> URLRequest {
         rest(config, accessToken: session.accessToken, method: "GET", table: "profiles", query: [
-            URLQueryItem(name: "select", value: "id,username,display_name"),
+            URLQueryItem(name: "select", value: "id,username,display_name,avatar_path"),
             URLQueryItem(name: "id", value: "in.(\(ids.joined(separator: ",")))"),
         ])
     }
 
     static func findProfile(_ config: Config, session: Session, username: String) -> URLRequest {
         rest(config, accessToken: session.accessToken, method: "GET", table: "profiles", query: [
-            URLQueryItem(name: "select", value: "id,username,display_name"),
+            URLQueryItem(name: "select", value: "id,username,display_name,avatar_path"),
             URLQueryItem(name: "username", value: "eq.\(username)"),
         ])
     }
@@ -325,6 +327,133 @@ enum SocialAPI {
             URLQueryItem(name: "day", value: "gte.\(day)"),
             URLQueryItem(name: "order", value: "day.desc"),
         ])
+    }
+
+    // MARK: Perfil: altura y peso, fotos de progreso, foto de perfil y contadores
+
+    struct Stats: Codable, Equatable {
+        let userID: String
+        let heightCm: Double?
+        let weightKg: Double?
+
+        enum CodingKeys: String, CodingKey {
+            case userID = "user_id"
+            case heightCm = "height_cm"
+            case weightKg = "weight_kg"
+        }
+    }
+
+    struct PhotoRow: Codable, Equatable, Hashable {
+        let userID: String
+        let month: String
+        let view: String
+        let takenOn: String
+        let path: String
+        var updatedAt: String? = nil
+
+        enum CodingKeys: String, CodingKey {
+            case userID = "user_id"
+            case month, view, path
+            case takenOn = "taken_on"
+            case updatedAt = "updated_at"
+        }
+    }
+
+    struct Counts: Codable, Equatable {
+        let followers: Int
+        let following: Int
+    }
+
+    static func upsertStats(_ config: Config, session: Session, heightCm: Double?, weightKg: Double?) -> URLRequest {
+        let row = Stats(userID: session.userID, heightCm: heightCm, weightKg: weightKg)
+        return rest(config, accessToken: session.accessToken, method: "POST", table: "profile_stats",
+                    query: [URLQueryItem(name: "on_conflict", value: "user_id")],
+                    body: try? JSONEncoder().encode([row]), prefer: "resolution=merge-duplicates")
+    }
+
+    static func stats(_ config: Config, session: Session, userID: String) -> URLRequest {
+        rest(config, accessToken: session.accessToken, method: "GET", table: "profile_stats", query: [
+            URLQueryItem(name: "select", value: "user_id,height_cm,weight_kg"),
+            URLQueryItem(name: "user_id", value: "eq.\(userID)"),
+        ])
+    }
+
+    static func upsertPhotos(_ config: Config, session: Session, rows: [PhotoRow]) -> URLRequest {
+        let clean = rows.map { PhotoRow(userID: session.userID, month: $0.month, view: $0.view, takenOn: $0.takenOn, path: $0.path) }
+        let body = try? JSONSerialization.data(withJSONObject: clean.map {
+            ["user_id": $0.userID, "month": $0.month, "view": $0.view, "taken_on": $0.takenOn, "path": $0.path,
+             "updated_at": ISO8601DateFormatter().string(from: Date())]
+        })
+        return rest(config, accessToken: session.accessToken, method: "POST", table: "progress_photos",
+                    query: [URLQueryItem(name: "on_conflict", value: "user_id,month,view")], body: body,
+                    prefer: "resolution=merge-duplicates")
+    }
+
+    static func photos(_ config: Config, session: Session, userID: String) -> URLRequest {
+        rest(config, accessToken: session.accessToken, method: "GET", table: "progress_photos", query: [
+            URLQueryItem(name: "select", value: "user_id,month,view,taken_on,path,updated_at"),
+            URLQueryItem(name: "user_id", value: "eq.\(userID)"),
+            URLQueryItem(name: "order", value: "month.desc"),
+        ])
+    }
+
+    static func deletePhoto(_ config: Config, session: Session, month: String, view: String) -> URLRequest {
+        rest(config, accessToken: session.accessToken, method: "DELETE", table: "progress_photos", query: [
+            URLQueryItem(name: "user_id", value: "eq.\(session.userID)"),
+            URLQueryItem(name: "month", value: "eq.\(month)"),
+            URLQueryItem(name: "view", value: "eq.\(view)"),
+        ])
+    }
+
+    static func setAvatar(_ config: Config, session: Session, path: String?) -> URLRequest {
+        rest(config, accessToken: session.accessToken, method: "PATCH", table: "profiles",
+             query: [URLQueryItem(name: "id", value: "eq.\(session.userID)")],
+             body: try? JSONSerialization.data(withJSONObject: ["avatar_path": path.map { $0 as Any } ?? NSNull()]))
+    }
+
+    static func followCounts(_ config: Config, session: Session, userID: String) -> URLRequest {
+        rest(config, accessToken: session.accessToken, method: "POST", table: "rpc/follow_counts",
+             body: try? JSONSerialization.data(withJSONObject: ["target": userID]))
+    }
+
+    /// Fotos agrupadas por mes (el más reciente primero), con el día en que se hicieron.
+    static func groupedByMonth(_ rows: [PhotoRow]) -> [(month: String, takenOn: String, photos: [PhotoRow])] {
+        let order = ["front": 0, "side": 1, "back": 2]
+        return Dictionary(grouping: rows, by: \.month)
+            .map { month, list in
+                (month: month, takenOn: list.map(\.takenOn).max() ?? "", photos: list.sorted { (order[$0.view] ?? 3) < (order[$1.view] ?? 3) })
+            }
+            .sorted { $0.month > $1.month }
+    }
+
+    // MARK: Archivos (Supabase Storage)
+
+    static func storagePath(userID: String, month: String, view: String) -> String { "\(userID)/\(month)-\(view).jpg" }
+
+    static func upload(_ config: Config, session: Session, bucket: String, path: String, jpeg: Data) -> URLRequest {
+        var request = URLRequest(url: config.baseURL.appendingPathComponent("storage/v1/object/\(bucket)/\(path)"), timeoutInterval: 60)
+        request.httpMethod = "POST"
+        request.setValue(config.apiKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue("image/jpeg", forHTTPHeaderField: "Content-Type")
+        request.setValue("true", forHTTPHeaderField: "x-upsert")
+        request.httpBody = jpeg
+        return request
+    }
+
+    static func download(_ config: Config, session: Session, bucket: String, path: String) -> URLRequest {
+        var request = URLRequest(url: config.baseURL.appendingPathComponent("storage/v1/object/authenticated/\(bucket)/\(path)"), timeoutInterval: 60)
+        request.setValue(config.apiKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        return request
+    }
+
+    static func deleteFile(_ config: Config, session: Session, bucket: String, path: String) -> URLRequest {
+        var request = URLRequest(url: config.baseURL.appendingPathComponent("storage/v1/object/\(bucket)/\(path)"), timeoutInterval: 30)
+        request.httpMethod = "DELETE"
+        request.setValue(config.apiKey, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(session.accessToken)", forHTTPHeaderField: "Authorization")
+        return request
     }
 
     private struct RestErrorBody: Decodable {

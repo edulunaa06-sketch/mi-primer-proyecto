@@ -140,9 +140,34 @@ final class SocialIntegrationTests: XCTestCase {
         (status, data) = try await run(SocialAPI.profiles(config, session: b, ids: [a.userID, b.userID]))
         XCTAssertEqual(Set(try SocialAPI.decodeRows(SocialAPI.Profile.self, status: status, data: data).map(\.username)), ["edu", "novia"])
 
+        // Perfil: altura y peso, fotos de progreso y contadores.
+        (status, data) = try await run(SocialAPI.upsertStats(config, session: a, heightCm: 180, weightKg: 85.1))
+        try SocialAPI.check(status: status, data: data)
+        (status, data) = try await run(SocialAPI.upsertPhotos(config, session: a, rows: [
+            SocialAPI.PhotoRow(userID: a.userID, month: "2026-10", view: "front", takenOn: "2026-10-23", path: "\(a.userID)/2026-10-front.jpg"),
+            SocialAPI.PhotoRow(userID: a.userID, month: "2026-10", view: "back", takenOn: "2026-10-23", path: "\(a.userID)/2026-10-back.jpg"),
+        ]))
+        try SocialAPI.check(status: status, data: data)
+        (status, data) = try await run(SocialAPI.stats(config, session: b, userID: a.userID))
+        XCTAssertEqual(try SocialAPI.decodeRows(SocialAPI.Stats.self, status: status, data: data).first?.heightCm, 180)
+        (status, data) = try await run(SocialAPI.photos(config, session: b, userID: a.userID))
+        let photoRows = try SocialAPI.decodeRows(SocialAPI.PhotoRow.self, status: status, data: data)
+        let grouped = SocialAPI.groupedByMonth(photoRows)
+        XCTAssertEqual(grouped.first?.takenOn, "2026-10-23")
+        XCTAssertEqual(grouped.first?.photos.map(\.view), ["front", "back"])
+        (status, data) = try await run(SocialAPI.followCounts(config, session: b, userID: a.userID))
+        let counts = try SocialAPI.decodeRows(SocialAPI.Counts.self, status: status, data: data)
+        XCTAssertEqual(counts.first, SocialAPI.Counts(followers: 1, following: 0))
+        (status, data) = try await run(SocialAPI.setAvatar(config, session: a, path: "\(a.userID)/avatar-1.jpg"))
+        try SocialAPI.check(status: status, data: data)
+        (status, data) = try await run(SocialAPI.findProfile(config, session: b, username: "edu"))
+        XCTAssertEqual(try SocialAPI.decodeRows(SocialAPI.Profile.self, status: status, data: data).first?.avatarPath, "\(a.userID)/avatar-1.jpg")
+
         (status, data) = try await run(SocialAPI.removeFollow(config, session: b, follower: b.userID, followee: a.userID))
         try SocialAPI.check(status: status, data: data)
         (status, data) = try await run(SocialAPI.summaries(config, session: b, userID: a.userID, since: "2026-10-01"))
         XCTAssertEqual(try SocialAPI.decodeRows(SocialAPI.DayRow.self, status: status, data: data).count, 0, "Al dejar de seguir ya no ve nada")
+        (status, data) = try await run(SocialAPI.photos(config, session: b, userID: a.userID))
+        XCTAssertEqual(try SocialAPI.decodeRows(SocialAPI.PhotoRow.self, status: status, data: data).count, 0, "Ni las fotos")
     }
 }

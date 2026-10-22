@@ -49,12 +49,19 @@ struct FriendsView: View {
     private var meCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: "person.crop.circle.fill").font(.largeTitle).foregroundStyle(Theme.lime)
-                VStack(alignment: .leading) {
-                    Text(social.me?.shownName ?? "").font(.headline)
-                    Text("@\(social.me?.username ?? "")").font(.subheadline).foregroundStyle(Theme.textSecondary)
-                        .accessibilityIdentifier("friends.me")
+                NavigationLink {
+                    MyProfileView()
+                } label: {
+                    HStack {
+                        Avatar(profile: social.me, size: 52)
+                        VStack(alignment: .leading) {
+                            Text(social.me?.shownName ?? "").font(.headline)
+                            Text("@\(social.me?.username ?? "") · Ver mi perfil").font(.subheadline).foregroundStyle(Theme.textSecondary)
+                                .accessibilityIdentifier("friends.me")
+                        }
+                    }
                 }
+                .buttonStyle(.plain)
                 Spacer()
                 Menu {
                     Button("Cerrar sesión", role: .destructive) { social.signOut() }
@@ -123,7 +130,7 @@ struct FriendsView: View {
                     FriendDetailView(person: person)
                 } label: {
                     HStack {
-                        Image(systemName: "person.fill").foregroundStyle(Theme.lime)
+                        Avatar(profile: person, size: 40)
                         VStack(alignment: .leading) {
                             Text(person.shownName).font(.subheadline.weight(.semibold))
                             Text("@\(person.username)").font(.caption).foregroundStyle(Theme.textSecondary)
@@ -193,6 +200,15 @@ enum SocialSync {
         let steps = Dictionary(health.history.map { (DateUtils.startOfDay($0.date), $0.steps) }, uniquingKeysWith: { a, _ in a })
         let summaries = DataStore.socialSummaries(steps: steps, todaySteps: health.todaySteps, in: context)
         try await social.publish(summaries)
+        let settings = DataStore.settings(context)
+        let photos = (try? context.fetch(FetchDescriptor<ProgressPhoto>())) ?? []
+        let local = photos.map { photo in
+            SocialService.LocalPhoto(month: String(format: "%04d-%02d", photo.year, photo.month), view: photo.viewRaw,
+                                     takenOn: SocialAPI.dayString(photo.updatedAt, calendar: DateUtils.calendar),
+                                     version: String(Int(photo.updatedAt.timeIntervalSince1970)),
+                                     jpeg: { [fileName = photo.fileName] in PhotoStorage.loadImage(fileName).flatMap { ProfileImage.jpeg($0, maxSide: 1280) } })
+        }
+        try await social.syncProfile(heightCm: settings.heightCm, weightKg: DataStore.latestWeight(context), photos: local)
     }
 }
 
@@ -323,12 +339,48 @@ struct FriendDetailView: View {
     let person: SocialAPI.Profile
     @Environment(SocialService.self) private var social
     @State private var days: [SocialAPI.DaySummary] = []
+    @State private var detail = SocialService.ProfileDetail()
+    @State private var tab = 0
     @State private var loaded = false
     @State private var error: String?
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                VStack(spacing: 10) {
+                    Avatar(profile: person, size: 88)
+                    Text(person.shownName).font(.title2.weight(.heavy))
+                    Text("@\(person.username)").foregroundStyle(Theme.textSecondary)
+                    FollowCountsRow(followers: detail.counts?.followers ?? 0, following: detail.counts?.following ?? 0)
+                    if detail.stats?.heightCm != nil || detail.stats?.weightKg != nil {
+                        StatsRow(heightCm: detail.stats?.heightCm, weightKg: detail.stats?.weightKg)
+                    }
+                }
+                .frame(maxWidth: .infinity)
+                .card()
+                Picker("", selection: $tab) {
+                    Text("Entrenos y comidas").tag(0)
+                    Text("Fotos").tag(1)
+                }
+                .pickerStyle(.segmented)
+                if tab == 1 {
+                    FriendPhotosView(rows: detail.photos)
+                } else {
+                    daysContent
+                }
+            }
+            .padding(16)
+        }
+        .screenBackground()
+        .navigationTitle(person.shownName)
+        .navigationBarTitleDisplayMode(.inline)
+        .refreshable { await load() }
+        .task { await load() }
+    }
+
+    @ViewBuilder
+    private var daysContent: some View {
+        VStack(spacing: 14) {
                 if let error {
                     Text(error).font(.footnote).foregroundStyle(Theme.danger).card()
                 } else if loaded && days.isEmpty {
@@ -338,14 +390,7 @@ struct FriendDetailView: View {
                 }
                 if !days.isEmpty { weekCard }
                 ForEach(days, id: \.day) { day in dayCard(day) }
-            }
-            .padding(16)
         }
-        .screenBackground()
-        .navigationTitle(person.shownName)
-        .navigationBarTitleDisplayMode(.inline)
-        .refreshable { await load() }
-        .task { await load() }
     }
 
     private var weekCard: some View {
@@ -415,6 +460,7 @@ struct FriendDetailView: View {
     private func load() async {
         do {
             days = try await social.summaries(of: person)
+            detail = try await social.profileDetail(of: person.id)
             error = nil
         } catch {
             self.error = error.localizedDescription

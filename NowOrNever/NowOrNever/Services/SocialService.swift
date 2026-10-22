@@ -210,6 +210,8 @@ final class SocialService {
     }
 
     /// Devuelve una sesión válida, renovándola si ha caducado (los tokens duran una hora).
+    func currentSession() async throws -> SocialAPI.Session { try await validSession() }
+
     private func validSession() async throws -> SocialAPI.Session {
         guard let current = session else { throw SocialAPI.SocialError.notSignedIn }
         guard current.isExpired() else { return current }
@@ -221,6 +223,8 @@ final class SocialService {
         store(renewed)
         return renewed
     }
+
+    func send(_ request: URLRequest) async throws -> (Int, Data) { try await perform(request) }
 
     private func perform(_ request: URLRequest) async throws -> (Int, Data) {
         isWorking = true
@@ -236,8 +240,144 @@ final class SocialService {
         }
     }
 
+    func updateMe(_ profile: SocialAPI.Profile) { setMe(profile) }
+
     private func setMe(_ profile: SocialAPI.Profile) {
         me = profile
         UserDefaults.standard.set(try? JSONEncoder().encode(profile), forKey: Self.profileKey)
     }
+}
+
+// MARK: - Perfil: foto, altura y peso, fotos de progreso
+
+extension SocialService {
+    static let shareStatsKey = "social.shareStats"
+    /// nil = aún no se ha preguntado. Las fotos de progreso son sensibles: se pide permiso la primera vez.
+    static let sharePhotosKey = "social.sharePhotos"
+    private static let uploadedPhotosKey = "social.uploadedPhotos"
+
+    var sharesStats: Bool { UserDefaults.standard.object(forKey: Self.shareStatsKey) as? Bool ?? true }
+    var sharesPhotos: Bool? { UserDefaults.standard.object(forKey: Self.sharePhotosKey) as? Bool }
+
+    struct LocalPhoto {
+        let month: String
+        let view: String
+        let takenOn: String
+        let version: String
+        let jpeg: () -> Data?
+    }
+
+    /// Sube altura, peso y las fotos de progreso nuevas o cambiadas (solo si compartes cada cosa).
+    func syncProfile(heightCm: Double?, weightKg: Double?, photos: [LocalPhoto]) async throws {
+        guard isSignedIn, me != nil, let config else { return }
+        let session = try await currentSession()
+        if sharesStats {
+            let (status, data) = try await send(SocialAPI.upsertStats(config, session: session, heightCm: heightCm, weightKg: weightKg))
+            try SocialAPI.check(status: status, data: data)
+        }
+        guard sharesPhotos == true else { return }
+        var uploaded = UserDefaults.standard.dictionary(forKey: Self.uploadedPhotosKey) as? [String: String] ?? [:]
+        let localKeys = Set(photos.map { "\($0.month)|\($0.view)" })
+        for photo in photos {
+            let key = "\(photo.month)|\(photo.view)"
+            guard uploaded[key] != photo.version, let jpeg = photo.jpeg() else { continue }
+            let path = SocialAPI.storagePath(userID: session.userID, month: photo.month, view: photo.view)
+            var (status, data) = try await send(SocialAPI.upload(config, session: session, bucket: "progress", path: path, jpeg: jpeg))
+            try SocialAPI.check(status: status, data: data)
+            (status, data) = try await send(SocialAPI.upsertPhotos(config, session: session, rows: [
+                SocialAPI.PhotoRow(userID: session.userID, month: photo.month, view: photo.view, takenOn: photo.takenOn, path: path),
+            ]))
+            try SocialAPI.check(status: status, data: data)
+            uploaded[key] = photo.version
+            UserDefaults.standard.set(uploaded, forKey: Self.uploadedPhotosKey)
+        }
+        // Fotos borradas en el iPhone: también se borran del servidor.
+        for key in uploaded.keys where !localKeys.contains(key) {
+            let parts = key.split(separator: "|").map(String.init)
+            guard parts.count == 2 else { continue }
+            try await removeRemotePhoto(month: parts[0], view: parts[1], session: session, config: config)
+            uploaded.removeValue(forKey: key)
+            UserDefaults.standard.set(uploaded, forKey: Self.uploadedPhotosKey)
+        }
+    }
+
+    func setSharesStats(_ value: Bool) async {
+        UserDefaults.standard.set(value, forKey: Self.shareStatsKey)
+        guard !value, let config, let session = try? await currentSession() else { return }
+        _ = try? await send(SocialAPI.upsertStats(config, session: session, heightCm: nil, weightKg: nil))
+    }
+
+    /// Al dejar de compartir fotos se borran del servidor (en el iPhone se quedan).
+    func setSharesPhotos(_ value: Bool) async {
+        UserDefaults.standard.set(value, forKey: Self.sharePhotosKey)
+        guard !value, let config, let session = try? await currentSession() else { return }
+        let uploaded = UserDefaults.standard.dictionary(forKey: Self.uploadedPhotosKey) as? [String: String] ?? [:]
+        for key in uploaded.keys {
+            let parts = key.split(separator: "|").map(String.init)
+            if parts.count == 2 { try? await removeRemotePhoto(month: parts[0], view: parts[1], session: session, config: config) }
+        }
+        UserDefaults.standard.removeObject(forKey: Self.uploadedPhotosKey)
+    }
+
+    private func removeRemotePhoto(month: String, view: String, session: SocialAPI.Session, config: SocialAPI.Config) async throws {
+        _ = try await send(SocialAPI.deleteFile(config, session: session, bucket: "progress",
+                                                path: SocialAPI.storagePath(userID: session.userID, month: month, view: view)))
+        let (status, data) = try await send(SocialAPI.deletePhoto(config, session: session, month: month, view: view))
+        try SocialAPI.check(status: status, data: data)
+    }
+
+    func uploadAvatar(_ jpeg: Data) async throws {
+        guard let config, let me else { throw SocialAPI.SocialError.notSignedIn }
+        let session = try await currentSession()
+        let path = "\(session.userID)/avatar-\(Int(Date().timeIntervalSince1970)).jpg"
+        var (status, data) = try await send(SocialAPI.upload(config, session: session, bucket: "avatars", path: path, jpeg: jpeg))
+        try SocialAPI.check(status: status, data: data)
+        (status, data) = try await send(SocialAPI.setAvatar(config, session: session, path: path))
+        try SocialAPI.check(status: status, data: data)
+        if let old = me.avatarPath { _ = try? await send(SocialAPI.deleteFile(config, session: session, bucket: "avatars", path: old)) }
+        var updated = me
+        updated.avatarPath = path
+        updateMe(updated)
+    }
+
+    struct ProfileDetail {
+        var stats: SocialAPI.Stats?
+        var counts: SocialAPI.Counts?
+        var photos: [SocialAPI.PhotoRow] = []
+    }
+
+    func profileDetail(of userID: String) async throws -> ProfileDetail {
+        guard let config else { throw SocialAPI.SocialError.notConfigured }
+        let session = try await currentSession()
+        var detail = ProfileDetail()
+        var (status, data) = try await send(SocialAPI.stats(config, session: session, userID: userID))
+        detail.stats = try SocialAPI.decodeRows(SocialAPI.Stats.self, status: status, data: data).first
+        (status, data) = try await send(SocialAPI.followCounts(config, session: session, userID: userID))
+        detail.counts = try SocialAPI.decodeRows(SocialAPI.Counts.self, status: status, data: data).first
+        (status, data) = try await send(SocialAPI.photos(config, session: session, userID: userID))
+        detail.photos = try SocialAPI.decodeRows(SocialAPI.PhotoRow.self, status: status, data: data)
+        return detail
+    }
+
+    /// Descarga una imagen privada (foto de perfil o de progreso) respetando las reglas de acceso.
+    func image(bucket: String, path: String, version: String? = nil) async -> Data? {
+        let key = path + "|" + (version ?? "")
+        if let cached = ImageCache.shared.data(for: key) { return cached }
+        guard let config, let session = try? await currentSession(),
+              let response = try? await send(SocialAPI.download(config, session: session, bucket: bucket, path: path)),
+              (200..<300).contains(response.0), !response.1.isEmpty else { return nil }
+        let data = response.1
+        ImageCache.shared.store(data, for: key)
+        return data
+    }
+}
+
+/// Caché en memoria de imágenes descargadas (se vacía al cerrar la app).
+final class ImageCache: @unchecked Sendable {
+    static let shared = ImageCache()
+    private let cache = NSCache<NSString, NSData>()
+
+    func data(for key: String) -> Data? { cache.object(forKey: key as NSString) as Data? }
+    func store(_ data: Data, for key: String) { cache.setObject(data as NSData, forKey: key as NSString, cost: data.count) }
+    func remove(_ key: String) { cache.removeObject(forKey: key as NSString) }
 }

@@ -92,3 +92,78 @@ create trigger follows_only_status_changes before update on public.follows
   for each row execute function public.follows_only_status_changes();
 
 grant select, insert, update, delete on public.profiles, public.follows, public.daily_summaries to authenticated;
+
+-- ============================================================================================
+-- Perfil: foto, altura y peso, fotos de progreso y contador de seguidores (versión 2)
+-- ============================================================================================
+
+alter table public.profiles add column if not exists avatar_path text check (avatar_path is null or char_length(avatar_path) <= 200);
+
+-- Altura y peso: solo los ven tú y quien te sigue con solicitud aceptada.
+create table if not exists public.profile_stats (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  height_cm numeric check (height_cm is null or height_cm between 100 and 250),
+  weight_kg numeric check (weight_kg is null or weight_kg between 20 and 400),
+  updated_at timestamptz not null default now()
+);
+
+-- Fotos de progreso: una por mes y vista (frente, lateral, espalda), con el día en que se hizo.
+create table if not exists public.progress_photos (
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  month text not null check (month ~ '^[0-9]{4}-[0-9]{2}$'),
+  view text not null check (view in ('front', 'side', 'back')),
+  taken_on date not null,
+  path text not null check (char_length(path) <= 200),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, month, view)
+);
+
+alter table public.profile_stats enable row level security;
+alter table public.progress_photos enable row level security;
+
+-- ¿Puede la persona con sesión ver los datos de «owner»? (es ella misma o la sigue con solicitud aceptada)
+create or replace function public.can_view(owner uuid) returns boolean language sql stable security definer set search_path = public as $$
+  select owner = auth.uid() or exists (
+    select 1 from public.follows f where f.follower = auth.uid() and f.followee = owner and f.status = 'accepted')
+$$;
+grant execute on function public.can_view(uuid) to authenticated;
+
+drop policy if exists "stats_read" on public.profile_stats;
+create policy "stats_read" on public.profile_stats for select to authenticated using (public.can_view(user_id));
+drop policy if exists "stats_write_own" on public.profile_stats;
+create policy "stats_write_own" on public.profile_stats for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "photos_read" on public.progress_photos;
+create policy "photos_read" on public.progress_photos for select to authenticated using (public.can_view(user_id));
+drop policy if exists "photos_write_own" on public.progress_photos;
+create policy "photos_write_own" on public.progress_photos for all to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+grant select, insert, update, delete on public.profile_stats, public.progress_photos to authenticated;
+
+-- Número de seguidores y seguidos de cualquier perfil (solo los números, no quiénes son).
+create or replace function public.follow_counts(target uuid) returns table (followers bigint, following bigint)
+language sql stable security definer set search_path = public as $$
+  select (select count(*) from public.follows where followee = target and status = 'accepted'),
+         (select count(*) from public.follows where follower = target and status = 'accepted')
+$$;
+grant execute on function public.follow_counts(uuid) to authenticated;
+
+-- Archivos (Supabase Storage): carpetas privadas por persona: avatars/<tu id>/… y progress/<tu id>/…
+insert into storage.buckets (id, name, public) values ('avatars', 'avatars', false), ('progress', 'progress', false)
+  on conflict (id) do nothing;
+
+drop policy if exists "nn_avatars_read" on storage.objects;
+create policy "nn_avatars_read" on storage.objects for select to authenticated using (bucket_id = 'avatars');
+drop policy if exists "nn_progress_read" on storage.objects;
+create policy "nn_progress_read" on storage.objects for select to authenticated
+  using (bucket_id = 'progress' and public.can_view(((storage.foldername(name))[1])::uuid));
+drop policy if exists "nn_own_insert" on storage.objects;
+create policy "nn_own_insert" on storage.objects for insert to authenticated
+  with check (bucket_id in ('avatars', 'progress') and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "nn_own_update" on storage.objects;
+create policy "nn_own_update" on storage.objects for update to authenticated
+  using (bucket_id in ('avatars', 'progress') and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id in ('avatars', 'progress') and (storage.foldername(name))[1] = auth.uid()::text);
+drop policy if exists "nn_own_delete" on storage.objects;
+create policy "nn_own_delete" on storage.objects for delete to authenticated
+  using (bucket_id in ('avatars', 'progress') and (storage.foldername(name))[1] = auth.uid()::text);
