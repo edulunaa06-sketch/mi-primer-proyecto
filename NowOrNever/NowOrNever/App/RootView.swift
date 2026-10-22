@@ -3,7 +3,7 @@ import SwiftData
 import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
-    case home, training, nutrition, activity, progress, settings
+    case home, training, nutrition, activity, progress, friends, settings
     var id: String { rawValue }
 
     var title: String {
@@ -13,6 +13,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .nutrition: return "Nutrición"
         case .activity: return "Pasos"
         case .progress: return "Progreso"
+        case .friends: return "Amigos"
         case .settings: return "Ajustes"
         }
     }
@@ -24,6 +25,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .nutrition: return "fork.knife"
         case .activity: return "figure.walk"
         case .progress: return "chart.line.uptrend.xyaxis"
+        case .friends: return "person.2.fill"
         case .settings: return "gearshape.fill"
         }
     }
@@ -35,8 +37,8 @@ final class AppRouter {
     var tab: AppTab = .home
 }
 
-/// Contenedor principal con barra de pestañas propia (6 secciones; la TabView del sistema
-/// agruparía la sexta en "Más").
+/// Contenedor principal con barra de pestañas propia (7 secciones; la TabView del sistema
+/// agruparía las últimas en "Más").
 struct RootView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
@@ -44,6 +46,7 @@ struct RootView: View {
     @Environment(NotificationManager.self) private var notifications
     @Environment(StravaService.self) private var strava
     @Environment(AppRouter.self) private var router
+    @Environment(SocialService.self) private var social
 
     @Query private var settingsList: [UserSettings]
     @State private var showOnboarding = false
@@ -80,6 +83,7 @@ struct RootView: View {
                 await refreshPhotoRemindersIfNeeded(settings)
                 await health.refreshAuthorizationState()
                 await health.refresh()
+                try? await SocialSync.publish(social: social, health: health, context: context)
             }
             .overlay {
                 if let quote = splashQuote {
@@ -91,7 +95,11 @@ struct RootView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .background { backgroundedAt = Date() }
+                if phase == .background {
+                    backgroundedAt = Date()
+                    // Al salir de la app se comparte el día con lo último registrado.
+                    Task { try? await SocialSync.publish(social: social, health: health, context: context) }
+                }
                 // Al volver a la app tras 10 minutos o más fuera, otra frase.
                 if phase == .active, let since = backgroundedAt, Date().timeIntervalSince(since) >= 600 {
                     splashQuote = RootView.nextQuote()
@@ -121,6 +129,7 @@ struct RootView: View {
         case .nutrition: NutritionView()
         case .activity: ActivityView()
         case .progress: ProgressHubView()
+        case .friends: FriendsView()
         case .settings: SettingsView()
         }
     }
@@ -137,7 +146,7 @@ struct RootView: View {
                         Text(tab.title)
                             .font(.system(size: 10, weight: .semibold))
                             .lineLimit(1)
-                            .minimumScaleFactor(0.8)
+                            .minimumScaleFactor(0.7)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
