@@ -355,6 +355,40 @@ function claudeMode() { return sample ? "claude.ai" : claudeKey() ? "key" : null
 let anthropicClient = null;
 /** Pide JSON a Claude: dentro de claude.ai usa la capacidad integrada (sin clave);
  *  en el archivo descargado usa el SDK oficial de Anthropic con tu clave. */
+const PHOTO_PROMPT = `Eres el asistente de nutrición de la app Now or Never. Recibes la foto de un plato y el peso total de la comida en gramos (pesada en báscula, sin el plato). Identifica cada alimento visible (por ejemplo: pollo a la plancha, boniato asado, queso cottage, arroz, aceite) y reparte el peso total entre ellos según lo que ves.
+- La suma de los gramos de todos los ingredientes debe ser igual al peso total indicado.
+- Usa valores por 100 g del alimento tal y como está en el plato (cocinado si está cocinado), según tablas de referencia (BEDCA, USDA).
+- Si hay aceite o salsa visibles o probables, inclúyelos con una cantidad prudente y dilo en la nota.
+- Si dudas de qué es un alimento, de cómo está cocinado o de una cantidad importante, haz una pregunta corta y concreta en "questions" (máximo 3) y da igualmente tu mejor estimación. Si no tienes dudas, deja "questions" vacío.
+- Si el usuario ya ha respondido a tus preguntas, usa sus respuestas y no vuelvas a preguntar lo mismo.
+- Si la foto no muestra comida, devuelve "items" vacío y explícalo en la nota.
+- Nota en español, máximo 2 frases.
+Responde SOLO con JSON: {"items":[{"name":"","grams":0,"kcal_per_100g":0,"protein_per_100g":0,"carbs_per_100g":0,"fat_per_100g":0}],"questions":[""],"note":""}`;
+async function askClaudeImage(user, blob) {
+  const schema = { ...SCHEMA_ESTIMATE, required: ["items", "questions", "note"], properties: { ...SCHEMA_ESTIMATE.properties, questions: { type: "array", items: { type: "string" } } } };
+  if (sample) return sample.json(PHOTO_PROMPT + "\n\n" + user, { images: blob, modelTier: "default" });
+  const key = claudeKey();
+  if (!key) throw new Error("Añade tu clave de la API de Claude en Perfil, o abre la demo desde su enlace de claude.ai.");
+  if (!anthropicClient) {
+    const mod = await import("https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm");
+    anthropicClient = new (mod.default || mod.Anthropic)({ apiKey: key, dangerouslyAllowBrowser: true });
+  }
+  const data = await new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1]); r.onerror = ko; r.readAsDataURL(blob); });
+  const msg = await anthropicClient.beta.messages.create({
+    model: "claude-opus-5-5", max_tokens: 16000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default", system: PHOTO_PROMPT,
+    output_config: { effort: "medium", format: { type: "json_schema", schema } },
+    messages: [{ role: "user", content: [{ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }, { type: "text", text: user }] }],
+  });
+  if (msg.stop_reason === "refusal") throw new Error("Claude no ha podido analizar esta foto.");
+  if (msg.stop_reason === "max_tokens") throw new Error("La respuesta llegó incompleta. Inténtalo de nuevo.");
+  return JSON.parse((msg.content.filter(b => b.type === "text").pop() || {}).text);
+}
+function photoBlob(file) {
+  return new Promise((ok, ko) => { const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const k = Math.min(1, 1568 / Math.max(img.width, img.height)), c = document.createElement("canvas"); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); c.toBlob(b => b ? ok(b) : ko(new Error("imagen")), "image/jpeg", 0.8); };
+    img.onerror = () => { URL.revokeObjectURL(url); ko(new Error("No se pudo leer la imagen")); }; img.src = url; });
+}
 async function askClaude(system, user, schema, effort) {
   if (sample) return sample.json(system + "\n\n" + user, { modelTier: "default" });
   const key = claudeKey();
@@ -619,6 +653,27 @@ function sheetBuilder() {
     + opts.map(o => optionCard(type, o, tgt, "pickBuilder")).join("")
     + (st.all ? "" : `<button class="ghost" data-act="showAll">Ver las ${CANDIDATES[type].length} opciones</button>`);
 }
+function photoCard(st, mode) {
+  const ph = st.photo || {}, net = (ph.grams || 0) - (ph.plate || 0), a = ph.analysis;
+  const kept = a ? a.items.filter((_, i) => !(ph.removed || []).includes(i)) : [];
+  const tot = kept.reduce((acc, it) => add(acc, per({ kcal: it.kcal_per_100g, protein: it.protein_per_100g, carbs: it.carbs_per_100g, fat: it.fat_per_100g }, it.grams)), V0());
+  return `<section class="card"><h3>Foto del plato</h3><p class="tiny muted">Haz una foto, pesa la comida y Claude ve qué hay y calcula las kcal. Si duda de algún alimento, te pregunta.</p>
+    <div class="row">${ph.url ? `<img src="${ph.url}" alt="Foto del plato" style="width:96px;height:96px;object-fit:cover;border-radius:12px">` : ""}
+      <label class="photo-btn grow" style="text-align:center">${ph.url ? "Cambiar foto" : "Hacer foto / elegir"}<input type="file" accept="image/*" id="pFile" hidden></label></div>
+    <div class="grid2"><label class="field">Peso en báscula (g)<input id="pGrams" inputmode="decimal" value="${ph.grams || ""}"></label><label class="field">Plato vacío (g, opcional)<input id="pPlate" inputmode="decimal" value="${ph.plate || ""}"></label></div>
+    <p class="tiny muted">Si pones el peso del plato vacío, se resta del total.</p>
+    <label class="field">Comentario (opcional)<input id="pNote" value="${esc(ph.note || "")}" placeholder="el pollo lleva salsa de yogur"></label>
+    ${mode ? "" : '<p class="note">Fuera de claude.ai necesita tu clave de la API (Perfil).</p>'}
+    <button data-act="pAnalyze" ${mode && ph.blob && !st.busy ? "" : "disabled"}>${st.busy === "photo" ? "Analizando la foto…" : a ? "Volver a analizar" : "Calcular con la foto"}</button>
+    ${a ? (a.items.length ? `<h3>Lo que ve Claude</h3>${a.items.map((it, i) => { const off = (ph.removed || []).includes(i);
+        return `<div class="line small"><span class="grow" style="${off ? "text-decoration:line-through;opacity:.5" : ""}">${esc(it.name)} · ${fmt0(it.grams)} g <span class="dim">(${fmt0(it.kcal_per_100g)} kcal/100 g)</span></span><span class="num">${fmt0(it.kcal_per_100g * it.grams / 100)} kcal</span><button class="plain tiny" data-act="pToggle" data-v="${i}">${off ? "Incluir" : "Quitar"}</button></div>`; }).join("")}
+      <div class="num" style="color:var(--lime)"><b>Total: ${fmt0(tot.kcal)} kcal</b> · P ${fmt0(tot.protein)} · C ${fmt0(tot.carbs)} · G ${fmt0(tot.fat)} g</div><p class="tiny muted">${esc(a.note || "")}</p>
+      ${(a.questions || []).length ? `<div class="raised" style="display:flex;flex-direction:column;gap:8px;border:1px solid var(--warn)"><b style="color:var(--warn)">Claude tiene dudas</b>
+        ${a.questions.map((q, i) => `<label class="field">${esc(q)}<input data-pq="${i}" placeholder="Tu respuesta"></label>`).join("")}
+        <button class="ghost" data-act="pAnswer" ${st.busy ? "disabled" : ""}>Responder y recalcular</button></div>` : ""}
+      <button data-act="pAdd" ${kept.length ? "" : "disabled"}>Añadir a lo apuntado</button>` : `<p class="note">${esc(a.note || "Claude no ha reconocido comida en la foto.")}</p>`) : ""}
+  </section>`;
+}
 function sheetCustom() {
   const st = sheetState, label = MEALS.find(m => m[0] === st.type)[1], total = st.items.reduce((a, it) => add(a, per(it.per100, it.grams)), V0());
   const q = st.q || "", foods = CATALOG.foods.filter(f => foodMatches(f.name, q)).slice(0, 25), mode = claudeMode();
@@ -626,8 +681,9 @@ function sheetCustom() {
     + `<section class="card"><h3>Lo apuntado</h3>${st.items.length ? st.items.map((it, i) => { const v = per(it.per100, it.grams);
         return `<div class="line"><div class="grow">${esc(it.name)} <span class="dim small">· ${fmt0(it.grams)} g · ${it.source === "claude" ? "estimación de Claude" : it.source}</span><div class="tiny dim num">P ${fmt1(v.protein)} · C ${fmt1(v.carbs)} · G ${fmt1(v.fat)}</div></div><span class="num">${fmt0(v.kcal)} kcal <button class="danger" data-act="cDel" data-v="${i}" aria-label="Quitar">×</button></span></div>`; }).join("")
         + `<hr><div class="num"><b>Total: ${fmt0(total.kcal)} kcal</b> · P ${fmt0(total.protein)} · C ${fmt0(total.carbs)} · G ${fmt0(total.fat)} g</div>` : '<p class="small muted">Aún no has añadido nada.</p>'}</section>
-    <div class="seg">${[["claude", "Describir (Claude)"], ["catalog", "Catálogo"], ["manual", "Manual"]].map(([k, l]) => `<button data-act="cMode" data-v="${k}" class="${st.mode === k ? "on" : ""}">${l}</button>`).join("")}</div>
-    ${st.mode === "claude" ? `<section class="card"><label class="field">Descríbelo y Claude calcula kcal y macros<textarea id="cDesc" rows="3" placeholder="150 g de macarrones con tomate y un poco de queso">${esc(st.desc || "")}</textarea></label>
+    <div class="seg">${[["photo", "Foto"], ["claude", "Describir"], ["catalog", "Catálogo"], ["manual", "Manual"]].map(([k, l]) => `<button data-act="cMode" data-v="${k}" class="${st.mode === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    ${st.mode === "photo" ? photoCard(st, mode)
+    : st.mode === "claude" ? `<section class="card"><label class="field">Descríbelo y Claude calcula kcal y macros<textarea id="cDesc" rows="3" placeholder="150 g de macarrones con tomate y un poco de queso">${esc(st.desc || "")}</textarea></label>
         ${mode ? "" : '<p class="note">Fuera de claude.ai necesita tu clave de la API (Perfil). Mientras, usa Catálogo o Manual.</p>'}
         <button data-act="cEstimate" ${mode && !st.busy ? "" : "disabled"}>${st.busy === "estimate" ? "Calculando…" : "Calcular con Claude"}</button>
         ${st.estimate ? st.estimate.items.map(it => `<div class="line small"><span class="grow">${esc(it.name)} · ${fmt0(it.grams)} g</span><span class="num">${fmt0(it.kcal_per_100g * it.grams / 100)} kcal</span></div>`).join("") + `<p class="tiny muted">${esc(st.estimate.note || "")}</p><button class="ghost" data-act="cAddEstimate">Añadir a mi ${label.toLowerCase()}</button>` : ""}</section>`
@@ -645,6 +701,32 @@ function sheetCustom() {
     </section>
     ${st.error ? `<p class="note" style="color:var(--danger)">${esc(st.error)}</p>` : ""}
     <button data-act="cSave">${st.fromBuilder ? "Guardar y seguir" : "Guardar"}</button>`;
+}
+
+async function analyzePhoto(answering) {
+  const st = sheetState, ph = st.photo; readPhotoFields();
+  const net = (ph.grams || 0) - (ph.plate || 0); if (!ph.blob) return;
+  if (net <= 0) { st.error = ph.grams ? "El plato vacío no puede pesar más que el total." : "Escribe lo que pesa la comida en la báscula."; renderSheet(); return; }
+  let user = `Peso total de la comida (sin el plato): ${fmt0(net)} g.` + (ph.note ? `\nComentario del usuario: ${ph.note}` : "");
+  if (answering && ph.analysis) {
+    const ans = [...document.querySelectorAll("[data-pq]")].map(n => [ph.analysis.questions[Number(n.dataset.pq)], n.value.trim()]).filter(x => x[1]);
+    if (!ans.length) return;
+    user += `\nTu análisis anterior: ${JSON.stringify(ph.analysis)}\nMis respuestas:\n` + ans.map(([q, a]) => `- ${q}\n  Respuesta: ${a}`).join("\n") + "\nRecalcula el plato con esta información.";
+  }
+  st.busy = "photo"; st.error = null; renderSheet();
+  try {
+    const r = await askClaudeImage(user, ph.blob);
+    let items = (r.items || []).filter(it => it.grams > 0 && it.grams <= 3000 && it.kcal_per_100g >= 0 && it.kcal_per_100g <= 900);
+    const sum = items.reduce((a, it) => a + it.grams, 0);
+    if (sum > 0 && Math.abs(sum - net) >= 1) items = items.map(it => ({ ...it, grams: Math.round(it.grams * net / sum) }));
+    ph.analysis = { items, questions: (r.questions || []).slice(0, 3), note: r.note || "" }; ph.removed = [];
+  } catch (e) { st.error = claudeError(e); }
+  st.busy = null; if (sheetState === st) renderSheet();
+}
+function readPhotoFields() {
+  const ph = sheetState && sheetState.photo; if (!ph) return;
+  const g = document.getElementById("pGrams"), p = document.getElementById("pPlate"), n = document.getElementById("pNote");
+  if (g) ph.grams = num(g.value) || 0; if (p) ph.plate = num(p.value) || 0; if (n) ph.note = n.value.trim();
 }
 
 /* ===== Acciones ===== */
@@ -674,12 +756,18 @@ const actions = {
   builderBack() { sheetState.step = Math.max(sheetState.step - 1, 0); sheetState.all = false; renderSheet(); },
   builderCustom(t) { const prev = sheetState, fixed = {}; MEALS.map(m => m[0]).slice(0, prev.step).forEach(x => (fixed[x] = prev.values[x]));
     const d = S.days[ui.day], cur = d && d.meals[t] && d.meals[t].kind === "custom" ? d.meals[t].items : [];
-    openSheet({ kind: "custom", type: t, items: JSON.parse(JSON.stringify(cur)), mode: "claude", target: targetFor(t, fixed), fromBuilder: prev }); },
+    openSheet({ kind: "custom", type: t, items: JSON.parse(JSON.stringify(cur)), mode: "photo", photo: {}, target: targetFor(t, fixed), fromBuilder: prev }); },
   builderSave() { const st = sheetState; Object.entries(st.picks).forEach(([t, m]) => setMeal(ui.day, t, m)); save(); closeSheet(); toast("Día guardado"); },
   rebalance() { const ch = rebalance(ui.day); save(); render(); toast(ch.length ? "Reajustado: " + ch.join(", ") : "No quedan comidas pendientes"); },
   custom(t) { const d = S.days[ui.day], cur = d && d.meals[t] && d.meals[t].kind === "custom" ? d.meals[t].items : [];
-    openSheet({ kind: "custom", type: t, items: JSON.parse(JSON.stringify(cur)), mode: "claude", target: targetFor(t, dayFixed(ui.day, t)) }); },
+    openSheet({ kind: "custom", type: t, items: JSON.parse(JSON.stringify(cur)), mode: "photo", photo: {}, target: targetFor(t, dayFixed(ui.day, t)) }); },
   cMode(v) { sheetState.mode = v; sheetState.error = null; renderSheet(); },
+  async pAnalyze() { await analyzePhoto(false); },
+  async pAnswer() { await analyzePhoto(true); },
+  pToggle(i) { const ph = sheetState.photo, n = Number(i); ph.removed = ph.removed || []; ph.removed = ph.removed.includes(n) ? ph.removed.filter(x => x !== n) : [...ph.removed, n]; renderSheet(); },
+  pAdd() { const st = sheetState, ph = st.photo; ph.analysis.items.forEach((it, i) => { if ((ph.removed || []).includes(i)) return;
+      st.items.push({ name: it.name, grams: it.grams, per100: { kcal: it.kcal_per_100g, protein: it.protein_per_100g, carbs: it.carbs_per_100g, fat: it.fat_per_100g }, source: "claude" }); });
+    st.photo = {}; renderSheet(); },
   cDel(i) { sheetState.items.splice(Number(i), 1); renderSheet(); },
   cPick(k) { sheetState.pick = k; renderSheet(); },
   cAddFood() { const g = num(document.getElementById("cGrams").value); if (!g || g <= 0) return; const f = FOODS[sheetState.pick];
@@ -764,6 +852,8 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("change", e => {
   const t = e.target;
+  if (t.id === "pFile" && t.files[0]) { const f = t.files[0]; readPhotoFields(); photoBlob(f).then(b => { const ph = sheetState.photo = sheetState.photo || {}; if (ph.url) URL.revokeObjectURL(ph.url); ph.blob = b; ph.url = URL.createObjectURL(b); ph.analysis = null; renderSheet(); }).catch(() => toast("No se pudo leer la foto")); return; }
+  if (["pGrams", "pPlate", "pNote"].includes(t.id)) { readPhotoFields(); return; }
   if (t.dataset && t.dataset.photo && t.files[0]) { savePhoto(t.dataset.photo, t.files[0]); t.value = ""; return; }
   if (t.id === "dayPick" && t.value) { ui.day = t.value; render(); return; }
   if (t.id === "importFile" && t.files[0]) { const r = new FileReader(); r.onload = () => { try { const x = JSON.parse(r.result); if (!x || !x.targets || !x.days) throw 0; S = normalize(x); save(); render(); toast("Copia importada"); } catch (err) { toast("Ese archivo no es una copia de Now or Never"); } }; r.readAsText(t.files[0]); return; }
