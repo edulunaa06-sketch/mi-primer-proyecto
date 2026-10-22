@@ -269,6 +269,8 @@ final class MenuPlan {
     var note: String = ""
     /// Menú de ejemplo: los valores deben revisarse antes de considerarlos definitivos.
     var isExample: Bool = true
+    /// true = idea suelta de la biblioteca (una sola comida); no aparece como "menú del día".
+    var isLibrary: Bool = false
 
     @Relationship(deleteRule: .cascade, inverse: \MealTemplate.plan)
     var meals: [MealTemplate] = []
@@ -288,6 +290,8 @@ final class MenuPlan {
     var totals: NutritionValues { NutritionMath.sum(meals.map(\.totals)) }
 
     var hasProvisionalValues: Bool { meals.contains { $0.hasProvisionalValues } }
+
+    var displayName: String { isLibrary ? "Idea · \(name)" : "Menú \(number) · \(name)" }
 }
 
 @Model
@@ -385,6 +389,54 @@ final class DayMealChoice {
     var mealType: MealType { MealType(rawValue: mealTypeRaw) ?? .breakfast }
 }
 
+/// Lo que el usuario dice que come (o va a comer) en una comida concreta, fuera de los menús.
+/// Si existe para un día y una comida, sustituye a la comida del menú y el resto del día se reajusta.
+@Model
+final class CustomMealItem {
+    var dayKey: String = ""
+    var mealTypeRaw: String = MealType.breakfast.rawValue
+    var name: String = ""
+    var grams: Double = 0
+    var kcalPer100: Double = 0
+    var proteinPer100: Double = 0
+    var carbsPer100: Double = 0
+    var fatPer100: Double = 0
+    /// "catalog", "manual" o "claude" (estimación de IA).
+    var sourceRaw: String = CustomItemSource.manual.rawValue
+    var order: Int = 0
+    var createdAt: Date = Date()
+
+    init(dayKey: String, mealType: MealType, name: String, grams: Double, per100: NutritionValues,
+         source: CustomItemSource, order: Int) {
+        self.dayKey = dayKey
+        self.mealTypeRaw = mealType.rawValue
+        self.name = name
+        self.grams = grams
+        self.kcalPer100 = per100.kcal
+        self.proteinPer100 = per100.protein
+        self.carbsPer100 = per100.carbs
+        self.fatPer100 = per100.fat
+        self.sourceRaw = source.rawValue
+        self.order = order
+    }
+
+    var source: CustomItemSource { CustomItemSource(rawValue: sourceRaw) ?? .manual }
+    var per100: NutritionValues { NutritionValues(kcal: kcalPer100, protein: proteinPer100, carbs: carbsPer100, fat: fatPer100) }
+    var values: NutritionValues { per100.scaled(toGrams: grams) }
+}
+
+enum CustomItemSource: String, Codable {
+    case catalog, manual, claude
+
+    var label: String {
+        switch self {
+        case .catalog: return "Catálogo"
+        case .manual: return "Manual"
+        case .claude: return "Estimación de Claude (IA)"
+        }
+    }
+}
+
 /// Comida tal y como se come un día: comida de un menú con su ración (factor).
 struct ResolvedMeal {
     let type: MealType
@@ -410,7 +462,7 @@ struct ResolvedMeal {
 
     var totals: NutritionValues { NutritionMath.sum(lines.map(\.values)) }
 
-    var sourceName: String { "Menú \(plan.number) · \(plan.name)" }
+    var sourceName: String { plan.displayName }
 
     var plannerCandidate: MealPlanner.Candidate {
         MealPlanner.Candidate(id: plan.id.uuidString, items: template.sortedItems.compactMap { item in

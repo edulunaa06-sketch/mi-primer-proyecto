@@ -34,10 +34,30 @@ struct SeedCatalog: Codable {
         let meals: [Meal]
     }
 
+    /// Idea de comida suelta (biblioteca para elegir y combinar).
+    struct Idea: Codable {
+        let type: String
+        let name: String
+        let items: [Item]
+    }
+
     let version: Int
     let disclaimer: String
     let foods: [Food]
     let menus: [Menu]
+    /// Desde la versión 2 del catálogo.
+    var ideas: [Idea] = []
+
+    enum CodingKeys: String, CodingKey { case version, disclaimer, foods, menus, ideas }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decode(Int.self, forKey: .version)
+        disclaimer = try c.decode(String.self, forKey: .disclaimer)
+        foods = try c.decode([Food].self, forKey: .foods)
+        menus = try c.decode([Menu].self, forKey: .menus)
+        ideas = try c.decodeIfPresent([Idea].self, forKey: .ideas) ?? []
+    }
 
     static func decode(from data: Data) throws -> SeedCatalog {
         try JSONDecoder().decode(SeedCatalog.self, from: data)
@@ -88,6 +108,18 @@ struct SeedCatalog: Codable {
                 }
             }
         }
+        for idea in ideas {
+            if MealType(rawValue: idea.type) == nil { errors.append("Tipo de comida inválido en idea \(idea.name)") }
+            if idea.items.isEmpty { errors.append("Idea sin ingredientes: \(idea.name)") }
+            for item in idea.items where !keys.contains(item.food) || item.grams <= 0 {
+                errors.append("Ingrediente no válido (\(item.food)) en idea \(idea.name)")
+            }
+        }
         return errors
+    }
+
+    func totals(forIdea idea: Idea) -> NutritionValues {
+        let byKey = Dictionary(uniqueKeysWithValues: foods.map { ($0.key, $0) })
+        return NutritionMath.sum(idea.items.compactMap { item in byKey[item.food].map { $0.per100.scaled(toGrams: item.grams) } })
     }
 }

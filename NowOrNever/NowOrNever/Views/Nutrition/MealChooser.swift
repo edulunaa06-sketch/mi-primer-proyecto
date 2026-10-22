@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 /// Tarjeta de una opción de comida con su ración ajustada, ingredientes y macros.
@@ -104,16 +105,32 @@ struct MealChooserSheet: View {
 struct DayBuilderSheet: View {
     let daily: NutritionValues
     let plans: [MenuPlan]
-    let onFinish: ([(MealType, MealPlanner.Option)]) -> Void
+    let day: Date
+    /// Elecciones de menú/idea y comidas en las que se descarta lo apuntado a mano.
+    let onFinish: ([(MealType, MealPlanner.Option)], Set<MealType>) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \CustomMealItem.order) private var allCustom: [CustomMealItem]
     @State private var step = 0
     @State private var picks: [MealType: MealPlanner.Option] = [:]
+    /// Comidas resueltas con "lo que como" (apuntado a mano durante el asistente).
+    @State private var customPicks: Set<MealType> = []
     @State private var showAll = false
+    @State private var customFor: MealType?
 
     private let order = MealType.allCases
 
-    private var fixed: [MealType: NutritionValues] { picks.mapValues(\.values) }
+    private func customValues(_ type: MealType) -> NutritionValues? {
+        let key = DateUtils.dayKey(day)
+        let items = allCustom.filter { $0.dayKey == key && $0.mealType == type }
+        return items.isEmpty ? nil : NutritionMath.sum(items.map(\.values))
+    }
+
+    private var fixed: [MealType: NutritionValues] {
+        var result = picks.mapValues(\.values)
+        for type in customPicks { if let v = customValues(type) { result[type] = v } }
+        return result
+    }
     private var chosenTotal: NutritionValues { NutritionMath.sum(Array(fixed.values)) }
 
     var body: some View {
@@ -130,6 +147,19 @@ struct DayBuilderSheet: View {
                 .padding(16)
             }
             .screenBackground()
+            .sheet(item: $customFor) { type in
+                CustomMealSheet(type: type, day: day,
+                                target: MealPlanner.target(for: type, daily: daily,
+                                                           fixed: fixed.filter { order.firstIndex(of: $0.key)! < order.firstIndex(of: type)! })) {
+                    if customValues(type) != nil {
+                        picks[type] = nil
+                        customPicks.insert(type)
+                        for later in order.dropFirst(order.firstIndex(of: type)! + 1) { picks[later] = nil; customPicks.remove(later) }
+                        showAll = false
+                        withAnimation { step = order.firstIndex(of: type)! + 1 }
+                    }
+                }
+            }
             .navigationTitle(step < order.count ? "Elige tu \(order[step].label.lowercased())" : "Tu día")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -148,15 +178,15 @@ struct DayBuilderSheet: View {
             HStack(spacing: 6) {
                 ForEach(Array(order.enumerated()), id: \.offset) { index, type in
                     VStack(spacing: 4) {
-                        Image(systemName: picks[type] != nil ? "checkmark.circle.fill" : type.symbol)
-                            .foregroundStyle(index == step ? Theme.lime : (picks[type] != nil ? Theme.lime : Theme.textTertiary))
+                        Image(systemName: fixed[type] != nil ? "checkmark.circle.fill" : type.symbol)
+                            .foregroundStyle(index == step ? Theme.lime : (fixed[type] != nil ? Theme.lime : Theme.textTertiary))
                         Text(type.label).font(.caption2)
                             .foregroundStyle(index == step ? Theme.textPrimary : Theme.textSecondary)
                     }
                     .frame(maxWidth: .infinity)
                 }
             }
-            if !picks.isEmpty {
+            if !fixed.isEmpty {
                 Text("Llevas \(NumberFormat.integer(chosenTotal.kcal)) de \(NumberFormat.integer(daily.kcal)) kcal · P \(NumberFormat.integer(chosenTotal.protein))/\(NumberFormat.integer(daily.protein)) · C \(NumberFormat.integer(chosenTotal.carbs))/\(NumberFormat.integer(daily.carbs)) · G \(NumberFormat.integer(chosenTotal.fat))/\(NumberFormat.integer(daily.fat))")
                     .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
             }
@@ -169,18 +199,25 @@ struct DayBuilderSheet: View {
         let candidates = DataStore.candidates(for: type, plans: plans)
         let byID = Dictionary(uniqueKeysWithValues: candidates.map { ($0.plan.id.uuidString, $0) })
         // Las comidas posteriores aún no elegidas no cuentan: se reserva su parte del día.
-        let previous = picks.filter { order.firstIndex(of: $0.key)! < step }.mapValues(\.values)
+        let previous = fixed.filter { order.firstIndex(of: $0.key)! < step }
         let target = MealPlanner.target(for: type, daily: daily, fixed: previous)
         let options = MealPlanner.rank(candidates.map(\.plannerCandidate), target: target, limit: showAll ? candidates.count : 4)
         TargetHeader(title: "Objetivo para tu \(type.label.lowercased())",
                      subtitle: step == 0 ? "Elige una de estas opciones" : (type == .dinner ? "La cena cuadra con lo que te falta del día" : "Según lo que ya has elegido"),
                      target: target)
+        Button {
+            customFor = type
+        } label: {
+            Label("Voy a comer otra cosa: apuntarla", systemImage: "square.and.pencil")
+        }
+        .buttonStyle(LimeButtonStyle(filled: false))
         ForEach(options, id: \.id) { option in
             if let meal = byID[option.id] {
                 MealOptionCard(meal: meal, option: option, target: target) {
                     picks[type] = option
+                    customPicks.remove(type)
                     // Al cambiar una comida anterior se descartan las siguientes (sus opciones dependían de ella).
-                    for later in order.dropFirst(step + 1) { picks[later] = nil }
+                    for later in order.dropFirst(step + 1) { picks[later] = nil; customPicks.remove(later) }
                     showAll = false
                     withAnimation { step += 1 }
                 }
@@ -201,7 +238,9 @@ struct DayBuilderSheet: View {
             MacroRow(name: "Carbohidratos", consumed: total.carbs, target: daily.carbs)
             MacroRow(name: "Grasas", consumed: total.fat, target: daily.fat)
             Button("Guardar mi día") {
-                onFinish(order.compactMap { type in picks[type].map { (type, $0) } })
+                // Lo apuntado a mano se mantiene en las comidas resueltas así; en las demás se descarta.
+                onFinish(order.compactMap { type in picks[type].map { (type, $0) } },
+                         Set(order.filter { !customPicks.contains($0) }))
                 dismiss()
             }
             .buttonStyle(LimeButtonStyle())

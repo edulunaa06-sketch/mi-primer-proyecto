@@ -163,4 +163,32 @@ final class UserFlowUITests: XCTestCase {
         app.buttons.matching(NSPredicate(format: "label == %@", "Elegir esta opción")).element(boundBy: 1).tap()
         XCTAssertTrue(scrollTo(app.buttons["Volver al menú"].firstMatch).exists)
     }
+
+    func test5_LogWhatIEatAndRebalance() {
+        tab("Nutrición")
+        let custom = app.buttons["Como otra cosa: apuntarla"].firstMatch
+        XCTAssertTrue(scrollTo(custom).exists)
+        custom.tap()
+        assertAppears(element(containing: "Lo que como"), "Pantalla de comida libre")
+        app.buttons["Manual"].tap()
+        let name = app.textFields["Nombre (p. ej. bocadillo de lomo)"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Bocadillo de lomo")
+        let numbers = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "0"))
+        type("200", into: numbers.element(boundBy: 0))
+        type("500", into: numbers.element(boundBy: 1))
+        app.toolbars.buttons["Listo"].firstMatch.tap()
+        scrollTo(app.buttons["Añadir"].firstMatch).tap()
+        app.swipeDown(); app.swipeDown()
+        assertAppears(element(containing: "Total: 500 kcal"), "Total de lo apuntado")
+        app.buttons["Hecho"].tap()
+
+        assertAppears(element(containing: "Apuntado por ti"), "Tarjeta de comida libre")
+        app.swipeDown(); app.swipeDown(); app.swipeDown()
+        let rebalance = app.buttons["Reajustar el resto del día a mis macros"]
+        XCTAssertTrue(scrollTo(rebalance).exists)
+        rebalance.tap()
+        assertAppears(element(containing: "Reajustado:"), "Mensaje de reajuste")
+    }
 }

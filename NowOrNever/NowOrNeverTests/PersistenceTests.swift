@@ -180,7 +180,7 @@ final class PersistenceTests: XCTestCase {
     }
 
     func testSeededMenusComputeTotalsAndScaleToTarget() throws {
-        let plans = try seedCatalog()
+        let plans = try seedCatalog().filter { !$0.isLibrary }
         XCTAssertEqual(plans.count, 9)
         XCTAssertTrue(plans.allSatisfy { $0.meals.count == 4 })
         for plan in plans {
@@ -267,6 +267,66 @@ final class PersistenceTests: XCTestCase {
         let total = NutritionMath.sum(Array(fixed.values))
         XCTAssertEqual(total.kcal, daily.kcal, accuracy: daily.kcal * 0.08)
         XCTAssertGreaterThan(MealPlanner.fit(total, to: daily), 0.85)
+    }
+
+    // MARK: Biblioteca de ideas y comida libre
+
+    func testIdeasSeededAsLibraryAndOfferedAsOptions() throws {
+        let plans = try seedCatalog()
+        XCTAssertEqual(plans.filter { !$0.isLibrary }.count, 9)
+        XCTAssertEqual(plans.filter(\.isLibrary).count, 38)
+        XCTAssertTrue(plans.filter(\.isLibrary).allSatisfy { $0.meals.count == 1 })
+        let breakfasts = DataStore.candidates(for: .breakfast, plans: plans)
+        XCTAssertTrue(breakfasts.contains { $0.plan.name == "Plato de frutas con yogur" })
+        XCTAssertGreaterThanOrEqual(breakfasts.count, 15)
+        // Una idea nunca se usa como menú del día.
+        let s = DataStore.settings(context)
+        s.defaultPlanID = plans.first(where: \.isLibrary)?.id
+        XCTAssertFalse(DataStore.plan(for: Date(), plans: plans, selections: [], settings: s)?.isLibrary ?? true)
+    }
+
+    func testCatalogUpgradeAddsIdeasWithoutDuplicates() throws {
+        let catalog = try SeedCatalog.loadFromBundle(.main)
+        let defaults = try XCTUnwrap(self.defaults)
+        DataStore.seedCatalogIfNeeded(context, defaults: defaults, catalog: catalog)
+        let foodsBefore = try context.fetchCount(FetchDescriptor<FoodItem>())
+        // Simula una instalación antigua (versión 1, sin ideas) con un alimento editado por el usuario.
+        try context.fetch(FetchDescriptor<MenuPlan>()).filter(\.isLibrary).forEach { context.delete($0) }
+        let chicken = try XCTUnwrap(try context.fetch(FetchDescriptor<FoodItem>()).first { $0.seedKey == "chicken_breast" })
+        chicken.kcalPer100 = 110
+        try context.save()
+        defaults.set(1, forKey: DataStore.seedVersionKey)
+
+        DataStore.seedCatalogIfNeeded(context, defaults: defaults, catalog: catalog)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<FoodItem>()), foodsBefore)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<MenuPlan>()).filter(\.isLibrary).count, 38)
+        XCTAssertEqual(chicken.kcalPer100, 110, "No se sobrescriben los cambios del usuario")
+        XCTAssertEqual(defaults.integer(forKey: DataStore.seedVersionKey), 2)
+    }
+
+    func testCustomMealAndRebalanceRestOfDay() throws {
+        let plans = try seedCatalog()
+        let day = Date()
+        let daily = NutritionValues(kcal: 2550, protein: 170, carbs: 308, fat: 71)
+        // "Hoy desayuno un plato de frutas": se apunta a mano.
+        DataStore.addCustomItem(.breakfast, name: "Plato de frutas", grams: 600,
+                                per100: NutritionValues(kcal: 55, protein: 0.8, carbs: 13, fat: 0.3), source: .manual, on: day, in: context)
+        DataStore.addCustomItem(.breakfast, name: "Macarrones", grams: 150,
+                                per100: NutritionValues(kcal: 158, protein: 5.8, carbs: 30.9, fat: 0.9), source: .claude, on: day, in: context)
+        let items = DataStore.customItems(for: .breakfast, on: day, in: context)
+        XCTAssertEqual(items.count, 2)
+        let breakfast = NutritionMath.sum(items.map(\.values))
+        XCTAssertEqual(breakfast.kcal, 330 + 237, accuracy: 0.01)
+
+        let applied = DataStore.rebalanceDay(day, fixed: [.breakfast: breakfast], daily: daily, plans: plans, in: context)
+        XCTAssertEqual(Set(applied.keys), [.lunch, .snack, .dinner])
+        let total = NutritionMath.sum([breakfast] + applied.values.map(\.values))
+        XCTAssertEqual(total.kcal, daily.kcal, accuracy: daily.kcal * 0.1)
+        XCTAssertGreaterThan(MealPlanner.fit(total, to: daily), 0.8)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<DayMealChoice>()), 3)
+
+        DataStore.clearCustom(.breakfast, on: day, in: context)
+        XCTAssertTrue(DataStore.customItems(for: .breakfast, on: day, in: context).isEmpty)
     }
 }
 #endif

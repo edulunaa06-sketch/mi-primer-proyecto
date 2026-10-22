@@ -1,11 +1,11 @@
 import Foundation
 import Security
 
-/// Almacenamiento mínimo en el Llavero de iOS para los tokens OAuth (nunca en UserDefaults ni en el código).
+/// Almacenamiento mínimo en el Llavero de iOS para tokens y claves (nunca en UserDefaults ni en el código).
 enum KeychainStore {
-    private static let service = "NowOrNever.Strava"
+    static let defaultService = "NowOrNever.Strava"
 
-    static func save(_ data: Data, account: String) throws {
+    static func save(_ data: Data, account: String, service: String = defaultService) throws {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -19,7 +19,7 @@ enum KeychainStore {
         guard status == errSecSuccess else { throw KeychainError(status: status) }
     }
 
-    static func load(account: String) -> Data? {
+    static func load(account: String, service: String = defaultService) -> Data? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -32,7 +32,7 @@ enum KeychainStore {
         return result as? Data
     }
 
-    static func delete(account: String) {
+    static func delete(account: String, service: String = defaultService) {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,

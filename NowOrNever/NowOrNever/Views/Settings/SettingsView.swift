@@ -30,6 +30,8 @@ private struct SettingsForm: View {
     @Environment(NotificationManager.self) private var notifications
     @Environment(StravaService.self) private var strava
     @Environment(HealthKitManager.self) private var health
+    @Environment(ClaudeService.self) private var claude
+    @State private var claudeKey = ""
 
     @State private var kcal: Double?
     @State private var protein: Double?
@@ -54,6 +56,7 @@ private struct SettingsForm: View {
             notificationsStatusSection
             healthSection
             stravaSection
+            claudeSection
             trackingSection
             dataSection
         }
@@ -351,6 +354,35 @@ private struct SettingsForm: View {
             }
         } catch {
             show("Conexión cancelada o fallida: \(error.localizedDescription)", error: true)
+        }
+    }
+
+    // MARK: Claude (IA)
+
+    private var claudeSection: some View {
+        Section {
+            if claude.isConfigured {
+                Label("Clave guardada en el Llavero", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.lime)
+                Button("Borrar clave", role: .destructive) { claude.deleteKey() }
+            } else {
+                SecureField("Clave de la API (sk-ant-…)", text: $claudeKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                Button("Guardar clave") {
+                    do {
+                        try claude.saveKey(claudeKey)
+                        claudeKey = ""
+                        show("Clave guardada. Ya puedes usar Claude en Nutrición › «Como otra cosa: apuntarla».")
+                    } catch {
+                        show(error.localizedDescription, error: true)
+                    }
+                }
+                .disabled(claudeKey.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+        } header: {
+            Text("Claude (IA)")
+        } footer: {
+            Text("Claude calcula las kcal de lo que describes (p. ej. «150 g de macarrones») y propone comidas más saludables con tu catálogo para cuadrar tus macros. Necesita una clave de la API de Claude (console.anthropic.com), que tiene coste por uso (céntimos por consulta). La clave se guarda solo en el Llavero de este iPhone. Se envía a Anthropic: lo que escribes, el objetivo de esa comida y la lista de alimentos del catálogo; nunca fotos, peso ni datos de Salud. Las cifras son estimaciones.")
         }
     }
 

@@ -9,12 +9,15 @@ struct NutritionView: View {
     @Query private var choices: [DayMealChoice]
     @Query private var settingsList: [UserSettings]
     @Query private var allRecords: [MealRecord]
+    @Query(sort: \CustomMealItem.order) private var allCustom: [CustomMealItem]
 
     @State private var day = Date()
     @State private var editingItem: MealItem?
     @State private var addingTo: MealTemplate?
     @State private var swapping: MealType?
     @State private var showBuilder = false
+    @State private var customFor: MealType?
+    @State private var rebalanceMessage: String?
 
     private var settings: UserSettings? { settingsList.first }
     private var dayKey: String { DateUtils.dayKey(day) }
@@ -23,6 +26,15 @@ struct NutritionView: View {
     private var consumed: NutritionValues { NutritionMath.sum(records.map(\.values)) }
     private var meals: [ResolvedMeal] {
         DataStore.resolvedMeals(for: day, plans: plans, selections: selections, choices: choices, settings: settings)
+    }
+    /// Lo apuntado a mano en cada comida del día visible.
+    private var customByType: [MealType: [CustomMealItem]] {
+        Dictionary(grouping: allCustom.filter { $0.dayKey == dayKey }, by: \.mealType)
+    }
+    /// Valores de una comida: lo apuntado a mano si existe; si no, la comida del menú o la elegida.
+    private func values(of type: MealType) -> NutritionValues {
+        if let custom = customByType[type], !custom.isEmpty { return NutritionMath.sum(custom.map(\.values)) }
+        return meals.first { $0.type == type }?.totals ?? .zero
     }
     private var dailyTargets: NutritionValues {
         NutritionValues(kcal: settings?.kcalTarget ?? 0, protein: settings?.proteinTarget ?? 0,
@@ -42,9 +54,29 @@ struct NutritionView: View {
                             Label("Elegir mis comidas paso a paso", systemImage: "square.stack.3d.up.fill")
                         }
                         .buttonStyle(LimeButtonStyle())
+                        Button {
+                            rebalance()
+                        } label: {
+                            Label("Reajustar el resto del día a mis macros", systemImage: "wand.and.stars")
+                        }
+                        .buttonStyle(LimeButtonStyle(filled: false))
+                        if let rebalanceMessage {
+                            Text(rebalanceMessage).font(.caption).foregroundStyle(Theme.lime)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         consumedCard
                         dayTotalsCard
                         ForEach(meals, id: \.type) { meal in
+                            if let custom = customByType[meal.type], !custom.isEmpty {
+                                CustomMealCard(
+                                    type: meal.type,
+                                    items: custom,
+                                    isCompleted: records.contains { $0.mealTypeRaw == meal.type.rawValue },
+                                    onToggle: { toggleCustom(meal.type, custom) },
+                                    onEdit: { customFor = meal.type },
+                                    onRemove: { removeCustom(meal.type) }
+                                )
+                            } else {
                             MealCard(
                                 meal: meal.template,
                                 isCompleted: records.contains { $0.mealTypeRaw == meal.type.rawValue },
@@ -54,8 +86,10 @@ struct NutritionView: View {
                                 onEditItem: { editingItem = $0 },
                                 onAddItem: { addingTo = meal.template },
                                 onSwap: { swapping = meal.type },
-                                onReset: resetAction(for: meal)
+                                onReset: resetAction(for: meal),
+                                onCustom: { customFor = meal.type }
                             )
+                            }
                         }
                         InfoBanner(text: "Menús y valores de EJEMPLO: cifras aproximadas por 100 g, no un plan calculado clínicamente. Revisa cada alimento con su etiqueta en el Catálogo.")
                     } else {
@@ -71,7 +105,7 @@ struct NutritionView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        NavigationLink { MenuPlansView() } label: { Label("Los 9 menús", systemImage: "list.bullet.rectangle") }
+                        NavigationLink { MenuPlansView() } label: { Label("Menús e ideas de comida", systemImage: "list.bullet.rectangle") }
                         NavigationLink { FoodCatalogView() } label: { Label("Catálogo de alimentos", systemImage: "carrot") }
                         NavigationLink { NutritionHistoryView() } label: { Label("Historial de comidas", systemImage: "calendar") }
                     } label: {
@@ -89,7 +123,7 @@ struct NutritionView: View {
                 MealChooserSheet(
                     type: type,
                     target: MealPlanner.target(for: type, daily: dailyTargets, fixed: fixedValues(except: type)),
-                    dayTotalsWithoutThis: NutritionMath.sum(meals.filter { $0.type != type }.map(\.totals)),
+                    dayTotalsWithoutThis: NutritionMath.sum(MealType.allCases.filter { $0 != type }.map(values(of:))),
                     daily: dailyTargets,
                     candidates: DataStore.candidates(for: type, plans: plans),
                     subtitle: "Opciones que encajan con tus otras tres comidas de hoy"
@@ -98,13 +132,27 @@ struct NutritionView: View {
                 }
             }
             .sheet(isPresented: $showBuilder) {
-                DayBuilderSheet(daily: dailyTargets, plans: plans) { picks in
+                DayBuilderSheet(daily: dailyTargets, plans: plans, day: day) { picks, clearCustomTypes in
+                    for type in clearCustomTypes { DataStore.clearCustom(type, on: day, in: context) }
                     for (type, option) in picks { apply(option, type: type) }
+                    refreshRecords()
+                }
+            }
+            .sheet(item: $customFor) { type in
+                CustomMealSheet(
+                    type: type,
+                    day: day,
+                    target: MealPlanner.target(for: type, daily: dailyTargets, fixed: fixedValues(except: type))
+                ) {
+                    refreshRecords()
                 }
             }
             #if DEBUG
             .task {
-                if ProcessInfo.processInfo.arguments.contains("-NNMealBuilder") { showBuilder = true }
+                let args = ProcessInfo.processInfo.arguments
+                if args.contains("-NNMealBuilder") { showBuilder = true }
+                if args.contains("-NNCustomMeal") { customFor = .lunch }
+                if args.contains("-NNSwapMeal") { swapping = .lunch }
             }
             #endif
         }
@@ -113,7 +161,41 @@ struct NutritionView: View {
     // MARK: Elección de comidas
 
     private func fixedValues(except type: MealType) -> [MealType: NutritionValues] {
-        Dictionary(uniqueKeysWithValues: meals.filter { $0.type != type }.map { ($0.type, $0.totals) })
+        Dictionary(uniqueKeysWithValues: MealType.allCases.filter { $0 != type }.map { ($0, values(of: $0)) })
+    }
+
+    /// Mantiene lo apuntado a mano y lo ya marcado como hecho; el resto se reelige para cuadrar el día.
+    private func rebalance() {
+        var fixed: [MealType: NutritionValues] = [:]
+        for type in MealType.allCases {
+            if let custom = customByType[type], !custom.isEmpty {
+                fixed[type] = NutritionMath.sum(custom.map(\.values))
+            } else if let record = records.first(where: { $0.mealTypeRaw == type.rawValue }) {
+                fixed[type] = record.values
+            }
+        }
+        guard fixed.count < MealType.allCases.count else {
+            rebalanceMessage = "No quedan comidas pendientes que reajustar."
+            return
+        }
+        let applied = DataStore.rebalanceDay(day, fixed: fixed, daily: dailyTargets, plans: plans, in: context)
+        refreshRecords()
+        let names = MealType.allCases.filter { applied[$0] != nil }.map { $0.label.lowercased() }
+        let total = NutritionMath.sum(Array(fixed.values) + applied.values.map(\.values))
+        rebalanceMessage = names.isEmpty
+            ? "No se encontraron opciones para reajustar."
+            : "Reajustado: \(names.joined(separator: ", ")). Ajuste del día: \(NumberFormat.percent(MealPlanner.fit(total, to: dailyTargets)))."
+    }
+
+    private func toggleCustom(_ type: MealType, _ items: [CustomMealItem]) {
+        let done = records.contains { $0.mealTypeRaw == type.rawValue }
+        DataStore.setMeal(type, values: NutritionMath.sum(items.map(\.values)), planName: "Lo que he comido",
+                          completed: !done, on: day, in: context)
+    }
+
+    private func removeCustom(_ type: MealType) {
+        DataStore.clearCustom(type, on: day, in: context)
+        refreshRecords()
     }
 
     private func apply(_ option: MealPlanner.Option, type: MealType) {
@@ -138,9 +220,25 @@ struct NutritionView: View {
     }
 
     /// Las comidas ya marcadas del día visible se actualizan con su composición actual.
+    /// Se lee directamente de la base de datos (no de las @Query, que se actualizan en el siguiente refresco
+    /// de la pantalla) para no guardar valores antiguos justo después de un cambio.
     private func refreshRecords() {
-        for meal in meals where records.contains(where: { $0.mealTypeRaw == meal.type.rawValue }) {
-            DataStore.setMeal(meal.type, values: meal.totals, planName: meal.sourceName, completed: true, on: day, in: context)
+        let key = dayKey
+        let fresh = DataStore.resolvedMeals(
+            for: day, plans: plans,
+            selections: (try? context.fetch(FetchDescriptor<DayPlanSelection>())) ?? [],
+            choices: (try? context.fetch(FetchDescriptor<DayMealChoice>(predicate: #Predicate { $0.dayKey == key }))) ?? [],
+            settings: settings
+        )
+        let done = Set(((try? context.fetch(FetchDescriptor<MealRecord>(predicate: #Predicate { $0.dayKey == key }))) ?? []).map(\.mealTypeRaw))
+        for type in MealType.allCases where done.contains(type.rawValue) {
+            let custom = DataStore.customItems(for: type, on: day, in: context)
+            if !custom.isEmpty {
+                DataStore.setMeal(type, values: NutritionMath.sum(custom.map(\.values)), planName: "Lo que he comido",
+                                  completed: true, on: day, in: context)
+            } else if let meal = fresh.first(where: { $0.type == type }) {
+                DataStore.setMeal(type, values: meal.totals, planName: meal.sourceName, completed: true, on: day, in: context)
+            }
         }
     }
 
@@ -166,7 +264,7 @@ struct NutritionView: View {
 
     private func planPicker(_ current: MenuPlan) -> some View {
         Menu {
-            ForEach(plans) { p in
+            ForEach(plans.filter { !$0.isLibrary }) { p in
                 Button {
                     DataStore.select(plan: p, for: day, in: context)
                     refreshRecords()
@@ -214,7 +312,7 @@ struct NutritionView: View {
     }
 
     private var dayTotalsCard: some View {
-        let t = NutritionMath.sum(meals.map(\.totals))
+        let t = NutritionMath.sum(MealType.allCases.map(values(of:)))
         return VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: "Total del día planificado", subtitle: "Suma automática de las 4 comidas · objetivo debajo")
             HStack {
@@ -256,6 +354,8 @@ struct MealCard: View {
     let onAddItem: () -> Void
     var onSwap: (() -> Void)?
     var onReset: (() -> Void)?
+    /// Apuntar otra cosa que comes en lugar de esta comida.
+    var onCustom: (() -> Void)?
 
     private var isScaled: Bool { abs(factor - 1) > 0.001 }
 
@@ -301,7 +401,7 @@ struct MealCard: View {
                 }
             }
             if isScaled {
-                Text("Ración ajustada a tus macros. Para editar los ingredientes base ve a Nutrición › ⋯ › Los 9 menús.")
+                Text("Ración ajustada a tus macros. Para editar los ingredientes base ve a Nutrición › ⋯ › Menús e ideas.")
                     .font(.caption2).foregroundStyle(Theme.textTertiary)
             } else {
                 Button(action: onAddItem) {
@@ -332,6 +432,12 @@ struct MealCard: View {
                         Button("Volver al menú", action: onReset)
                             .font(.caption.weight(.semibold))
                     }
+                }
+            }
+            if let onCustom {
+                Button(action: onCustom) {
+                    Label("Como otra cosa: apuntarla", systemImage: "square.and.pencil")
+                        .font(.caption.weight(.semibold))
                 }
             }
         }

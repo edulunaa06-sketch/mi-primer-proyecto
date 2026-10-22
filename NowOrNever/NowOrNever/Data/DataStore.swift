@@ -15,14 +15,24 @@ enum DataStore {
         _ = settings(context)
         seedRoutineIfNeeded(context)
 
-        let defaults = UserDefaults.standard
-        let alreadySeeded = defaults.integer(forKey: seedVersionKey) > 0
-        let existingFoods = (try? context.fetchCount(FetchDescriptor<FoodItem>())) ?? 0
-        guard !alreadySeeded, existingFoods == 0 else { return }
+        seedCatalogIfNeeded(context, defaults: .standard)
+    }
 
+    /// Primera vez: inserta alimentos, 9 menús e ideas. Versiones posteriores del catálogo:
+    /// solo AÑADE lo nuevo (alimentos e ideas que falten), sin tocar lo que el usuario ya tiene o editó.
+    @MainActor
+    static func seedCatalogIfNeeded(_ context: ModelContext, defaults: UserDefaults, catalog provided: SeedCatalog? = nil) {
+        let stored = defaults.integer(forKey: seedVersionKey)
+        let existingFoods = (try? context.fetchCount(FetchDescriptor<FoodItem>())) ?? 0
         do {
-            let catalog = try SeedCatalog.loadFromBundle()
-            seed(catalog, into: context)
+            let catalog = try provided ?? SeedCatalog.loadFromBundle()
+            if stored == 0 && existingFoods == 0 {
+                seed(catalog, into: context)
+            } else if stored < catalog.version {
+                addMissingFoodsAndIdeas(catalog, into: context)
+            } else {
+                return
+            }
             try context.save()
             defaults.set(catalog.version, forKey: seedVersionKey)
         } catch {
@@ -65,6 +75,42 @@ enum DataStore {
         }
         let s = settings(context)
         if s.defaultPlanID == nil { s.defaultPlanID = firstPlan?.id }
+        insertIdeas(catalog, foodsByKey: foodsByKey, into: context)
+    }
+
+    /// Actualización del catálogo para quien ya tenía la app: añade alimentos e ideas nuevos.
+    @MainActor
+    static func addMissingFoodsAndIdeas(_ catalog: SeedCatalog, into context: ModelContext) {
+        let existing = (try? context.fetch(FetchDescriptor<FoodItem>())) ?? []
+        var foodsByKey = Dictionary(existing.filter { !$0.seedKey.isEmpty }.map { ($0.seedKey, $0) }, uniquingKeysWith: { a, _ in a })
+        for food in catalog.foods where foodsByKey[food.key] == nil {
+            let item = FoodItem(name: food.name, per100: food.per100, basis: WeightBasis(rawValue: food.basis) ?? .raw,
+                                macrosKnown: food.macrosKnown, isProvisional: food.provisional,
+                                sourceNote: food.source, seedKey: food.key)
+            context.insert(item)
+            foodsByKey[food.key] = item
+        }
+        let hasIdeas = ((try? context.fetch(FetchDescriptor<MenuPlan>(predicate: #Predicate { $0.isLibrary }))) ?? []).isEmpty == false
+        if !hasIdeas { insertIdeas(catalog, foodsByKey: foodsByKey, into: context) }
+    }
+
+    /// Cada idea se guarda como un "menú" de biblioteca con una sola comida (editable como cualquier menú).
+    @MainActor
+    private static func insertIdeas(_ catalog: SeedCatalog, foodsByKey: [String: FoodItem], into context: ModelContext) {
+        for (index, idea) in catalog.ideas.enumerated() {
+            guard let type = MealType(rawValue: idea.type) else { continue }
+            let plan = MenuPlan(number: 100 + index, name: idea.name, note: "Idea de \(type.label.lowercased()) con pesos exactos.", isExample: true)
+            plan.isLibrary = true
+            context.insert(plan)
+            let template = MealTemplate(mealType: type)
+            context.insert(template)
+            template.plan = plan
+            for (order, entry) in idea.items.enumerated() {
+                let item = MealItem(grams: entry.grams, order: order, food: foodsByKey[entry.food])
+                context.insert(item)
+                item.meal = template
+            }
+        }
     }
 
     @MainActor
@@ -237,10 +283,10 @@ enum DataStore {
            let plan = plans.first(where: { $0.id == sel.planID }) {
             return plan
         }
-        if let id = settings?.defaultPlanID, let plan = plans.first(where: { $0.id == id }) {
+        if let id = settings?.defaultPlanID, let plan = plans.first(where: { $0.id == id && !$0.isLibrary }) {
             return plan
         }
-        return plans.sorted { $0.number < $1.number }.first
+        return plans.filter { !$0.isLibrary }.sorted { $0.number < $1.number }.first
     }
 
     @MainActor
@@ -299,6 +345,55 @@ enum DataStore {
             context.insert(DayMealChoice(dayKey: DateUtils.dayKey(date), mealType: type, planID: planID, factor: factor))
         }
         try? context.save()
+    }
+
+    // MARK: Lo que he comido (comida libre)
+
+    @MainActor
+    static func customItems(for type: MealType, on date: Date, in context: ModelContext) -> [CustomMealItem] {
+        let key = DateUtils.dayKey(date)
+        let raw = type.rawValue
+        let descriptor = FetchDescriptor<CustomMealItem>(
+            predicate: #Predicate { $0.dayKey == key && $0.mealTypeRaw == raw },
+            sortBy: [SortDescriptor(\.order)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    @MainActor
+    static func addCustomItem(_ type: MealType, name: String, grams: Double, per100: NutritionValues,
+                              source: CustomItemSource, on date: Date, in context: ModelContext) {
+        let next = (customItems(for: type, on: date, in: context).map(\.order).max() ?? -1) + 1
+        context.insert(CustomMealItem(dayKey: DateUtils.dayKey(date), mealType: type, name: name,
+                                      grams: max(grams, 0), per100: per100, source: source, order: next))
+        try? context.save()
+    }
+
+    /// Borra lo apuntado en esa comida: vuelve a mostrarse la comida del menú (o la elegida).
+    @MainActor
+    static func clearCustom(_ type: MealType, on date: Date, in context: ModelContext) {
+        customItems(for: type, on: date, in: context).forEach { context.delete($0) }
+        try? context.save()
+    }
+
+    /// Reajusta las comidas pendientes del día (sin lo apuntado a mano ni las ya marcadas como hechas):
+    /// elige, en orden, la opción que mejor encaja con lo que queda.
+    /// - Returns: las elecciones aplicadas.
+    @MainActor
+    @discardableResult
+    static func rebalanceDay(_ date: Date, fixed: [MealType: NutritionValues], daily: NutritionValues,
+                             plans: [MenuPlan], in context: ModelContext) -> [MealType: MealPlanner.Option] {
+        var fixedValues = fixed
+        var applied: [MealType: MealPlanner.Option] = [:]
+        for type in MealType.allCases where fixedValues[type] == nil {
+            let target = MealPlanner.target(for: type, daily: daily, fixed: fixedValues)
+            guard let best = MealPlanner.rank(candidates(for: type, plans: plans).map(\.plannerCandidate), target: target, limit: 1).first,
+                  let id = UUID(uuidString: best.id) else { continue }
+            choose(type, planID: id, factor: best.factor, on: date, in: context)
+            fixedValues[type] = best.values
+            applied[type] = best
+        }
+        return applied
     }
 
     /// Quita la elección: vuelve la comida del menú del día.

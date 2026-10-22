@@ -155,7 +155,9 @@ struct AddFoodSheet: View {
 /// Lista de los nueve menús con sus totales calculados.
 struct MenuPlansView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \MenuPlan.number) private var plans: [MenuPlan]
+    @Query(sort: \MenuPlan.number) private var allPlans: [MenuPlan]
+    private var plans: [MenuPlan] { allPlans.filter { !$0.isLibrary } }
+    private var ideas: [MenuPlan] { allPlans.filter(\.isLibrary) }
     @Query private var settingsList: [UserSettings]
     @State private var confirmScaleAll = false
     @State private var resultMessage: String?
@@ -211,9 +213,36 @@ struct MenuPlansView: View {
                 Text("Totales calculados automáticamente a partir de los ingredientes. Menús de ejemplo con valores aproximados.")
             }
             .listRowBackground(Theme.card)
+
+            ForEach(MealType.allCases) { type in
+                let list = ideas.filter { $0.meal(type) != nil }
+                if !list.isEmpty {
+                    Section {
+                        ForEach(list) { idea in
+                            NavigationLink {
+                                MenuPlanDetailView(plan: idea)
+                            } label: {
+                                let t = idea.totals
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(idea.name).font(.subheadline.weight(.semibold))
+                                    Text("≈ \(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.integer(t.protein)) · C \(NumberFormat.integer(t.carbs)) · G \(NumberFormat.integer(t.fat))")
+                                        .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
+                                }
+                            }
+                        }
+                    } header: {
+                        Text("Ideas de \(type.label.lowercased()) (\(list.count))")
+                    } footer: {
+                        if type == .dinner {
+                            Text("Las ideas aparecen como opciones al elegir cada comida, con la ración ajustada a lo que te queda del día. Puedes editar sus ingredientes y gramos.")
+                        }
+                    }
+                    .listRowBackground(Theme.card)
+                }
+            }
         }
         .screenBackground()
-        .navigationTitle("Modelos de menú")
+        .navigationTitle("Menús e ideas")
         .confirmationDialog("¿Ajustar los gramos de los 9 menús a \(NumberFormat.integer(target)) kcal?", isPresented: $confirmScaleAll, titleVisibility: .visible) {
             Button("Ajustar menús") {
                 let done = plans.compactMap { DataStore.scale($0, toKcal: target, in: context) }.count
@@ -243,7 +272,7 @@ struct MenuPlanDetailView: View {
                     Text("Total diario ≈ \(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.oneDecimal(t.protein)) g · C \(NumberFormat.oneDecimal(t.carbs)) g · G \(NumberFormat.oneDecimal(t.fat)) g")
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(Theme.lime)
-                    if let settings = settingsList.first {
+                    if let settings = settingsList.first, !plan.isLibrary {
                         Button(settings.defaultPlanID == plan.id ? "Menú predeterminado ✓" : "Usar como menú predeterminado") {
                             settings.defaultPlanID = plan.id
                             try? context.save()
@@ -267,7 +296,7 @@ struct MenuPlanDetailView: View {
             .padding(16)
         }
         .screenBackground()
-        .navigationTitle("Menú \(plan.number)")
+        .navigationTitle(plan.isLibrary ? "Idea" : "Menú \(plan.number)")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $editingItem) { MealItemEditor(item: $0) {} }
         .sheet(item: $addingTo) { AddFoodSheet(meal: $0) {} }

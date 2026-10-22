@@ -10,6 +10,7 @@ struct NowOrNeverApp: App {
     @State private var notifications = NotificationManager()
     @State private var strava = StravaService()
     @State private var router = AppRouter()
+    @State private var claude = ClaudeService()
 
     static let schema = Schema([
         UserSettings.self,
@@ -25,6 +26,7 @@ struct NowOrNeverApp: App {
         MealRecord.self,
         DayPlanSelection.self,
         DayMealChoice.self,
+        CustomMealItem.self,
         ProgressPhoto.self,
         StravaActivityRecord.self,
     ])
@@ -51,6 +53,7 @@ struct NowOrNeverApp: App {
                     .environment(notifications)
                     .environment(strava)
                     .environment(router)
+                    .environment(claude)
                     .preferredColorScheme(.dark)
                     .tint(Theme.lime)
             } else {
