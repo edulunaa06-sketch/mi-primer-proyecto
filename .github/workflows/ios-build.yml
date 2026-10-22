@@ -34,5 +34,30 @@ jobs:
           UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
           echo "Simulator: $UDID"
           xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
-            -destination "id=$UDID" CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST" || true
+            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST" || true
           grep -q "TEST SUCCEEDED" test.log
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Screenshots on simulator
+        run: |
+          mkdir -p screenshots
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time "9:41" || true
+          APP=build/Build/Products/Debug-iphonesimulator/NowOrNever.app
+          BID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
+          xcrun simctl uninstall "$UDID" "$BID" || true
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" "$BID"; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/0-onboarding.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          for tab in home training nutrition activity progress settings; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab "$tab"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: NowOrNever/screenshots

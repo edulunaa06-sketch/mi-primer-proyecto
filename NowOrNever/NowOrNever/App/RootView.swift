@@ -61,6 +61,9 @@ struct RootView: View {
                 let settings = DataStore.settings(context)
                 strava.configure(clientID: settings.stravaClientID, backendURL: settings.stravaBackendURL)
                 showOnboarding = !settings.onboardingCompleted
+                #if DEBUG
+                applyScreenshotArguments()
+                #endif
                 await notifications.refreshStatus()
                 await refreshPhotoRemindersIfNeeded(settings)
                 await health.refreshAuthorizationState()
@@ -127,6 +130,17 @@ struct RootView: View {
                 .ignoresSafeArea(edges: .bottom)
         )
     }
+
+    #if DEBUG
+    /// Solo en Debug: permite al CI abrir una pestaña concreta para capturas de pantalla.
+    private func applyScreenshotArguments() {
+        let args = ProcessInfo.processInfo.arguments
+        if args.contains("-NNSkipOnboarding") { showOnboarding = false }
+        if let i = args.firstIndex(of: "-NNTab"), i + 1 < args.count, let tab = AppTab(rawValue: args[i + 1]) {
+            router.tab = tab
+        }
+    }
+    #endif
 
     /// Los recordatorios de fotos con día 29–31 se programan mes a mes: se renuevan al abrir la app.
     private func refreshPhotoRemindersIfNeeded(_ settings: UserSettings) async {
