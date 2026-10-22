@@ -6,6 +6,8 @@
 	<string>Now or Never</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Now or Never lee tus pasos de Apple Salud para mostrarte el total diario, el porcentaje de tu objetivo y el historial. No escribe ni comparte datos de Salud.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Now or Never usa la cámara para hacer tus fotos mensuales de progreso (frente, lateral y espalda). Se guardan solo en tu iPhone.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>strava</string>

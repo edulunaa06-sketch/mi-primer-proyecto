@@ -17,6 +17,8 @@ struct PhotosProgressView: View {
     @State private var errorMessage: String?
     @State private var confirmDeleteAll = false
     @State private var isSaving = false
+    @State private var sourceView: PhotoView?
+    @State private var cameraView: PhotoView?
 
     private let current = DateUtils.yearMonth(Date())
 
@@ -63,7 +65,8 @@ struct PhotosProgressView: View {
                             titleVisibility: .visible) {
             if let view = actionView {
                 Button("Ver foto") { viewing = currentMonthPhotos[view] }
-                Button("Reemplazar foto") { targetView = view; showPicker = true }
+                Button("Repetir con la cámara") { cameraView = view }
+                Button("Reemplazar con una de la galería") { targetView = view; showPicker = true }
                 Button("Eliminar foto", role: .destructive) { delete(currentMonthPhotos[view]) }
             }
         } message: {
@@ -75,6 +78,19 @@ struct PhotosProgressView: View {
             }
         } message: {
             Text("Esta acción no se puede deshacer.")
+        }
+        .confirmationDialog(sourceView.map { "Foto de \($0.label.lowercased())" } ?? "",
+                            isPresented: Binding(get: { sourceView != nil }, set: { if !$0 { sourceView = nil } }),
+                            titleVisibility: .visible) {
+            if let view = sourceView {
+                Button("Hacer foto con la cámara") { cameraView = view }
+                Button("Elegir de la galería") { targetView = view; showPicker = true }
+            }
+        }
+        .fullScreenCover(item: $cameraView) { view in
+            CameraCaptureView(view: view, guide: previousPhoto(view).flatMap { PhotoStorage.loadImage($0.fileName) }) { data in
+                saveData(data, view: view)
+            }
         }
         .fullScreenCover(item: $viewing) { PhotoViewer(photo: $0) }
         .alert("Error", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
@@ -101,8 +117,7 @@ struct PhotosProgressView: View {
         let photo = currentMonthPhotos[view]
         return Button {
             if photo == nil {
-                targetView = view
-                showPicker = true
+                sourceView = view
             } else {
                 actionView = view
             }
@@ -179,6 +194,19 @@ struct PhotosProgressView: View {
                 errorMessage = "No se pudo cargar la imagen."
                 return
             }
+            try PhotoStorage.save(imageData: data, year: current.year, month: current.month, view: view, in: context)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// La foto más reciente de esa vista en un mes anterior: sirve de guía para repetir la postura.
+    private func previousPhoto(_ view: PhotoView) -> ProgressPhoto? {
+        photos.first { $0.view == view && !($0.year == current.year && $0.month == current.month) }
+    }
+
+    private func saveData(_ data: Data, view: PhotoView) {
+        do {
             try PhotoStorage.save(imageData: data, year: current.year, month: current.month, view: view, in: context)
         } catch {
             errorMessage = error.localizedDescription
