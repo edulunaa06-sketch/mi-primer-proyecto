@@ -6,6 +6,12 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 - Sin dependencias externas (ningún paquete SPM ni CocoaPods).
 - Todos los datos se guardan **solo en el iPhone**.
 
+<p>
+<img src="docs/screenshots/home.jpg" width="200"> <img src="docs/screenshots/training.jpg" width="200"> <img src="docs/screenshots/session-tue-push-a.jpg" width="200"> <img src="docs/screenshots/nutrition.jpg" width="200">
+</p>
+
+*Capturas reales del simulador (iOS 18.5) generadas por el CI. Más en `docs/screenshots/`.*
+
 ---
 
 ## 1. Instalación paso a paso (para principiantes)
@@ -190,4 +196,4 @@ Las 6 secciones usan una barra de pestañas propia, porque la `TabView` del sist
 
 ## 7. Comprobaciones realizadas
 
-Consulta la sección «Resultado de las comprobaciones» al final del archivo `CHECKS.md`.
+Ver [`CHECKS.md`](CHECKS.md): compilación real con Xcode 16.4 (BUILD SUCCEEDED, sin avisos del compilador), 35 pruebas unitarias en verde en el simulador, capturas de pantalla, y lo que **no** se ha podido probar (iPhone físico, Strava real, notificaciones).
