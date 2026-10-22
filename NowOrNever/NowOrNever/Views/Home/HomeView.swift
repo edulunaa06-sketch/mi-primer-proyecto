@@ -9,6 +9,7 @@ struct HomeView: View {
     @Query private var settingsList: [UserSettings]
     @Query private var todayMeals: [MealRecord]
     @Query private var weekLogs: [WorkoutSessionLog]
+    @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
 
     @State private var showWeightSheet = false
     @State private var showStravaMissing = false
@@ -24,7 +25,7 @@ struct HomeView: View {
 
     private var settings: UserSettings? { settingsList.first }
     private var todaySessions: [SessionDefinition] {
-        WeeklyRoutine.sessions(forWeekday: DateUtils.weekdayMondayBased(today))
+        WeeklyRoutine.sessions(forWeekday: DateUtils.weekdayMondayBased(today)).map { $0.resolved(with: routine) }
     }
     private var trainableToday: [SessionDefinition] { todaySessions.filter { $0.kind != .rest } }
 

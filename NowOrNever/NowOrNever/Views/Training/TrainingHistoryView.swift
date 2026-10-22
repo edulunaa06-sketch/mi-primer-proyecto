@@ -65,10 +65,11 @@ struct SessionHistoryDetail: View {
                 }
             }
             .listRowBackground(Theme.card)
-            ForEach(session.exercises) { exercise in
-                if let exLog = log.exercises.first(where: { $0.exerciseID == exercise.id }) {
-                    Section(exercise.name) {
-                        ForEach(exLog.sortedSets) { set in
+            // Se muestra lo que se registró esa semana (nombres guardados), aunque la rutina haya cambiado.
+            ForEach(log.sortedExercises) { exLog in
+                if exLog.sets.contains(where: \.hasData) || exLog.isCompleted {
+                    Section {
+                        ForEach(exLog.sortedSets.filter(\.hasData)) { set in
                             HStack {
                                 Text("Serie \(set.index + 1)")
                                 Spacer()
@@ -77,6 +78,16 @@ struct SessionHistoryDetail: View {
                                 CheckCircle(isOn: set.isDone, size: 18)
                             }
                             .font(.subheadline)
+                        }
+                        NavigationLink("Ver progresión") {
+                            ExerciseProgressView(exerciseID: exLog.exerciseID, name: exLog.displayName)
+                        }
+                        .font(.footnote)
+                    } header: {
+                        HStack {
+                            Text(exLog.displayName)
+                            Spacer()
+                            if exLog.isCompleted { Image(systemName: "checkmark.circle.fill").foregroundStyle(Theme.lime) }
                         }
                     }
                     .listRowBackground(Theme.card)

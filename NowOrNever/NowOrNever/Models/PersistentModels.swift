@@ -29,7 +29,46 @@ final class UserSettings {
     var stravaClientID: String = ""
     var stravaBackendURL: String = ""
 
+    // Perfil personal (el peso se toma del último pesaje registrado).
+    var heightCm: Double?
+    var age: Int?
+    var sexRaw: String?
+    var activityRaw: String = ActivityLevel.moderate.rawValue
+    var goalRaw: String = FitnessGoal.recomposition.rawValue
+    /// true: kcal y macros se recalculan solos al cambiar el perfil o registrar un peso nuevo.
+    /// false: objetivos manuales (los que el usuario escribe en Ajustes).
+    var autoTargets: Bool = false
+
     init() {}
+
+    var sex: BiologicalSex? {
+        get { sexRaw.flatMap(BiologicalSex.init(rawValue:)) }
+        set { sexRaw = newValue?.rawValue }
+    }
+
+    var activity: ActivityLevel {
+        get { ActivityLevel(rawValue: activityRaw) ?? .moderate }
+        set { activityRaw = newValue.rawValue }
+    }
+
+    var goal: FitnessGoal {
+        get { FitnessGoal(rawValue: goalRaw) ?? .recomposition }
+        set { goalRaw = newValue.rawValue }
+    }
+
+    /// Perfil completo para el cálculo, o nil si falta algún dato.
+    func bodyProfile(weightKg: Double?) -> BodyProfile? {
+        guard let weightKg, let heightCm, let age, let sex else { return nil }
+        let profile = BodyProfile(weightKg: weightKg, heightCm: heightCm, age: age, sex: sex, activity: activity, goal: goal)
+        return profile.isValid ? profile : nil
+    }
+
+    func apply(_ targets: EnergyTargets) {
+        kcalTarget = targets.kcal
+        proteinTarget = targets.protein
+        carbsTarget = targets.carbs
+        fatTarget = targets.fat
+    }
 }
 
 // MARK: - Peso
@@ -52,6 +91,45 @@ final class WeightEntry {
 }
 
 // MARK: - Entrenamiento
+
+/// Ejercicio de la rutina personalizada. Se inicializa con la rutina predeterminada
+/// (`WeeklyRoutine`) y el usuario puede añadir, quitar, sustituir, reordenar y editar series/reps.
+@Model
+final class RoutineExercise {
+    /// Identificador estable que enlaza con el historial. Sustituir un ejercicio crea un ID nuevo.
+    @Attribute(.unique) var exerciseID: String = ""
+    var sessionID: String = ""
+    var name: String = ""
+    var sets: Int = 3
+    var repMin: Int = 8
+    var repMax: Int = 12
+    var order: Int = 0
+
+    init(exerciseID: String, sessionID: String, name: String, sets: Int, repMin: Int, repMax: Int, order: Int) {
+        self.exerciseID = exerciseID
+        self.sessionID = sessionID
+        self.name = name
+        self.sets = sets
+        self.repMin = repMin
+        self.repMax = repMax
+        self.order = order
+    }
+
+    var repRange: String { ExerciseDefinition.formatRange(min: repMin, max: repMax) }
+
+    var definition: ExerciseDefinition {
+        ExerciseDefinition(id: exerciseID, name: name, sets: sets, repRange: repRange)
+    }
+}
+
+extension SessionDefinition {
+    /// Aplica la rutina personalizada guardada (si la sesión es de fuerza).
+    func resolved(with routine: [RoutineExercise]) -> SessionDefinition {
+        guard kind == .strength else { return self }
+        let mine = routine.filter { $0.sessionID == id }.sorted { $0.order < $1.order }
+        return with(exercises: mine.map(\.definition))
+    }
+}
 
 /// Registro de una sesión en una semana concreta. Clave = semana + sesión,
 /// así cada semana empieza con casillas limpias sin borrar las anteriores.
@@ -91,6 +169,11 @@ final class ExerciseLog {
     var exerciseID: String = ""
     var order: Int = 0
     var isCompleted: Bool = false
+    /// Copia del nombre y la prescripción de esa semana, para que el historial
+    /// siga siendo legible aunque luego se edite o elimine el ejercicio.
+    var name: String = ""
+    var targetSets: Int = 0
+    var repRange: String = ""
     var session: WorkoutSessionLog?
 
     @Relationship(deleteRule: .cascade, inverse: \SetLog.exercise)
@@ -102,6 +185,17 @@ final class ExerciseLog {
     }
 
     var sortedSets: [SetLog] { sets.sorted { $0.index < $1.index } }
+
+    var displayName: String {
+        if !name.isEmpty { return name }
+        return WeeklyRoutine.defaultExercise(id: exerciseID)?.name ?? "Ejercicio"
+    }
+
+    /// Series a mostrar: las prescritas más cualquier serie extra que ya tenga datos.
+    var visibleSets: [SetLog] {
+        let limit = targetSets > 0 ? targetSets : Int.max
+        return sortedSets.filter { $0.index < limit || $0.hasData }
+    }
 }
 
 @Model

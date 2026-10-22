@@ -17,6 +17,20 @@ struct ExerciseDefinition: Identifiable, Hashable {
     let repRange: String
 
     var prescription: String { "\(sets) × \(repRange)" }
+
+    /// "6–10" (o "6-10") → (6, 10). Un único número ("12") → (12, 12).
+    static func parseRange(_ text: String) -> (min: Int, max: Int)? {
+        let parts = text.split(whereSeparator: { $0 == "–" || $0 == "-" || $0 == "—" })
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        let numbers = parts.compactMap { Int($0) }
+        guard numbers.count == parts.count, let lo = numbers.first, let hi = numbers.last,
+              (1...2).contains(numbers.count), lo > 0, hi >= lo else { return nil }
+        return (lo, hi)
+    }
+
+    static func formatRange(min: Int, max: Int) -> String {
+        min == max ? "\(min)" : "\(min)–\(max)"
+    }
 }
 
 struct SessionDefinition: Identifiable, Hashable {
@@ -28,6 +42,11 @@ struct SessionDefinition: Identifiable, Hashable {
     let weekday: Int
     let detail: String
     let exercises: [ExerciseDefinition]
+
+    /// Misma sesión con la lista de ejercicios personalizada por el usuario.
+    func with(exercises custom: [ExerciseDefinition]) -> SessionDefinition {
+        SessionDefinition(id: id, title: title, kind: kind, weekday: weekday, detail: detail, exercises: custom)
+    }
 }
 
 enum WeeklyRoutine {
@@ -159,6 +178,11 @@ enum WeeklyRoutine {
     }
 
     static let weekdayNames = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+    /// Busca un ejercicio de la rutina predeterminada (para nombres de registros antiguos).
+    static func defaultExercise(id: String) -> ExerciseDefinition? {
+        allSessions.lazy.flatMap(\.exercises).first { $0.id == id }
+    }
 
     static func weekdayName(_ weekday: Int) -> String {
         guard (1...7).contains(weekday) else { return "" }

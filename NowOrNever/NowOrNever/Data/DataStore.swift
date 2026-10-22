@@ -4,6 +4,7 @@ import SwiftData
 /// Operaciones de datos reutilizables. Todas trabajan sobre el ModelContext principal.
 enum DataStore {
     static let seedVersionKey = "seedCatalogVersion"
+    static let routineSeededKey = "routineSeeded"
 
     // MARK: Inicialización
 
@@ -12,6 +13,7 @@ enum DataStore {
     @MainActor
     static func bootstrap(_ context: ModelContext) {
         _ = settings(context)
+        seedRoutineIfNeeded(context)
 
         let defaults = UserDefaults.standard
         let alreadySeeded = defaults.integer(forKey: seedVersionKey) > 0
@@ -77,6 +79,92 @@ enum DataStore {
         return s
     }
 
+    // MARK: Rutina personalizable
+
+    /// Copia la rutina predeterminada a la base de datos una sola vez (no sobrescribe cambios).
+    @MainActor
+    static func seedRoutineIfNeeded(_ context: ModelContext, defaults: UserDefaults = .standard) {
+        let existing = (try? context.fetchCount(FetchDescriptor<RoutineExercise>())) ?? 0
+        guard !defaults.bool(forKey: routineSeededKey), existing == 0 else { return }
+        for session in WeeklyRoutine.allSessions where session.kind == .strength {
+            insertDefaults(for: session, in: context)
+        }
+        try? context.save()
+        defaults.set(true, forKey: routineSeededKey)
+    }
+
+    @MainActor
+    private static func insertDefaults(for session: SessionDefinition, in context: ModelContext) {
+        for (order, ex) in session.exercises.enumerated() {
+            let range = ExerciseDefinition.parseRange(ex.repRange) ?? (8, 12)
+            context.insert(RoutineExercise(exerciseID: ex.id, sessionID: session.id, name: ex.name,
+                                           sets: ex.sets, repMin: range.min, repMax: range.max, order: order))
+        }
+    }
+
+    @MainActor
+    static func routine(for sessionID: String, in context: ModelContext) -> [RoutineExercise] {
+        let descriptor = FetchDescriptor<RoutineExercise>(
+            predicate: #Predicate { $0.sessionID == sessionID },
+            sortBy: [SortDescriptor(\.order)]
+        )
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    @MainActor
+    static func addExercise(to sessionID: String, name: String, sets: Int, repMin: Int, repMax: Int, in context: ModelContext) {
+        let current = routine(for: sessionID, in: context)
+        let ex = RoutineExercise(exerciseID: "custom-\(UUID().uuidString.lowercased())", sessionID: sessionID,
+                                 name: name, sets: sets, repMin: repMin, repMax: repMax,
+                                 order: (current.map(\.order).max() ?? -1) + 1)
+        context.insert(ex)
+        try? context.save()
+    }
+
+    /// Sustituir = ejercicio nuevo en la misma posición (ID nuevo: su progresión empieza de cero
+    /// y el historial del ejercicio anterior se conserva).
+    @MainActor
+    static func substitute(_ exercise: RoutineExercise, withName name: String, in context: ModelContext) {
+        let replacement = RoutineExercise(exerciseID: "custom-\(UUID().uuidString.lowercased())", sessionID: exercise.sessionID,
+                                          name: name, sets: exercise.sets, repMin: exercise.repMin,
+                                          repMax: exercise.repMax, order: exercise.order)
+        context.delete(exercise)
+        context.insert(replacement)
+        try? context.save()
+    }
+
+    /// Elimina el ejercicio de la rutina. Los registros de semanas pasadas NO se borran.
+    @MainActor
+    static func removeExercise(_ exercise: RoutineExercise, in context: ModelContext) {
+        let sessionID = exercise.sessionID
+        context.delete(exercise)
+        renumber(sessionID, in: context)
+    }
+
+    @MainActor
+    static func moveExercises(in sessionID: String, from source: IndexSet, to destination: Int, in context: ModelContext) {
+        var items = routine(for: sessionID, in: context)
+        items.move(fromOffsets: source, toOffset: destination)
+        for (i, item) in items.enumerated() { item.order = i }
+        try? context.save()
+    }
+
+    @MainActor
+    private static func renumber(_ sessionID: String, in context: ModelContext) {
+        for (i, item) in routine(for: sessionID, in: context).enumerated() { item.order = i }
+        try? context.save()
+    }
+
+    /// Vuelve a la rutina predeterminada de esa sesión (el historial no se toca).
+    @MainActor
+    static func restoreDefaultRoutine(for session: SessionDefinition, in context: ModelContext) {
+        guard let base = WeeklyRoutine.session(id: session.id) else { return }
+        routine(for: session.id, in: context).forEach { context.delete($0) }
+        try? context.save()
+        insertDefaults(for: base, in: context)
+        try? context.save()
+    }
+
     // MARK: Entrenamiento
 
     @MainActor
@@ -88,6 +176,7 @@ enum DataStore {
     }
 
     /// Devuelve el registro de la semana o lo crea vacío (sin nada marcado).
+    /// `session` debe ser la sesión ya resuelta con la rutina personalizada.
     @MainActor
     static func fetchOrCreateLog(for session: SessionDefinition, weekStart: Date, in context: ModelContext) -> WorkoutSessionLog {
         if let existing = sessionLog(for: session, weekStart: weekStart, in: context) {
@@ -113,6 +202,11 @@ enum DataStore {
                 context.insert(exLog)
                 exLog.session = log
             }
+            // Instantánea de la prescripción vigente esta semana.
+            exLog.order = order
+            exLog.name = exercise.name
+            exLog.targetSets = exercise.sets
+            exLog.repRange = exercise.repRange
             let existing = Set(exLog.sets.map(\.index))
             for index in 0..<exercise.sets where !existing.contains(index) {
                 let set = SetLog(index: index)
@@ -194,6 +288,46 @@ enum DataStore {
         }
         context.insert(WeightEntry(date: date, weightKg: kg, waistCm: waist))
         try? context.save()
+        // Con objetivos automáticos, un peso nuevo recalcula kcal y macros.
+        if settings(context).autoTargets { recalculateTargets(context) }
         return true
+    }
+
+    @MainActor
+    static func latestWeight(_ context: ModelContext) -> Double? {
+        var descriptor = FetchDescriptor<WeightEntry>(sortBy: [SortDescriptor(\.date, order: .reverse)])
+        descriptor.fetchLimit = 1
+        return (try? context.fetch(descriptor))?.first?.weightKg
+    }
+
+    // MARK: Perfil y objetivos
+
+    /// Recalcula y guarda los objetivos con Mifflin-St Jeor. Devuelve nil si el perfil está incompleto.
+    @MainActor
+    @discardableResult
+    static func recalculateTargets(_ context: ModelContext) -> EnergyTargets? {
+        let s = settings(context)
+        guard let profile = s.bodyProfile(weightKg: latestWeight(context)) else { return nil }
+        let targets = EnergyCalculator.targets(for: profile)
+        s.apply(targets)
+        try? context.save()
+        return targets
+    }
+
+    // MARK: Ajuste de menús
+
+    /// Escala proporcionalmente los gramos de un menú para acercar su total a `targetKcal`.
+    /// Devuelve el factor aplicado (nil si no se pudo).
+    @MainActor
+    @discardableResult
+    static func scale(_ plan: MenuPlan, toKcal targetKcal: Double, in context: ModelContext) -> Double? {
+        guard let factor = MenuScaler.factor(currentKcal: plan.totals.kcal, targetKcal: targetKcal) else { return nil }
+        for meal in plan.meals {
+            for item in meal.items {
+                item.grams = MenuScaler.scaledGrams(item.grams, factor: factor)
+            }
+        }
+        try? context.save()
+        return factor
     }
 }

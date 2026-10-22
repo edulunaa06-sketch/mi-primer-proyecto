@@ -42,9 +42,12 @@ private struct SettingsForm: View {
     @State private var showOnboarding = false
     @State private var stravaClientID = ""
     @State private var stravaBackend = ""
+    @State private var showProfile = false
+    @Query(sort: \WeightEntry.date, order: .reverse) private var weights: [WeightEntry]
 
     var body: some View {
         Form {
+            profileSection
             goalsSection
             creatineSection
             photoSection
@@ -56,6 +59,12 @@ private struct SettingsForm: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .onAppear(perform: load)
+        .navigationDestination(isPresented: $showProfile) { ProfileView(settings: settings) }
+        #if DEBUG
+        .task {
+            if ProcessInfo.processInfo.arguments.contains("-NNProfile") { showProfile = true }
+        }
+        #endif
         .task { await notifications.refreshStatus() }
         .onChange(of: settings.trackingStartDate) { _, _ in
             // Si cambia la fecha de referencia, se reprograma el recordatorio de fotos.
@@ -73,6 +82,37 @@ private struct SettingsForm: View {
         }
     }
 
+    // MARK: Perfil
+
+    private var profileSection: some View {
+        Section {
+            Button { showProfile = true } label: {
+                HStack {
+                    Image(systemName: "person.crop.circle.fill").font(.title2).foregroundStyle(Theme.lime)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Perfil personal").foregroundStyle(Theme.textPrimary)
+                        Text(profileSummary).font(.caption).foregroundStyle(Theme.textSecondary)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
+                }
+            }
+        } footer: {
+            Text(settings.autoTargets
+                 ? "Objetivos AUTOMÁTICOS: calculados con Mifflin-St Jeor según tu perfil."
+                 : "Objetivos MANUALES. Completa tu perfil para calcularlos automáticamente.")
+        }
+    }
+
+    private var profileSummary: String {
+        var parts: [String] = []
+        if let w = weights.first?.weightKg { parts.append("\(NumberFormat.kg(w)) kg") }
+        if let h = settings.heightCm { parts.append("\(NumberFormat.integer(h)) cm") }
+        if let a = settings.age { parts.append("\(a) años") }
+        if settings.heightCm != nil { parts.append(settings.goal.label) }
+        return parts.isEmpty ? "Peso, altura, edad, sexo, actividad y objetivo" : parts.joined(separator: " · ")
+    }
+
     // MARK: Objetivos
 
     private var goalsSection: some View {
@@ -87,7 +127,9 @@ private struct SettingsForm: View {
         } header: {
             Text("Objetivos diarios")
         } footer: {
-            Text("Valores iniciales provisionales (2.300 kcal, 180 g P, 250 g C, 65 g G, 8.000 pasos). No son una recomendación clínica; ajústalos con un profesional si lo necesitas.")
+            Text(settings.autoTargets
+                 ? "Calculados automáticamente desde tu perfil. Si los cambias y guardas aquí pasarán a ser manuales. No son una recomendación clínica."
+                 : "Valores manuales (iniciales provisionales: 2.300 kcal, 180 g P, 250 g C, 65 g G, 8.000 pasos). No son una recomendación clínica.")
         }
     }
 
@@ -147,8 +189,9 @@ private struct SettingsForm: View {
 
     // MARK: Fotos
 
+    /// Día del recordatorio de fotos: el de la fecha de inicio del seguimiento o, si no hay, el 22.
     private var referenceDay: Int? {
-        settings.trackingStartDate.map { DateUtils.calendar.component(.day, from: $0) }
+        settings.trackingStartDate.map { DateUtils.calendar.component(.day, from: $0) } ?? 22
     }
 
     private var photoSection: some View {
@@ -157,7 +200,6 @@ private struct SettingsForm: View {
                 get: { settings.photoReminderEnabled },
                 set: { newValue in Task { await setPhotoReminder(enabled: newValue) } }
             ))
-            .disabled(referenceDay == nil)
             Stepper("Hora: \(settings.photoReminderHour):00", value: Binding(
                 get: { settings.photoReminderHour },
                 set: { newValue in
@@ -171,7 +213,7 @@ private struct SettingsForm: View {
         } footer: {
             if let day = referenceDay {
                 Text(day <= 28
-                     ? "El día \(day) de cada mes a las \(settings.photoReminderHour):00 (según tu fecha de inicio). Pide las tres vistas: frente, lateral y espalda."
+                     ? "El día \(day) de cada mes a las \(settings.photoReminderHour):00 (día de tu fecha de inicio, o el 22 si no la has configurado). Pide las tres vistas: frente, lateral y espalda."
                      : "Tu día de referencia es el \(day): en los meses que no lo tienen se usará el último día del mes. Se programan 12 meses y se renuevan al abrir la app.")
             } else {
                 Text("Configura la fecha de inicio del seguimiento (más abajo) para activar el recordatorio.")
@@ -364,11 +406,14 @@ private struct SettingsForm: View {
 
     private func saveGoals() {
         guard let kcal, let protein, let carbs, let fat, let steps else { return }
+        settings.stepGoal = Int(steps.rounded())
+        let targetsChanged = [kcal, protein, carbs, fat] != [settings.kcalTarget, settings.proteinTarget, settings.carbsTarget, settings.fatTarget]
         settings.kcalTarget = kcal
         settings.proteinTarget = protein
         settings.carbsTarget = carbs
         settings.fatTarget = fat
-        settings.stepGoal = Int(steps.rounded())
+        // Editar los objetivos a mano desactiva el cálculo automático para no sobrescribirlos.
+        if targetsChanged { settings.autoTargets = false }
         try? context.save()
         let macroKcal = protein * 4 + carbs * 4 + fat * 9
         if abs(macroKcal - kcal) / kcal > 0.1 {

@@ -5,6 +5,7 @@ import SwiftUI
 /// al empezar una semana nueva las casillas aparecen vacías y el historial anterior se conserva.
 struct TrainingView: View {
     @Query private var weekLogs: [WorkoutSessionLog]
+    @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
     @State private var path: [String] = []
 
     private let weekStart: Date
@@ -115,7 +116,8 @@ struct TrainingView: View {
         .card()
     }
 
-    private func sessionRow(_ session: SessionDefinition) -> some View {
+    private func sessionRow(_ base: SessionDefinition) -> some View {
+        let session = base.resolved(with: routine)
         let log = log(for: session)
         let progress = SessionProgress(session: session, log: log)
         return HStack(spacing: 12) {

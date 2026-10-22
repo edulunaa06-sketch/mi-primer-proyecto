@@ -14,11 +14,19 @@
 			remoteGlobalIDString = BBB213A0A7661458B9C9F49A;
 			remoteInfo = NowOrNever;
 		};
+		3585D9BE4A3F50732AB006AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 922870392FC562C83E1D5445 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BBB213A0A7661458B9C9F49A;
+			remoteInfo = NowOrNever;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		E6428DBEE8F11DA29C9F5863 /* NowOrNever.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NowOrNever.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A19310C3E46EDDF810383D7 /* NowOrNeverTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NowOrNeverTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8A3EBCD2215E723AF2BDE782 /* NowOrNeverUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NowOrNeverUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		9D725F6848D968B90E7684C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		542A4FC26BA8F3869A7EA961 /* NowOrNever.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NowOrNever.entitlements; sourceTree = "<group>"; };
 		A8088DB9773D639BA10C4512 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
@@ -33,6 +41,11 @@
 		9C3EAAA89BF0D45794CAF06D /* NowOrNeverTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = NowOrNeverTests;
+			sourceTree = "<group>";
+		};
+		6D661C7147A3356487FBF2AD /* NowOrNeverUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NowOrNeverUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +65,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BA65DFB183D7DBBCB879B6A7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -60,6 +80,7 @@
 			children = (
 				7078EAA39DCD30636A5A05A3 /* NowOrNever */,
 				9C3EAAA89BF0D45794CAF06D /* NowOrNeverTests */,
+				6D661C7147A3356487FBF2AD /* NowOrNeverUITests */,
 				762117C66ADBBC89F7158B09 /* Config */,
 				305EC09FACA8C89D576885B7 /* Products */,
 			);
@@ -80,6 +101,7 @@
 			children = (
 				E6428DBEE8F11DA29C9F5863 /* NowOrNever.app */,
 				0A19310C3E46EDDF810383D7 /* NowOrNeverTests.xctest */,
+				8A3EBCD2215E723AF2BDE782 /* NowOrNeverUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -132,6 +154,29 @@
 			productReference = 0A19310C3E46EDDF810383D7 /* NowOrNeverTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		4C9E3265274E5565083D8755 /* NowOrNeverUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1863A37F7172AB152C3F6007 /* Build configuration list for PBXNativeTarget "NowOrNeverUITests" */;
+			buildPhases = (
+				46CEB77A3E1079B2F36BF573 /* Sources */,
+				BA65DFB183D7DBBCB879B6A7 /* Frameworks */,
+				C1498DEF05DC33D4CA8A3AAB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5853C0E94ECB3D38A73DA971 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				6D661C7147A3356487FBF2AD /* NowOrNeverUITests */,
+			);
+			name = NowOrNeverUITests;
+			packageProductDependencies = (
+			);
+			productName = NowOrNeverUITests;
+			productReference = 8A3EBCD2215E723AF2BDE782 /* NowOrNeverUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -146,6 +191,10 @@
 						CreatedOnToolsVersion = 16.0;
 					};
 					730CAE27F042E554482CE62D = {
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = BBB213A0A7661458B9C9F49A;
+					};
+					4C9E3265274E5565083D8755 = {
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = BBB213A0A7661458B9C9F49A;
 					};
@@ -167,6 +216,7 @@
 			targets = (
 				BBB213A0A7661458B9C9F49A /* NowOrNever */,
 				730CAE27F042E554482CE62D /* NowOrNeverTests */,
+				4C9E3265274E5565083D8755 /* NowOrNeverUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -180,6 +230,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3935A4B68A8EFCCF902C7304 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1498DEF05DC33D4CA8A3AAB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -203,6 +260,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		46CEB77A3E1079B2F36BF573 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -210,6 +274,11 @@
 			isa = PBXTargetDependency;
 			target = BBB213A0A7661458B9C9F49A /* NowOrNever */;
 			targetProxy = 11FFEA1045A35EBDFDDA65BD /* PBXContainerItemProxy */;
+		};
+		5853C0E94ECB3D38A73DA971 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BBB213A0A7661458B9C9F49A /* NowOrNever */;
+			targetProxy = 3585D9BE4A3F50732AB006AC /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -441,6 +510,44 @@
 			};
 			name = Release;
 		};
+		568444A905F352DEA98C0E13 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A8088DB9773D639BA10C4512 /* Signing.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).nowornever.uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = NowOrNever;
+			};
+			name = Debug;
+		};
+		A81F0B8F41EAF583A8310AA3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = A8088DB9773D639BA10C4512 /* Signing.xcconfig */;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).nowornever.uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = NowOrNever;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -467,6 +574,15 @@
 			buildConfigurations = (
 				5F4C0F1041A9C867DB33B767 /* Debug */,
 				27F985BAD791FE7D6E75D1E8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1863A37F7172AB152C3F6007 /* Build configuration list for PBXNativeTarget "NowOrNeverUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				568444A905F352DEA98C0E13 /* Debug */,
+				A81F0B8F41EAF583A8310AA3 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

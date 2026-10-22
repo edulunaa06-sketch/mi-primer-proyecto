@@ -38,6 +38,16 @@
                ReferencedContainer = "container:NowOrNever.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "4C9E3265274E5565083D8755"
+               BuildableName = "NowOrNeverUITests.xctest"
+               BlueprintName = "NowOrNeverUITests"
+               ReferencedContainer = "container:NowOrNever.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

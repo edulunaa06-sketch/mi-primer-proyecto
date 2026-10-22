@@ -84,7 +84,9 @@ struct WeightProgressView: View {
                        detail: weekly == nil ? "Necesita un registro de hace ≥ 7 días" : "Último vs. hace ≥ 7 días")
             MetricTile(title: "Variación mensual", value: monthly.map(NumberFormat.signedKg) ?? "—",
                        detail: monthly == nil ? "Necesita un registro de hace ≥ 30 días" : "Último vs. hace ≥ 30 días")
-            MetricTile(title: "Registros", value: "\(entries.count)", detail: nil)
+            MetricTile(title: "Vs. registro anterior",
+                       value: entries.count > 1 ? NumberFormat.signedKg(entries[0].weightKg - entries[1].weightKg) : "—",
+                       detail: entries.count > 1 ? "\(entries.count) registros" : "Necesita 2 registros")
         }
     }
 
@@ -124,7 +126,9 @@ struct WeightProgressView: View {
     private var history: some View {
         VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: "Historial", subtitle: "Mantén pulsado un registro para eliminarlo")
-            ForEach(entries) { entry in
+            // `entries` va del más reciente al más antiguo: el anterior de cada registro es el siguiente.
+            ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                let previous = index + 1 < entries.count ? entries[index + 1] : nil
                 HStack {
                     VStack(alignment: .leading) {
                         Text(DateUtils.shortDate(entry.date)).font(.subheadline)
@@ -134,7 +138,12 @@ struct WeightProgressView: View {
                     if let w = entry.waistCm {
                         Text("\(NumberFormat.oneDecimal(w)) cm").font(.caption).foregroundStyle(Theme.textSecondary)
                     }
-                    Text("\(NumberFormat.kg(entry.weightKg)) kg").font(.headline.monospacedDigit())
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text("\(NumberFormat.kg(entry.weightKg)) kg").font(.headline.monospacedDigit())
+                        Text(previous.map { NumberFormat.signedKg(entry.weightKg - $0.weightKg) + " vs anterior" } ?? "Primer registro")
+                            .font(.caption2.monospacedDigit())
+                            .foregroundStyle(Theme.textSecondary)
+                    }
                 }
                 .padding(.vertical, 6)
                 .contentShape(Rectangle())

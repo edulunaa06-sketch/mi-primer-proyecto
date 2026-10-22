@@ -3,7 +3,9 @@ def I(name): return hashlib.md5(("nowornever-"+name).encode()).hexdigest()[:24].
 ids = {n: I(n) for n in """PROJECT APPTARGET TESTTARGET APPPRODUCT TESTPRODUCT INFOPLIST ENTITLEMENTS XCCONFIG
 APPSRCGROUP TESTSRCGROUP MAINGROUP CONFIGGROUP PRODUCTSGROUP APPSOURCES APPFRAMEWORKS APPRESOURCES
 TESTSOURCES TESTFRAMEWORKS TESTRESOURCES TESTPROXY TESTDEPENDENCY PROJECTCONFIGLIST APPCONFIGLIST TESTCONFIGLIST
-PROJDEBUG PROJRELEASE APPDEBUG APPRELEASE TESTDEBUG TESTRELEASE""".split()}
+PROJDEBUG PROJRELEASE APPDEBUG APPRELEASE TESTDEBUG TESTRELEASE
+UITESTTARGET UITESTPRODUCT UITESTSRCGROUP UITESTSOURCES UITESTFRAMEWORKS UITESTRESOURCES UITESTPROXY
+UITESTDEPENDENCY UITESTCONFIGLIST UITESTDEBUG UITESTRELEASE""".split()}
 assert len(set(ids.values()))==len(ids)
 def S(n): return ids[n]
 
@@ -114,6 +116,19 @@ test = """				BUNDLE_LOADER = "$(TEST_HOST)";
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/NowOrNever.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/NowOrNever";
 """
+uitest = """				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).nowornever.uitests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_TARGET_NAME = NowOrNever;
+"""
 def bc(key, name, settings, base=None):
     b = f"\t\t\tbaseConfigurationReference = {S('XCCONFIG')} /* Signing.xcconfig */;\n" if base else ""
     return f"""		{S(key)} /* {name} */ = {{
@@ -159,11 +174,19 @@ out = f"""// !$*UTF8*$!
 			remoteGlobalIDString = {S('APPTARGET')};
 			remoteInfo = NowOrNever;
 		}};
+		{S('UITESTPROXY')} /* PBXContainerItemProxy */ = {{
+			isa = PBXContainerItemProxy;
+			containerPortal = {S('PROJECT')} /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = {S('APPTARGET')};
+			remoteInfo = NowOrNever;
+		}};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		{S('APPPRODUCT')} /* NowOrNever.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = NowOrNever.app; sourceTree = BUILT_PRODUCTS_DIR; }};
 		{S('TESTPRODUCT')} /* NowOrNeverTests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NowOrNeverTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};
+		{S('UITESTPRODUCT')} /* NowOrNeverUITests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NowOrNeverUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};
 		{S('INFOPLIST')} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; }};
 		{S('ENTITLEMENTS')} /* NowOrNever.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NowOrNever.entitlements; sourceTree = "<group>"; }};
 		{S('XCCONFIG')} /* Signing.xcconfig */ = {{isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; }};
@@ -180,10 +203,15 @@ out = f"""// !$*UTF8*$!
 			path = NowOrNeverTests;
 			sourceTree = "<group>";
 		}};
+		{S('UITESTSRCGROUP')} /* NowOrNeverUITests */ = {{
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = NowOrNeverUITests;
+			sourceTree = "<group>";
+		}};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-{phase('APPFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('TESTFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}/* End PBXFrameworksBuildPhase section */
+{phase('APPFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('TESTFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('UITESTFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		{S('MAINGROUP')} = {{
@@ -191,6 +219,7 @@ out = f"""// !$*UTF8*$!
 			children = (
 				{S('APPSRCGROUP')} /* NowOrNever */,
 				{S('TESTSRCGROUP')} /* NowOrNeverTests */,
+				{S('UITESTSRCGROUP')} /* NowOrNeverUITests */,
 				{S('CONFIGGROUP')} /* Config */,
 				{S('PRODUCTSGROUP')} /* Products */,
 			);
@@ -211,6 +240,7 @@ out = f"""// !$*UTF8*$!
 			children = (
 				{S('APPPRODUCT')} /* NowOrNever.app */,
 				{S('TESTPRODUCT')} /* NowOrNeverTests.xctest */,
+				{S('UITESTPRODUCT')} /* NowOrNeverUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -263,6 +293,29 @@ out = f"""// !$*UTF8*$!
 			productReference = {S('TESTPRODUCT')} /* NowOrNeverTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		}};
+		{S('UITESTTARGET')} /* NowOrNeverUITests */ = {{
+			isa = PBXNativeTarget;
+			buildConfigurationList = {S('UITESTCONFIGLIST')} /* Build configuration list for PBXNativeTarget "NowOrNeverUITests" */;
+			buildPhases = (
+				{S('UITESTSOURCES')} /* Sources */,
+				{S('UITESTFRAMEWORKS')} /* Frameworks */,
+				{S('UITESTRESOURCES')} /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				{S('UITESTDEPENDENCY')} /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				{S('UITESTSRCGROUP')} /* NowOrNeverUITests */,
+			);
+			name = NowOrNeverUITests;
+			packageProductDependencies = (
+			);
+			productName = NowOrNeverUITests;
+			productReference = {S('UITESTPRODUCT')} /* NowOrNeverUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		}};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -277,6 +330,10 @@ out = f"""// !$*UTF8*$!
 						CreatedOnToolsVersion = 16.0;
 					}};
 					{S('TESTTARGET')} = {{
+						CreatedOnToolsVersion = 16.0;
+						TestTargetID = {S('APPTARGET')};
+					}};
+					{S('UITESTTARGET')} = {{
 						CreatedOnToolsVersion = 16.0;
 						TestTargetID = {S('APPTARGET')};
 					}};
@@ -298,15 +355,16 @@ out = f"""// !$*UTF8*$!
 			targets = (
 				{S('APPTARGET')} /* NowOrNever */,
 				{S('TESTTARGET')} /* NowOrNeverTests */,
+				{S('UITESTTARGET')} /* NowOrNeverUITests */,
 			);
 		}};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-{phase('APPRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('TESTRESOURCES','PBXResourcesBuildPhase','Resources')}/* End PBXResourcesBuildPhase section */
+{phase('APPRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('TESTRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('UITESTRESOURCES','PBXResourcesBuildPhase','Resources')}/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-{phase('APPSOURCES','PBXSourcesBuildPhase','Sources')}{phase('TESTSOURCES','PBXSourcesBuildPhase','Sources')}/* End PBXSourcesBuildPhase section */
+{phase('APPSOURCES','PBXSourcesBuildPhase','Sources')}{phase('TESTSOURCES','PBXSourcesBuildPhase','Sources')}{phase('UITESTSOURCES','PBXSourcesBuildPhase','Sources')}/* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		{S('TESTDEPENDENCY')} /* PBXTargetDependency */ = {{
@@ -314,13 +372,18 @@ out = f"""// !$*UTF8*$!
 			target = {S('APPTARGET')} /* NowOrNever */;
 			targetProxy = {S('TESTPROXY')} /* PBXContainerItemProxy */;
 		}};
+		{S('UITESTDEPENDENCY')} /* PBXTargetDependency */ = {{
+			isa = PBXTargetDependency;
+			target = {S('APPTARGET')} /* NowOrNever */;
+			targetProxy = {S('UITESTPROXY')} /* PBXContainerItemProxy */;
+		}};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-{bc('PROJDEBUG','Debug',project_debug)}{bc('PROJRELEASE','Release',project_release)}{bc('APPDEBUG','Debug',app,True)}{bc('APPRELEASE','Release',app,True)}{bc('TESTDEBUG','Debug',test,True)}{bc('TESTRELEASE','Release',test,True)}/* End XCBuildConfiguration section */
+{bc('PROJDEBUG','Debug',project_debug)}{bc('PROJRELEASE','Release',project_release)}{bc('APPDEBUG','Debug',app,True)}{bc('APPRELEASE','Release',app,True)}{bc('TESTDEBUG','Debug',test,True)}{bc('TESTRELEASE','Release',test,True)}{bc('UITESTDEBUG','Debug',uitest,True)}{bc('UITESTRELEASE','Release',uitest,True)}/* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-{cl('PROJECTCONFIGLIST','PBXProject "NowOrNever"','PROJDEBUG','PROJRELEASE')}{cl('APPCONFIGLIST','PBXNativeTarget "NowOrNever"','APPDEBUG','APPRELEASE')}{cl('TESTCONFIGLIST','PBXNativeTarget "NowOrNeverTests"','TESTDEBUG','TESTRELEASE')}/* End XCConfigurationList section */
+{cl('PROJECTCONFIGLIST','PBXProject "NowOrNever"','PROJDEBUG','PROJRELEASE')}{cl('APPCONFIGLIST','PBXNativeTarget "NowOrNever"','APPDEBUG','APPRELEASE')}{cl('TESTCONFIGLIST','PBXNativeTarget "NowOrNeverTests"','TESTDEBUG','TESTRELEASE')}{cl('UITESTCONFIGLIST','PBXNativeTarget "NowOrNeverUITests"','UITESTDEBUG','UITESTRELEASE')}/* End XCConfigurationList section */
 	}};
 	rootObject = {S('PROJECT')} /* Project object */;
 }}
@@ -364,6 +427,16 @@ scheme = f"""<?xml version="1.0" encoding="UTF-8"?>
                BlueprintIdentifier = "{S('TESTTARGET')}"
                BuildableName = "NowOrNeverTests.xctest"
                BlueprintName = "NowOrNeverTests"
+               ReferencedContainer = "container:NowOrNever.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "{S('UITESTTARGET')}"
+               BuildableName = "NowOrNeverUITests.xctest"
+               BlueprintName = "NowOrNeverUITests"
                ReferencedContainer = "container:NowOrNever.xcodeproj">
             </BuildableReference>
          </TestableReference>

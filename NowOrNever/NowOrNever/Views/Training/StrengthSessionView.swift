@@ -3,19 +3,29 @@ import SwiftUI
 import UIKit
 
 struct StrengthSessionView: View {
+    /// Sesión base; los ejercicios reales salen de la rutina personalizada guardada.
     let session: SessionDefinition
     let weekStart: Date
 
     @Environment(\.modelContext) private var context
+    @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
     @State private var log: WorkoutSessionLog?
     @State private var previous: WorkoutSessionLog?
+    @State private var editingRoutine = false
+
+    private var current: SessionDefinition { session.resolved(with: routine) }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
                 if let log {
                     summary(log)
-                    ForEach(Array(session.exercises.enumerated()), id: \.element.id) { index, exercise in
+                    if current.exercises.isEmpty {
+                        EmptyStateView(symbol: "dumbbell", title: "Sesión sin ejercicios",
+                                       message: "Pulsa “Editar” para añadir ejercicios a esta sesión.")
+                            .card()
+                    }
+                    ForEach(Array(current.exercises.enumerated()), id: \.element.id) { index, exercise in
                         if let exLog = log.exercises.first(where: { $0.exerciseID == exercise.id }) {
                             ExerciseCard(
                                 number: index + 1,
@@ -39,6 +49,9 @@ struct StrengthSessionView: View {
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button("Editar") { editingRoutine = true }
+            }
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
                 Button("Listo") {
@@ -48,8 +61,20 @@ struct StrengthSessionView: View {
         }
         .onAppear {
             // Crear el registro de la semana NO marca nada como completado.
-            log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
-            previous = DataStore.previousLog(for: session, before: weekStart, in: context)
+            log = DataStore.fetchOrCreateLog(for: current, weekStart: weekStart, in: context)
+            previous = DataStore.previousLog(for: current, before: weekStart, in: context)
+            #if DEBUG
+            if ProcessInfo.processInfo.arguments.contains("-NNEditRoutine") { editingRoutine = true }
+            #endif
+        }
+        .sheet(isPresented: $editingRoutine, onDismiss: {
+            // Aplica los cambios de la rutina al registro de esta semana (series nuevas, nombres…).
+            if let log {
+                DataStore.ensureStructure(log, session: current, in: context)
+                try? context.save()
+            }
+        }) {
+            RoutineEditorView(session: session)
         }
         .onDisappear { try? context.save() }
     }
@@ -60,7 +85,7 @@ struct StrengthSessionView: View {
     }
 
     private func summary(_ log: WorkoutSessionLog) -> some View {
-        let progress = SessionProgress(session: session, log: log)
+        let progress = SessionProgress(session: current, log: log)
         return HStack(spacing: 16) {
             ProgressRing(fraction: progress.fraction, size: 72)
             VStack(alignment: .leading, spacing: 4) {
@@ -143,12 +168,19 @@ struct ExerciseCard: View {
             .font(.caption2.weight(.bold))
             .foregroundStyle(Theme.textTertiary)
 
-            ForEach(log.sortedSets) { set in
+            ForEach(log.visibleSets) { set in
                 SetRow(set: set, onChange: onChange)
             }
 
             if let previous {
                 previousResults(previous)
+            }
+
+            NavigationLink {
+                ExerciseProgressView(exerciseID: definition.id, name: definition.name)
+            } label: {
+                Label("Ver progresión de cargas", systemImage: "chart.line.uptrend.xyaxis")
+                    .font(.caption.weight(.semibold))
             }
         }
         .card()

@@ -154,11 +154,34 @@ struct AddFoodSheet: View {
 
 /// Lista de los nueve menús con sus totales calculados.
 struct MenuPlansView: View {
+    @Environment(\.modelContext) private var context
     @Query(sort: \MenuPlan.number) private var plans: [MenuPlan]
     @Query private var settingsList: [UserSettings]
+    @State private var confirmScaleAll = false
+    @State private var resultMessage: String?
+
+    private var target: Double { settingsList.first?.kcalTarget ?? 0 }
 
     var body: some View {
         List {
+            Section {
+                LabeledContent("Tu objetivo", value: "\(NumberFormat.integer(target)) kcal")
+                if let s = settingsList.first {
+                    Text("P \(NumberFormat.integer(s.proteinTarget)) g · C \(NumberFormat.integer(s.carbsTarget)) g · G \(NumberFormat.integer(s.fatTarget)) g · \(s.autoTargets ? "calculado desde tu perfil" : "manual")")
+                        .font(.caption).foregroundStyle(Theme.textSecondary)
+                }
+                Button("Ajustar los 9 menús a \(NumberFormat.integer(target)) kcal") { confirmScaleAll = true }
+                    .disabled(target <= 0 || plans.isEmpty)
+                if let resultMessage {
+                    Text(resultMessage).font(.footnote).foregroundStyle(Theme.lime)
+                }
+            } header: {
+                Text("Ajustar a mis requerimientos")
+            } footer: {
+                Text("Escala proporcionalmente los gramos de cada ingrediente para que el total del día se acerque a tus calorías objetivo (redondeando a cantidades pesables). Las proporciones entre proteínas, carbohidratos y grasas de cada menú se mantienen; compáralas abajo con tus objetivos.")
+            }
+            .listRowBackground(Theme.card)
+
             Section {
                 ForEach(plans) { plan in
                     NavigationLink {
@@ -175,6 +198,12 @@ struct MenuPlansView: View {
                             Text("≈ \(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.integer(t.protein)) · C \(NumberFormat.integer(t.carbs)) · G \(NumberFormat.integer(t.fat))")
                                 .font(.caption.monospacedDigit())
                                 .foregroundStyle(Theme.textSecondary)
+                            if target > 0 {
+                                let diff = (t.kcal - target) / target
+                                Text(abs(diff) <= 0.05 ? "Dentro de ±5 % de tu objetivo" : "\(diff > 0 ? "+" : "")\(NumberFormat.percent(diff)) respecto a tu objetivo")
+                                    .font(.caption2)
+                                    .foregroundStyle(abs(diff) <= 0.05 ? Theme.lime : Theme.warning)
+                            }
                         }
                     }
                 }
@@ -185,6 +214,14 @@ struct MenuPlansView: View {
         }
         .screenBackground()
         .navigationTitle("Modelos de menú")
+        .confirmationDialog("¿Ajustar los gramos de los 9 menús a \(NumberFormat.integer(target)) kcal?", isPresented: $confirmScaleAll, titleVisibility: .visible) {
+            Button("Ajustar menús") {
+                let done = plans.compactMap { DataStore.scale($0, toKcal: target, in: context) }.count
+                resultMessage = "\(done) menús ajustados. Revisa los gramos antes de pesar."
+            }
+        } message: {
+            Text("Se modificarán los gramos de todos los ingredientes. Las comidas ya marcadas en días anteriores no cambian.")
+        }
     }
 }
 
@@ -212,6 +249,12 @@ struct MenuPlanDetailView: View {
                             try? context.save()
                         }
                         .buttonStyle(LimeButtonStyle(filled: settings.defaultPlanID != plan.id))
+                        if settings.kcalTarget > 0, abs(t.kcal - settings.kcalTarget) / settings.kcalTarget > 0.02 {
+                            Button("Ajustar este menú a \(NumberFormat.integer(settings.kcalTarget)) kcal") {
+                                DataStore.scale(plan, toKcal: settings.kcalTarget, in: context)
+                            }
+                            .buttonStyle(LimeButtonStyle(filled: false))
+                        }
                     }
                 }
                 .card()

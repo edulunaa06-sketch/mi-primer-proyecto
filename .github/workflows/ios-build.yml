@@ -34,7 +34,7 @@ jobs:
           UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
           echo "Simulator: $UDID"
           xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
-            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST" || true
+            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST|XCTAssert" || true
           grep -q "TEST SUCCEEDED" test.log
           echo "UDID=$UDID" >> "$GITHUB_ENV"
 
@@ -46,7 +46,7 @@ jobs:
           xcrun simctl status_bar "$UDID" override --time "9:41" || true
           APP=build/Build/Products/Debug-iphonesimulator/NowOrNever.app
           BID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
-          xcrun simctl uninstall "$UDID" "$BID" || true
+          # Sin desinstalar: las capturas muestran los datos introducidos por las pruebas de interfaz.
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch "$UDID" "$BID"; sleep 6
           xcrun simctl io "$UDID" screenshot screenshots/0-onboarding.png
@@ -56,6 +56,12 @@ jobs:
             xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
             xcrun simctl terminate "$UDID" "$BID" || true
           done
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab settings -NNProfile; sleep 5
+          xcrun simctl io "$UDID" screenshot screenshots/profile.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab training -NNSession tue-push-a -NNEditRoutine; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/routine-editor.png
+          xcrun simctl terminate "$UDID" "$BID" || true
           for session in tue-push-a sat-run; do
             xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab training -NNSession "$session"; sleep 5
             xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"
