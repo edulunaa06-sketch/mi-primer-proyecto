@@ -51,10 +51,10 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     header
+                    caloriesCard
                     stepsCard
                     complianceCard
                     weightCard
-                    nutritionCard
                     stepsAndTraining
                     quickActions
                 }
@@ -127,23 +127,15 @@ struct HomeView: View {
         }
     }
 
-    private var nutritionCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                SectionHeader(title: "Nutrición de hoy", subtitle: "Comidas completadas: \(Set(todayMeals.map(\.mealTypeRaw)).count) de 4")
-                Button("Ver") { router.tab = .nutrition }.font(.subheadline.weight(.semibold))
-            }
-            MacroRow(name: "Calorías", consumed: consumed.kcal, target: settings?.kcalTarget ?? 0, unit: "kcal")
-            MacroRow(name: "Proteínas", consumed: consumed.protein, target: settings?.proteinTarget ?? 0)
-            MacroRow(name: "Carbohidratos", consumed: consumed.carbs, target: settings?.carbsTarget ?? 0)
-            MacroRow(name: "Grasas", consumed: consumed.fat, target: settings?.fatTarget ?? 0)
-            Text(settings?.autoTargets == true
-                 ? "Objetivos calculados con tu perfil (Mifflin-St Jeor). Estimación, no prescripción clínica."
-                 : "Objetivos manuales editables en Ajustes. No son una prescripción clínica.")
-                .font(.caption2)
-                .foregroundStyle(Theme.textTertiary)
+    /// Lo que te queda por comer hoy (objetivo − lo comido), sin anillos. Tocar abre Comidas.
+    private var caloriesCard: some View {
+        Button { router.tab = .nutrition } label: {
+            CaloriesLeftCard(consumed: consumed,
+                             target: NutritionValues(kcal: settings?.kcalTarget ?? 0, protein: settings?.proteinTarget ?? 0,
+                                                     carbs: settings?.carbsTarget ?? 0, fat: settings?.fatTarget ?? 0),
+                             title: "Calorías de hoy")
         }
-        .card()
+        .buttonStyle(.plain)
     }
 
     private var stepsCard: some View {

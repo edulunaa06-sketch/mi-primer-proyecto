@@ -41,6 +41,13 @@ enum DateUtils {
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
+    /// «2026-10-22» → fecha (inicio del día). nil si el texto no es una fecha válida.
+    static func date(fromDayKey key: String) -> Date? {
+        let parts = key.split(separator: "-").compactMap { Int($0) }
+        guard parts.count == 3, (1...12).contains(parts[1]), (1...31).contains(parts[2]) else { return nil }
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2]))
+    }
+
     static func yearMonth(_ date: Date) -> (year: Int, month: Int) {
         let c = calendar.dateComponents([.year, .month], from: date)
         return (c.year ?? 0, c.month ?? 0)

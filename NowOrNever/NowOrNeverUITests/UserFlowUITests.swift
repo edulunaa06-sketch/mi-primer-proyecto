@@ -90,7 +90,7 @@ final class UserFlowUITests: XCTestCase {
 
         // Inicio refleja el nuevo objetivo calórico.
         tab("Inicio")
-        XCTAssertTrue(element(containing: "/ 2550 kcal").waitForExistence(timeout: 5))
+        XCTAssertTrue(element(containing: "Objetivo 2550").waitForExistence(timeout: 5))
     }
 
     func test2_EditRoutineAndLogSets() {
@@ -130,6 +130,7 @@ final class UserFlowUITests: XCTestCase {
 
     func test3_MarkMealCompleted() {
         tab("Nutrición")
+        app.buttons["Menús"].firstMatch.tap()
         let mark = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Marcar'")).firstMatch
         XCTAssertTrue(scrollTo(mark).exists)
         mark.tap()
@@ -139,6 +140,7 @@ final class UserFlowUITests: XCTestCase {
 
     func test4_BuildDayStepByStepAndSwap() {
         tab("Nutrición")
+        app.buttons["Menús"].firstMatch.tap()
         let builder = app.buttons["Elegir mis comidas paso a paso"]
         XCTAssertTrue(builder.waitForExistence(timeout: 10))
         builder.tap()
@@ -166,6 +168,7 @@ final class UserFlowUITests: XCTestCase {
 
     func test5_LogWhatIEatAndRebalance() {
         tab("Nutrición")
+        app.buttons["Menús"].firstMatch.tap()
         let custom = app.buttons["Como otra cosa: apuntarla"].firstMatch
         XCTAssertTrue(scrollTo(custom).exists)
         custom.tap()
@@ -191,5 +194,23 @@ final class UserFlowUITests: XCTestCase {
         XCTAssertTrue(scrollTo(rebalance).exists)
         rebalance.tap()
         assertAppears(element(containing: "Reajustado:"), "Mensaje de reajuste")
+    }
+
+    func test6_FoodLogShowsRemainingAndPhotoSheet() {
+        tab("Nutrición")
+        assertAppears(element(containing: "Te quedan"), "Lo que queda del día")
+        let lunch = app.buttons["Almuerzo: añadir con foto"].firstMatch
+        XCTAssertTrue(scrollTo(lunch).exists)
+        lunch.tap()
+        assertAppears(element(containing: "Ingredientes y gramos"), "Hoja de registro por foto")
+        app.buttons["Añadir ingrediente"].firstMatch.tap()
+        let name = app.textFields["Ingrediente"].firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Pollo")
+        XCTAssertFalse(app.buttons["Calcular calorías"].firstMatch.isEnabled, "Sin gramos (ni clave de Claude) no se calcula")
+        app.buttons["Cancelar"].firstMatch.tap()
+        tab("Inicio")
+        assertAppears(element(containing: "Te quedan"), "Inicio muestra lo que queda")
     }
 }

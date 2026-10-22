@@ -218,3 +218,40 @@ final class PhotoMealTests: XCTestCase {
         XCTAssertEqual(result.questions, ["¿Es queso cottage o requesón?"])
     }
 }
+
+final class MealLogTests: XCTestCase {
+    func testDetectRequestAsksOnlyForNames() throws {
+        let body = ClaudeAPI.detectRequest(imageBase64: "QUJD")
+        let output = try XCTUnwrap(body["output_config"] as? [String: Any])
+        let schema = try XCTUnwrap((output["format"] as? [String: Any])?["schema"] as? [String: Any])
+        XCTAssertEqual(schema["required"] as? [String], ["ingredients", "note"])
+        let messages = try XCTUnwrap(body["messages"] as? [[String: Any]])
+        XCTAssertEqual((messages[0]["content"] as? [[String: Any]])?.first?["type"] as? String, "image")
+    }
+
+    func testCalculateSendsUserGramsAndKeepsThem() throws {
+        let weighed = [ClaudeAPI.WeighedIngredient(name: "Pollo a la plancha", grams: 180),
+                       ClaudeAPI.WeighedIngredient(name: "Atún al natural", grams: 60)]
+        let body = ClaudeAPI.calculateRequest(weighed, imageBase64: nil)
+        let messages = try XCTUnwrap(body["messages"] as? [[String: Any]])
+        let text = try XCTUnwrap(messages[0]["content"] as? String)
+        XCTAssertTrue(text.contains("1. Pollo a la plancha: 180 g"))
+        XCTAssertTrue(text.contains("2. Atún al natural: 60 g"))
+
+        // Aunque Claude devuelva otros gramos, mandan los que pesó el usuario.
+        let fromClaude = [
+            ClaudeAPI.EstimatedItem(name: "Pollo", grams: 150, kcalPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6),
+            ClaudeAPI.EstimatedItem(name: "Atún", grams: 80, kcalPer100g: 116, proteinPer100g: 25.5, carbsPer100g: 0, fatPer100g: 0.8),
+        ]
+        let items = ClaudeAPI.apply(fromClaude, to: weighed)
+        XCTAssertEqual(items.map(\.grams), [180, 60])
+        XCTAssertEqual(items.map(\.name), ["Pollo a la plancha", "Atún al natural"])
+        XCTAssertEqual(NutritionMath.sum(items.map(\.values)).kcal, 297 + 69.6, accuracy: 0.01)
+    }
+
+    func testDayKeyRoundTrip() {
+        let date = DateUtils.date(fromDayKey: "2026-10-22")!
+        XCTAssertEqual(DateUtils.dayKey(date), "2026-10-22")
+        XCTAssertNil(DateUtils.date(fromDayKey: "hoy"))
+    }
+}

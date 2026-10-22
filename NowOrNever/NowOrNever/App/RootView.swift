@@ -126,7 +126,7 @@ struct RootView: View {
         switch router.tab {
         case .home: HomeView()
         case .training: TrainingView()
-        case .nutrition: NutritionView()
+        case .nutrition: NutritionRootView()
         case .activity: ActivityView()
         case .progress: ProgressHubView()
         case .friends: FriendsView()

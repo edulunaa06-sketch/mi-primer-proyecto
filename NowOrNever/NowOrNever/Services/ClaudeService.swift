@@ -57,6 +57,20 @@ final class ClaudeService {
         return (clean, raw)
     }
 
+    /// Lista los alimentos que se ven en la foto (sin cantidades).
+    func detectIngredients(jpeg: Data) async throws -> ClaudeAPI.DetectedIngredients {
+        let result = try await send(ClaudeAPI.detectRequest(imageBase64: jpeg.base64EncodedString()), as: ClaudeAPI.DetectedIngredients.self)
+        let names = result.ingredients.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+        return ClaudeAPI.DetectedIngredients(ingredients: Array(names.prefix(15)), note: result.note)
+    }
+
+    /// Calcula kcal y macros de cada ingrediente con los gramos que ha pesado el usuario.
+    func calculate(_ ingredients: [ClaudeAPI.WeighedIngredient], jpeg: Data?) async throws -> (items: [ClaudeAPI.EstimatedItem], note: String) {
+        let request = ClaudeAPI.calculateRequest(ingredients, imageBase64: jpeg?.base64EncodedString())
+        let result = try await send(request, as: ClaudeAPI.Estimate.self)
+        return (ClaudeAPI.apply(result.items, to: ingredients), result.note)
+    }
+
     private func send<T: Decodable>(_ body: [String: Any], as type: T.Type) async throws -> T {
         guard let keyData = KeychainStore.load(account: Self.keyAccount, service: Self.keychainService),
               let key = String(data: keyData, encoding: .utf8), !key.isEmpty else {

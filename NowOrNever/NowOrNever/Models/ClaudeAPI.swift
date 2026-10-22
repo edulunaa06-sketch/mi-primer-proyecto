@@ -166,6 +166,90 @@ enum ClaudeAPI {
         }
     }
 
+    // MARK: Registrar una comida: detectar ingredientes y calcular con los gramos del usuario
+
+    struct DetectedIngredients: Codable, Equatable {
+        let ingredients: [String]
+        let note: String
+    }
+
+    static let detectSystem = """
+    Eres el asistente de nutrición de la app Now or Never. Recibes la foto de un plato o de los ingredientes de una comida.
+    Enumera cada alimento distinto que se ve, con un nombre corto y concreto en español que indique cómo está
+    (por ejemplo: «Pechuga de pollo a la plancha», «Boniato asado», «Queso cottage», «Atún al natural escurrido», «Aceite de oliva»).
+    - No inventes alimentos que no se vean. Si algo es dudoso, ponlo igualmente con «(?)» al final para que el usuario lo revise.
+    - Incluye aceite o salsa solo si se ven.
+    - No des cantidades: el usuario pesará cada alimento.
+    - Si la foto no muestra comida, devuelve la lista vacía y explícalo en la nota (español, 1 frase).
+    """
+
+    static let detectSchema: [String: Any] = [
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ingredients", "note"],
+        "properties": [
+            "ingredients": ["type": "array", "items": ["type": "string"]],
+            "note": ["type": "string"],
+        ],
+    ]
+
+    static func detectRequest(imageBase64: String, mediaType: String = "image/jpeg") -> [String: Any] {
+        var request = body(system: detectSystem, user: "", schema: detectSchema, effort: "low")
+        request["messages"] = [[
+            "role": "user",
+            "content": [
+                ["type": "image", "source": ["type": "base64", "media_type": mediaType, "data": imageBase64]],
+                ["type": "text", "text": "¿Qué alimentos hay en esta comida?"],
+            ],
+        ]]
+        return request
+    }
+
+    /// Un ingrediente con los gramos que ha pesado el usuario.
+    struct WeighedIngredient: Equatable {
+        let name: String
+        let grams: Double
+    }
+
+    static let calculateSystem = """
+    Eres el asistente de nutrición de la app Now or Never. El usuario ha pesado cada ingrediente de su comida.
+    Para CADA ingrediente de la lista, en el mismo orden y con los mismos gramos, da sus valores por 100 g (kcal, proteínas,
+    carbohidratos y grasas) según tablas de composición de referencia (BEDCA, USDA), para el alimento tal y como se indica
+    (cocinado si está cocinado; en crudo o en seco si lo dice). Si hay foto, úsala solo para saber cómo está preparado.
+    - Devuelve exactamente un elemento por ingrediente, con el mismo nombre y los mismos gramos.
+    - En la nota (máximo 2 frases, en español) indica las suposiciones relevantes.
+    """
+
+    static func calculateRequest(_ ingredients: [WeighedIngredient], imageBase64: String?, mediaType: String = "image/jpeg") -> [String: Any] {
+        let list = ingredients.enumerated()
+            .map { "\($0.offset + 1). \($0.element.name): \(Int($0.element.grams.rounded())) g" }
+            .joined(separator: "\n")
+        let text = "Ingredientes pesados por el usuario:\n\(list)"
+        var request = body(system: calculateSystem, user: text, schema: estimateSchema, effort: "low")
+        if let imageBase64 {
+            request["messages"] = [[
+                "role": "user",
+                "content": [
+                    ["type": "image", "source": ["type": "base64", "media_type": mediaType, "data": imageBase64]],
+                    ["type": "text", "text": text],
+                ],
+            ]]
+        }
+        return request
+    }
+
+    /// Aplica los valores por 100 g de Claude a los gramos que pesó el usuario (los gramos mandan siempre).
+    static func apply(_ estimate: [EstimatedItem], to ingredients: [WeighedIngredient]) -> [EstimatedItem] {
+        ingredients.enumerated().compactMap { index, ingredient in
+            let match = estimate.count == ingredients.count ? estimate[index]
+                : estimate.first { $0.name.localizedCaseInsensitiveCompare(ingredient.name) == .orderedSame }
+            guard let match else { return nil }
+            let item = EstimatedItem(name: ingredient.name, grams: ingredient.grams, kcalPer100g: match.kcalPer100g,
+                                     proteinPer100g: match.proteinPer100g, carbsPer100g: match.carbsPer100g, fatPer100g: match.fatPer100g)
+            return item.isPlausible ? item : nil
+        }
+    }
+
     // MARK: Proponer comidas más saludables
 
     struct CatalogEntry: Equatable {

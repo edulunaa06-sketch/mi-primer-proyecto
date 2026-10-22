@@ -86,7 +86,7 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
     var label: String {
         switch self {
         case .breakfast: return "Desayuno"
-        case .lunch: return "Comida"
+        case .lunch: return "Almuerzo"
         case .snack: return "Merienda"
         case .dinner: return "Cena"
         }

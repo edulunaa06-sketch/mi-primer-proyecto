@@ -124,6 +124,26 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(exLog.targetSets, 5)
     }
 
+    // MARK: Registro por foto
+
+    func testLoggedFoodsUpdateTheDayTotalAndCanBeRemoved() throws {
+        let day = Date()
+        let chicken = NutritionValues(kcal: 165, protein: 31, carbs: 0, fat: 3.6)
+        let rice = NutritionValues(kcal: 130, protein: 2.7, carbs: 28, fat: 0.3)
+        DataStore.logFoods([(name: "Pollo", grams: 200, per100: chicken)], as: .lunch, on: day, in: context)
+        DataStore.logFoods([(name: "Arroz cocido", grams: 150, per100: rice)], as: .lunch, on: day, in: context)
+        var records = try context.fetch(FetchDescriptor<MealRecord>())
+        XCTAssertEqual(records.count, 1, "Una comida, un registro con el total")
+        XCTAssertEqual(records[0].kcal, 330 + 195, accuracy: 0.01)
+        let rows = DataStore.customItems(for: .lunch, on: day, in: context)
+        XCTAssertEqual(rows.count, 2)
+        DataStore.removeLogged(rows[0], in: context)
+        records = try context.fetch(FetchDescriptor<MealRecord>())
+        XCTAssertEqual(records.first?.kcal ?? 0, 195, accuracy: 0.01)
+        DataStore.removeLogged(DataStore.customItems(for: .lunch, on: day, in: context)[0], in: context)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<MealRecord>()).isEmpty)
+    }
+
     // MARK: Nombres de sesión
 
     func testRenameSessionKeepsIdAndCanRestore() throws {
