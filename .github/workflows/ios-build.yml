@@ -33,12 +33,13 @@ jobs:
           set -o pipefail
           UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
           echo "Simulator: $UDID"
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
           xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
             -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST|XCTAssert" || true
           grep -q "TEST SUCCEEDED" test.log
-          echo "UDID=$UDID" >> "$GITHUB_ENV"
 
       - name: Screenshots on simulator
+        if: always()
         run: |
           mkdir -p screenshots
           xcrun simctl boot "$UDID" || true
@@ -69,6 +70,13 @@ jobs:
           done
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: screenshots
           path: NowOrNever/screenshots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-log
+          path: NowOrNever/test.log

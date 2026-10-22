@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UIKit
 
 /// Perfil personal: peso, altura, edad, sexo, actividad y objetivo.
 /// Calcula el gasto estimado (Mifflin-St Jeor) y, si se activa, ajusta kcal y macros automáticamente.
@@ -104,6 +105,14 @@ struct ProfileView: View {
         .screenBackground()
         .navigationTitle("Perfil")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Listo") {
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            }
+        }
         .onAppear(perform: load)
     }
 

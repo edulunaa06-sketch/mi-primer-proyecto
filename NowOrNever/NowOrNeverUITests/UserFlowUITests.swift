@@ -22,6 +22,21 @@ final class UserFlowUITests: XCTestCase {
         app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
     }
 
+    /// Cierra el teclado numérico con el botón "Listo" de la barra del teclado.
+    private func dismissKeyboard() {
+        let done = app.toolbars.buttons["Listo"].firstMatch
+        if done.exists { done.tap() }
+    }
+
+    /// Comprueba que aparece; si no, vuelca el árbol de accesibilidad al log para diagnosticar.
+    private func assertAppears(_ element: XCUIElement, timeout: TimeInterval = 5, _ message: String,
+                               file: StaticString = #filePath, line: UInt = #line) {
+        if !element.waitForExistence(timeout: timeout) {
+            print("UI-DUMP \(message):\n\(app.debugDescription)")
+            XCTFail(message, file: file, line: line)
+        }
+    }
+
     /// Desplaza hacia abajo hasta que el elemento sea pulsable.
     @discardableResult
     private func scrollTo(_ element: XCUIElement, maxSwipes: Int = 12) -> XCUIElement {
@@ -30,6 +45,7 @@ final class UserFlowUITests: XCTestCase {
             app.swipeUp()
             swipes += 1
         }
+        if !element.exists { print("UI-DUMP scroll:\n\(app.debugDescription)") }
         XCTAssertTrue(element.exists, "No se encontró \(element)")
         return element
     }
@@ -51,14 +67,14 @@ final class UserFlowUITests: XCTestCase {
         type("85.1", into: app.textFields["kg"])
         type("180", into: app.textFields["cm"])
         type("30", into: app.textFields["años"])
+        dismissKeyboard()
         scrollTo(app.buttons["Hombre"]).tap()
 
         // Vista previa calculada con Mifflin-St Jeor (actividad moderada, recomposición por defecto).
         XCTAssertTrue(scrollTo(element(containing: "2550 kcal")).exists)
 
         scrollTo(app.buttons["Guardar perfil"]).tap()
-        let saved = element(containing: "Objetivos: 2550 kcal")
-        XCTAssertTrue(saved.waitForExistence(timeout: 5), "Mensaje de objetivos guardados")
+        assertAppears(element(containing: "Objetivos: 2550 kcal"), "Mensaje de objetivos guardados")
         XCTAssertTrue(element(containing: "P 170 g").exists)
 
         // El peso del perfil queda en el historial de Progreso.
@@ -96,13 +112,14 @@ final class UserFlowUITests: XCTestCase {
         app.swipeDown(); app.swipeDown(); app.swipeDown()
         type("60", into: app.textFields["kg"].firstMatch)
         type("8", into: app.textFields["reps"].firstMatch)
+        dismissKeyboard()
         app.buttons["Marcar serie terminada"].firstMatch.tap()
         app.buttons["Marcar ejercicio completado"].firstMatch.tap()
         XCTAssertTrue(element(containing: "1 de 7 ejercicios").waitForExistence(timeout: 5))
 
         // Progresión de cargas del ejercicio.
         scrollTo(app.buttons["Ver progresión de cargas"].firstMatch).tap()
-        XCTAssertTrue(element(containing: "60 kg × 8").waitForExistence(timeout: 5))
+        assertAppears(element(containing: "60 kg × 8"), "Mejor serie en la progresión")
     }
 
     func test3_MarkMealCompleted() {

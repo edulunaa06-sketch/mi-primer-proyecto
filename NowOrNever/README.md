@@ -39,7 +39,21 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 7. La primera vez el iPhone dirá que el desarrollador no es de confianza: ve a **Ajustes › General › VPN y gestión de dispositivos**, toca tu Apple ID y pulsa **Confiar**.
 8. Abre la app. Verás la pantalla inicial para introducir tu peso y fecha de inicio (puedes pulsar *Usar 85,1 kg · 22 oct 2026* o escribir otros valores, o *Omitir*).
 
-> Pruebas unitarias: en Xcode, ⌘U (con un simulador de iPhone seleccionado).
+> Pruebas: en Xcode, ⌘U con un simulador de iPhone seleccionado (pruebas unitarias + pruebas de interfaz).
+
+### Que parezca una app normal (como WhatsApp o TikTok)
+Una vez instalada desde Xcode, Now or Never **ya es una app nativa**: tiene su icono en la pantalla de inicio, se abre a pantalla completa, aparece en la biblioteca de apps, en Spotlight, en Ajustes › Notificaciones y en Salud. No es una web ni un acceso directo. La única diferencia con una app de la App Store es **cómo se instala y cuánto dura la firma**:
+
+| Opción | Coste | Duración de la instalación | Qué necesitas |
+|---|---|---|---|
+| **Xcode + Apple ID gratuito** | 0 € | **7 días**; luego la app no abre hasta reinstalarla desde Xcode (tus datos se conservan si no la borras) | Mac + cable |
+| **Apple Developer Program** + instalación desde Xcode | 99 €/año | **1 año** | Mac |
+| **Apple Developer Program + TestFlight** (recomendada) | 99 €/año | Cada compilación dura **90 días** y se actualiza desde la app TestFlight, como una app de la tienda | Mac para subirla una vez (Product › Archive › Distribute App › TestFlight) |
+| Publicarla en la App Store | 99 €/año | Indefinida | Revisión de Apple |
+
+Pasos con Xcode (resumen; detalle arriba): Mac con Xcode → abrir `NowOrNever.xcodeproj` → cambiar `BUNDLE_ID_PREFIX` → elegir tu Team → conectar el iPhone → activar Modo desarrollador → ▶︎ Run → en el iPhone, *Ajustes › General › VPN y gestión de dispositivos › Confiar*.
+
+Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone y volver a pulsar ▶︎ Run (no se pierden los datos). Sin Mac no se puede compilar una app nativa de iOS; existen servicios de Mac en la nube, pero la instalación seguiría necesitando una de las opciones de la tabla.
 
 ---
 
@@ -54,6 +68,15 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 - **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso) y pasos/objetivo (máx. 100 %; se omite si Salud no da datos). El desglose se muestra en pantalla.
 - Accesos rápidos: registrar peso, ver pasos, iniciar carrera (abre Strava) y ver rutina.
 
+### Perfil personal y objetivos automáticos (Ajustes › Perfil personal)
+- Peso, altura, edad, sexo, nivel de actividad (5 niveles) y objetivo: **perder grasa, ganar músculo o recomposición**.
+- El peso del perfil es tu **último pesaje**; si lo cambias, se guarda como pesaje nuevo de hoy (queda en el historial).
+- Cálculo con **Mifflin‑St Jeor**: basal = 10×peso + 6,25×altura − 5×edad + 5 (hombre) / −161 (mujer); gasto = basal × factor de actividad (1,2 / 1,375 / 1,55 / 1,725 / 1,9).
+- Calorías objetivo: −20 % (perder grasa), +10 % (ganar músculo), −10 % (recomposición), redondeadas a 10 kcal.
+- Macros: proteína 2,2 / 1,8 / 2,0 g/kg según objetivo; grasa 25 % de las kcal (mín. 0,6 g/kg); carbohidratos, el resto.
+- Con **Objetivos automáticos** activado, kcal y macros se recalculan al guardar el perfil y **cada vez que registras un peso nuevo**. Si editas los objetivos a mano en Ajustes, pasan a ser manuales y ya no se sobrescriben.
+- Es una estimación orientativa, no una pauta médica.
+
 ### Entrenamientos
 - Rutina semanal **exacta** de la especificación (`Models/Routine.swift`), con identificadores estables. Las pruebas `RoutineTests` comprueban ejercicios, orden, series y rangos.
 - **Sábado con dos sesiones separadas** (Carrera y Pecho y espalda), cada una con su propio estado.
@@ -63,6 +86,10 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 - **Cumplimiento semanal** (sesiones completadas / 7 sesiones entrenables).
 - Registros por semana (lunes–domingo): cada semana nueva empieza con casillas vacías y **el historial anterior se conserva** (pantalla *Historial de semanas anteriores*).
 - Sesiones de carrera: botón para abrir Strava, instrucciones y marcado de completada.
+- **Rutina editable** (botón *Editar* dentro de cada sesión de fuerza): añadir, eliminar, sustituir y reordenar ejercicios, y cambiar series y rango de repeticiones. Se guarda en el dispositivo y hay un botón para *Restaurar la rutina predeterminada*.
+  - Sustituir un ejercicio crea uno nuevo en la misma posición: su progresión empieza de cero y el historial del anterior se conserva.
+  - Cada registro semanal guarda una copia del nombre y la prescripción, así que el historial sigue siendo legible aunque cambies la rutina.
+- **Progresión de cargas** por ejercicio (*Ver progresión de cargas*): gráfica de la carga máxima por semana, mejor serie, volumen (kg × reps), repeticiones totales y 1RM estimado (Epley, orientativo).
 
 ### Nutrición
 - Objetivos editables en Ajustes (iniciales **provisionales**: 2.300 kcal, 180 g P, 250 g C, 65 g G).
@@ -72,6 +99,7 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 - Subtotales por comida y **total diario calculados automáticamente** (no hay ningún total escrito a mano).
 - Al cambiar los gramos de un ingrediente se recalculan ingrediente, comida y día. Si esa comida ya estaba marcada en el día visible, su registro se actualiza.
 - Añadir/quitar ingredientes, renombrar menús.
+- **Ajustar a tus requerimientos** (*Nutrición › ⋯ › Los 9 menús*): cada menú indica cuánto se desvía de tu objetivo calórico y puedes escalar un menú o los nueve a tus kcal. El ajuste es proporcional (mantiene las proporciones de macros de cada menú) y redondea a cantidades pesables (1 g por debajo de 20 g, 5 g por debajo de 100 g y 10 g a partir de ahí). Las comidas ya marcadas en días anteriores no cambian.
 - **Catálogo local editable** de alimentos (valores por 100 g), con indicador ⚠︎ de valor provisional, aviso si kcal y macros no cuadran y opción de crear alimentos.
 - Registro diario de comidas consumidas e historial con % de calorías.
 - Criterios de peso: arroz, pasta, avena y quinoa **en seco**; carne y pescado **en crudo**; legumbres **cocidas y escurridas**; atún **escurrido**; aceite en **gramos reales**.
@@ -93,14 +121,14 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 
 ### Progreso físico
 - Registro de peso con fecha/hora y **cintura opcional**; evita duplicar un registro idéntico el mismo día.
-- Primer peso, más reciente, diferencia total, variación **semanal** y **mensual** (solo si hay registros suficientemente antiguos), gráfica de evolución e historial (mantener pulsado para eliminar).
+- Primer peso, más reciente, diferencia total, diferencia con el **registro anterior** (también en cada fila del historial), variación **semanal** y **mensual** (solo si hay registros suficientemente antiguos), gráfica de evolución e historial (mantener pulsado para eliminar).
 - Aviso de que la fluctuación diaria no es pérdida/ganancia de grasa confirmada.
 - **Fotos mensuales** (frente, lateral, espalda): selector de fotos del sistema, indicador de vistas que faltan, guardado por mes/año, una foto por vista y mes (sin duplicados), reemplazo con confirmación, meses anteriores, **comparación de dos meses** (lado a lado o superpuesta con deslizador), eliminación de una foto o de todo el historial.
 
 ### Ajustes y recordatorios
 - Objetivos de kcal, macros y pasos.
 - **Creatina**: activar/desactivar, elegir hora, notificación de prueba. Usa un identificador fijo, así que cambiar la hora **sustituye** el recordatorio (no lo duplica). La app solo dice «programada» cuando iOS acepta la solicitud sin error.
-- **Fotos**: recordatorio mensual el día de tu fecha de inicio (22) a las 20:00 (hora configurable).
+- **Fotos**: recordatorio mensual el **día 22 a las 20:00** (o el día de tu fecha de inicio si la configuras; hora ajustable).
 - Estado del permiso de notificaciones y número de notificaciones programadas.
 - Configuración de Strava, fecha de inicio y peso inicial.
 
@@ -185,7 +213,8 @@ NowOrNever/
 │   ├── Views/                   Inicio, Entreno, Nutrición, Actividad, Progreso, Ajustes
 │   ├── Resources/SeedCatalog.json  Alimentos y 9 menús de ejemplo
 │   └── Assets.xcassets          Icono, color de acento, color de arranque
-├── NowOrNeverTests/             Pruebas unitarias (XCTest)
+├── NowOrNeverTests/             Pruebas unitarias y de persistencia (XCTest + SwiftData en memoria)
+├── NowOrNeverUITests/           Pruebas de interfaz que usan la app como un usuario (XCUITest)
 ├── docs/strava-backend/         Backend de ejemplo para OAuth
 └── tools/                       Scripts que generan SeedCatalog.json y el .xcodeproj
 ```
