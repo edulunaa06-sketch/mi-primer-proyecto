@@ -173,7 +173,7 @@ function foodMatches(name, query) {
   const q = fold(query), n = fold(name);
   return !q || n.includes(q) || Object.entries(ALIASES).some(([k, t]) => q.startsWith(k) && n.includes(t));
 }
-const MEALS = [["breakfast", "Desayuno"], ["lunch", "Comida"], ["snack", "Merienda"], ["dinner", "Cena"]];
+const MEALS = [["breakfast", "Desayuno"], ["lunch", "Almuerzo"], ["snack", "Merienda"], ["dinner", "Cena"]];
 const SHARE = { breakfast: 0.25, lunch: 0.35, snack: 0.15, dinner: 0.25 };
 const BASIS = { raw: "en crudo", cooked: "cocinado", dry: "en seco", drained: "escurrido", cookedDrained: "cocido y escurrido", edible: "parte comestible", asWeighed: "peso real" };
 const FOODS = Object.fromEntries(CATALOG.foods.map(f => [f.key, f]));
@@ -273,7 +273,9 @@ function targetFor(type, fixed) {
   const share = pending.reduce((a, k) => a + SHARE[k], 0), f = SHARE[type] / share;
   return { kcal: rem.kcal * f, protein: rem.protein * f, carbs: rem.carbs * f, fat: rem.fat * f };
 }
-function dayData(k) { return S.days[k] || (S.days[k] = { meals: {}, done: {} }); }
+function dayData(k) { const d = S.days[k] || (S.days[k] = { meals: {}, done: {} }); d.log = d.log || {}; return d; }
+function logOfDay(k, t) { const d = S.days[k]; return (d && d.log && d.log[t]) || []; }
+function logTotals(items) { return items.reduce((a, it) => add(a, per(it.per100, it.grams)), V0()); }
 /** Comida de un día: lo apuntado a mano, lo elegido o (por defecto) la del menú 1. */
 function resolve(k, type) {
   const d = S.days[k], m = d && d.meals[type];
@@ -286,7 +288,16 @@ function resolve(k, type) {
 }
 function dayFixed(k, except) { const out = {}; MEALS.forEach(([t]) => { if (t !== except) out[t] = resolve(k, t).totals; }); return out; }
 function dayTotals(k) { return MEALS.reduce((a, [t]) => add(a, resolve(k, t).totals), V0()); }
-function consumed(k) { const d = S.days[k]; return MEALS.reduce((a, [t]) => (d && d.done[t] ? add(a, resolve(k, t).totals) : a), V0()); }
+/** Lo comido: lo registrado por foto o, si no hay, la comida del menú marcada como hecha. */
+function consumed(k) { const d = S.days[k]; return MEALS.reduce((a, [t]) => { const log = logOfDay(k, t); return log.length ? add(a, logTotals(log)) : (d && d.done[t] ? add(a, resolve(k, t).totals) : a); }, V0()); }
+function leftCard(k, title) {
+  const c = consumed(k), T = S.targets, left = T.kcal - c.kcal;
+  const m = (n, e, g) => { const l = g - e; return `<div class="raised" style="display:flex;flex-direction:column;gap:2px;min-width:0"><span class="tiny muted">${n}</span><b class="num" style="font-size:20px;${l < 0 ? "color:var(--warn)" : ""}">${fmt0(Math.abs(l))} g</b><span class="tiny dim">${l >= 0 ? "quedan de " + fmt0(g) : "de más (" + fmt0(g) + ")"}</span><div class="bar"><i style="width:${g > 0 ? Math.min(e / g, 1) * 100 : 0}%"></i></div></div>`; };
+  return `<section class="card"><div class="eyebrow">${esc(title)}</div><div class="muted small">${left >= 0 ? "Te quedan" : "Te has pasado"}</div>
+    <div class="num" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:52px;line-height:1;${left < 0 ? "color:var(--warn)" : ""}">${fmt0(Math.abs(left))} kcal</div>
+    <div class="tiny muted num">Objetivo ${fmt0(T.kcal)} − comido ${fmt0(c.kcal)}</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">${m("Proteínas", c.protein, T.protein)}${m("Carbohidratos", c.carbs, T.carbs)}${m("Grasas", c.fat, T.fat)}</div></section>`;
+}
 
 /* ===== Perfil (Mifflin-St Jeor, igual que la app) ===== */
 const ACT = { sedentary: [1.2, "Sedentario"], light: [1.375, "Ligero (1–3 días)"], moderate: [1.55, "Moderado (3–5 días)"], high: [1.725, "Alto (6–7 días)"], veryHigh: [1.9, "Muy alto"] };
@@ -442,11 +453,7 @@ function viewHome() {
   const pct = T.kcal ? Math.round(Math.min(c.kcal / T.kcal, 1) * 100) : 0;
   return `
   <header class="row between"><div><div class="eyebrow">Now or Never · demo</div><h1>Hoy cuenta.</h1><div class="muted small">${esc(niceDate(k))}</div></div></header>
-  <section class="card"><div class="row"><div class="ring" style="--p:${pct}"><span>${pct}%</span></div>
-    <div class="grow"><h3>Consumido hoy</h3><div class="num muted">${fmt0(c.kcal)} de ${fmt0(T.kcal)} kcal · ${done}/4 comidas</div>
-    <div class="tiny dim">Plan del día: ${fmt0(planned.kcal)} kcal · encaje ${Math.round(fit(planned, T) * 100)}%</div></div></div>
-    ${macroBar("Proteínas", c.protein, T.protein)}${macroBar("Carbohidratos", c.carbs, T.carbs)}${macroBar("Grasas", c.fat, T.fat)}
-    <button class="ghost" data-act="tab" data-v="food">Ver y elegir mis comidas</button></section>
+  <div data-act="tab" data-v="food" style="cursor:pointer">${leftCard(k, "Calorías de hoy")}</div>
   <section class="card"><div class="eyebrow">Entrenamiento de hoy · ${DAYS[wd - 1]}</div>
     ${sessions.map(s => { const log = logOf(week, s.id); return `<button class="raised row" style="color:inherit;text-align:left;width:100%" data-act="openSession" data-v="${s.id}">
       <div class="grow"><b>${esc(s.title)}</b><div class="tiny muted">${s.kind === "strength" ? exercisesOf(s.id).length + " ejercicios" : esc(s.detail)}</div></div>
@@ -468,9 +475,11 @@ function mealCard(k, type, label) {
     ${r.kind !== "menu" ? `<button class="plain" data-act="resetMeal" data-v="${type}">Volver al menú</button>` : ""}</div></section>`;
 }
 function viewFood() {
-  const k = ui.day, T = S.targets, t = dayTotals(k), c = consumed(k);
-  return `
-  <header><div class="eyebrow">Comidas</div><h1>${esc(niceDate(k))}</h1></header>
+  const k = ui.day, T = S.targets, t = dayTotals(k), c = consumed(k), sec = ui.foodSec || "log";
+  const seg = `<div class="seg">${[["log", "Comidas"], ["menus", "Menús"]].map(([v, l]) => `<button data-act="foodSec" data-v="${v}" class="${sec === v ? "on" : ""}">${l}</button>`).join("")}</div>`;
+  if (sec === "log") return seg + viewLog(k);
+  return seg + `
+  <header><div class="eyebrow">Menús · ideas</div><h1>${esc(niceDate(k))}</h1></header>
   <div class="row"><button class="ghost" data-act="dayShift" data-v="-1" aria-label="Día anterior">‹</button><input id="dayPick" type="date" value="${k}" aria-label="Día"><button class="ghost" data-act="dayShift" data-v="1" aria-label="Día siguiente">›</button></div>
   <button class="block" data-act="builder">Elegir mis comidas paso a paso</button>
   <button class="ghost block" data-act="rebalance">Reajustar el resto del día a mis macros</button>
@@ -615,7 +624,7 @@ function closeSheet() { sheetState = null; document.getElementById("sheet").inne
 function renderSheet() {
   const el = document.getElementById("sheet");
   if (!sheetState) { el.innerHTML = ""; return; }
-  const body = { swap: sheetSwap, builder: sheetBuilder, custom: sheetCustom }[sheetState.kind]();
+  const body = { swap: sheetSwap, builder: sheetBuilder, custom: sheetCustom, log: sheetLog }[sheetState.kind]();
   el.innerHTML = `<div class="sheet" data-act="sheetBg"><div class="panel" role="dialog" aria-modal="true">${body}</div></div>`;
 }
 function optionCard(type, o, tgt, action) {
@@ -729,6 +738,72 @@ function readPhotoFields() {
   if (g) ph.grams = num(g.value) || 0; if (p) ph.plate = num(p.value) || 0; if (n) ph.note = n.value.trim();
 }
 
+function viewLog(k) {
+  return `<header><div class="eyebrow">Comidas</div><h1>${esc(niceDate(k))}</h1></header>
+  <div class="row"><button class="ghost" data-act="dayShift" data-v="-1" aria-label="Día anterior">‹</button><input id="dayPick" type="date" value="${k}" aria-label="Día"><button class="ghost" data-act="dayShift" data-v="1" aria-label="Día siguiente">›</button></div>
+  ${leftCard(k, k === dayKey(new Date()) ? "Hoy" : niceDate(k))}
+  ${MEALS.map(([t, label]) => { const items = logOfDay(k, t), tot = logTotals(items), d = S.days[k], menuDone = !items.length && d && d.done[t];
+    return `<section class="card"><div class="row between"><div><h3>${label}</h3><div class="tiny muted num">${items.length ? `${fmt0(tot.kcal)} kcal · P ${fmt0(tot.protein)} g` : menuDone ? "Marcada desde Menús: " + fmt0(resolve(k, t).totals.kcal) + " kcal" : "Toca la cámara para hacer la foto"}</div></div>
+      <label class="photo-btn" style="width:auto;padding:10px 14px" aria-label="${label}: añadir con foto">📷 Foto<input type="file" accept="image/*" capture="environment" data-logphoto="${t}" hidden></label></div>
+      ${items.map((it, i) => { const v = per(it.per100, it.grams); return `<div class="line small"><span class="grow">${esc(it.name)} <span class="dim">· ${fmt0(it.grams)} g</span><div class="tiny dim num">P ${fmt1(v.protein)} · C ${fmt1(v.carbs)} · G ${fmt1(v.fat)}</div></span><span class="num">${fmt0(v.kcal)} kcal</span><button class="plain tiny" data-act="logDel" data-v="${t}|${i}" aria-label="Quitar ${esc(it.name)}">✕</button></div>`; }).join("")}
+      <button class="plain tiny" data-act="logOpen" data-v="${t}">Sin foto: escribir ingredientes</button></section>`; }).join("")}
+  <p class="note">Las kcal las estima Claude con los gramos que pesas tú; son aproximadas. Para ideas de qué comer, abre «Menús».</p>`;
+}
+const DETECT_PROMPT = `Eres el asistente de nutrición de la app Now or Never. Recibes la foto de un plato o de los ingredientes de una comida. Enumera cada alimento distinto que se ve, con un nombre corto y concreto en español que indique cómo está (por ejemplo: «Pechuga de pollo a la plancha», «Boniato asado», «Queso cottage», «Atún al natural escurrido»). No inventes alimentos; si algo es dudoso añade «(?)». Incluye aceite o salsa solo si se ven. No des cantidades: el usuario pesará cada alimento. Si no hay comida, lista vacía y explícalo en la nota.
+Responde SOLO con JSON: {"ingredients":["..."],"note":"..."}`;
+const CALC_PROMPT = `Eres el asistente de nutrición de la app Now or Never. El usuario ha pesado cada ingrediente de su comida. Para CADA ingrediente de la lista, en el mismo orden y con los mismos gramos, da sus valores por 100 g (kcal, proteínas, carbohidratos y grasas) según tablas de referencia (BEDCA, USDA), para el alimento tal y como se indica (cocinado si está cocinado). Si hay foto, úsala solo para saber cómo está preparado. Devuelve exactamente un elemento por ingrediente. Nota en español, máximo 2 frases.
+Responde SOLO con JSON: {"items":[{"name":"","grams":0,"kcal_per_100g":0,"protein_per_100g":0,"carbs_per_100g":0,"fat_per_100g":0}],"note":""}`;
+const SCHEMA_DETECT = { type: "object", additionalProperties: false, required: ["ingredients", "note"], properties: { ingredients: { type: "array", items: { type: "string" } }, note: { type: "string" } } };
+function sheetLog() {
+  const st = sheetState, label = MEALS.find(m => m[0] === st.type)[1], mode = claudeMode(), r = st.result;
+  const valid = st.rows.filter(x => x.name.trim()), ready = valid.length && valid.every(x => x.grams > 0);
+  const tot = r ? r.items.reduce((a, it) => add(a, per({ kcal: it.kcal_per_100g, protein: it.protein_per_100g, carbs: it.carbs_per_100g, fat: it.fat_per_100g }, it.grams)), V0()) : null;
+  return `<div class="sheet-head"><div class="row between"><div class="eyebrow">${esc(label)}</div><button class="plain" data-act="closeSheet">Cerrar</button></div></div>
+  ${mode ? "" : '<p class="note">Fuera de claude.ai, Claude necesita tu clave de la API (Perfil).</p>'}
+  <section class="card"><div class="row">${st.url ? `<img src="${st.url}" alt="Foto" style="width:88px;height:88px;object-fit:cover;border-radius:12px">` : ""}
+    <label class="photo-btn grow" style="text-align:center">${st.url ? "Repetir foto" : "Hacer foto"}<input type="file" accept="image/*" capture="environment" id="logFile" hidden></label></div>
+    ${st.busy === "detect" ? '<p class="small muted">Claude está mirando qué hay en el plato…</p>' : st.note ? `<p class="tiny muted">${esc(st.note)}</p>` : ""}</section>
+  <section class="card"><h3>Ingredientes y gramos</h3><p class="tiny muted">${st.rows.length ? "Revisa lo detectado, añade lo que falte y pon lo que pesa cada uno." : "Haz la foto o añade los ingredientes a mano."}</p>
+    ${st.rows.map((x, i) => `<div class="row"><input class="grow" data-lrow="${i}" data-f="name" value="${esc(x.name)}" placeholder="Ingrediente" aria-label="Ingrediente"><input class="short" data-lrow="${i}" data-f="grams" inputmode="decimal" value="${x.grams || ""}" placeholder="g" aria-label="Gramos de ${esc(x.name)}"><span class="tiny muted">g</span><button class="plain" data-act="lrowDel" data-v="${i}" aria-label="Quitar">✕</button></div>`).join("")}
+    <button class="ghost" data-act="lrowAdd">+ Añadir ingrediente</button>
+    <button data-act="logCalc" ${mode && ready && !st.busy ? "" : "disabled"}>${st.busy === "calc" ? "Calculando…" : "Calcular calorías"}</button>
+    ${valid.length && !ready ? '<p class="tiny muted">Pon los gramos de cada ingrediente.</p>' : ""}</section>
+  ${r ? `<section class="card"><h3>Resultado</h3>${r.items.map(it => `<div class="line small"><span class="grow">${esc(it.name)} <span class="dim">· ${fmt0(it.grams)} g · ${fmt0(it.kcal_per_100g)} kcal/100 g</span></span><span class="num">${fmt0(it.kcal_per_100g * it.grams / 100)} kcal</span></div>`).join("")}
+    <hr><div class="row between"><b>Total</b><b class="num" style="color:var(--lime);font-size:22px">${fmt0(tot.kcal)} kcal</b></div><div class="small muted num">P ${fmt0(tot.protein)} g · C ${fmt0(tot.carbs)} g · G ${fmt0(tot.fat)} g</div>
+    <p class="tiny dim">${esc(r.note || "")}</p><button data-act="logSave">Añadir a ${esc(label.toLowerCase())}</button></section>` : ""}
+  ${st.error ? `<p class="note" style="color:var(--danger)">${esc(st.error)}</p>` : ""}`;
+}
+async function askVision(prompt, schema, user, blob, effort) {
+  if (sample) return sample.json(prompt + "\n\n" + user, blob ? { images: blob, modelTier: "default" } : { modelTier: "default" });
+  const key = claudeKey();
+  if (!key) throw new Error("Añade tu clave de la API de Claude en Perfil, o abre la demo desde su enlace de claude.ai.");
+  if (!anthropicClient) { const mod = await import("https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm"); anthropicClient = new (mod.default || mod.Anthropic)({ apiKey: key, dangerouslyAllowBrowser: true }); }
+  const content = [{ type: "text", text: user }];
+  if (blob) { const data = await new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).split(",")[1]); fr.onerror = ko; fr.readAsDataURL(blob); }); content.unshift({ type: "image", source: { type: "base64", media_type: "image/jpeg", data } }); }
+  const msg = await anthropicClient.beta.messages.create({ model: "claude-opus-5-5", max_tokens: 16000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default", system: prompt,
+    output_config: { effort, format: { type: "json_schema", schema } }, messages: [{ role: "user", content }] });
+  if (msg.stop_reason === "refusal") throw new Error("Claude no ha podido responder a esta petición.");
+  if (msg.stop_reason === "max_tokens") throw new Error("La respuesta llegó incompleta. Inténtalo de nuevo.");
+  return JSON.parse((msg.content.filter(b => b.type === "text").pop() || {}).text);
+}
+function openLog(type, file) {
+  openSheet({ kind: "log", type, rows: [], result: null, note: "", busy: null, error: null });
+  if (file) setLogPhoto(file);
+}
+async function setLogPhoto(file) {
+  const st = sheetState;
+  try { const b = await photoBlob(file); if (st.url) URL.revokeObjectURL(st.url); st.blob = b; st.url = URL.createObjectURL(b); st.result = null; }
+  catch (e) { st.error = "No se pudo leer la foto."; renderSheet(); return; }
+  if (!claudeMode()) { renderSheet(); return; }
+  st.busy = "detect"; st.error = null; renderSheet();
+  try { const r = await askVision(DETECT_PROMPT, SCHEMA_DETECT, "¿Qué alimentos hay en esta comida?", st.blob, "low");
+    const known = new Set(st.rows.filter(x => x.name.trim()).map(x => x.name.trim().toLowerCase()));
+    st.rows = st.rows.filter(x => x.name.trim()).concat((r.ingredients || []).map(String).map(x => x.trim()).filter(x => x && !known.has(x.toLowerCase())).slice(0, 15).map(name => ({ name, grams: null })));
+    st.note = r.note || (st.rows.length ? "" : "No se ha reconocido comida. Añade los ingredientes a mano."); }
+  catch (e) { st.error = claudeError(e); }
+  st.busy = null; if (sheetState === st) renderSheet();
+}
+
 /* ===== Acciones ===== */
 function weekLogEnsure(sid) { return logOf(weekStartKey(new Date()), sid, true); }
 function setMeal(k, type, value) { const d = dayData(k); d.meals[type] = value; }
@@ -762,6 +837,22 @@ const actions = {
   custom(t) { const d = S.days[ui.day], cur = d && d.meals[t] && d.meals[t].kind === "custom" ? d.meals[t].items : [];
     openSheet({ kind: "custom", type: t, items: JSON.parse(JSON.stringify(cur)), mode: "photo", photo: {}, target: targetFor(t, dayFixed(ui.day, t)) }); },
   cMode(v) { sheetState.mode = v; sheetState.error = null; renderSheet(); },
+  foodSec(v) { ui.foodSec = v; render(); },
+  logOpen(t) { openLog(t, null); },
+  logDel(v) { const [t, i] = v.split("|"), d = dayData(ui.day); d.log[t].splice(Number(i), 1); d.done[t] = d.log[t].length > 0; save(); render(); },
+  lrowAdd() { sheetState.rows.push({ name: "", grams: null }); sheetState.result = null; renderSheet(); },
+  lrowDel(i) { sheetState.rows.splice(Number(i), 1); sheetState.result = null; renderSheet(); },
+  async logCalc() { const st = sheetState, rows = st.rows.filter(x => x.name.trim() && x.grams > 0); if (!rows.length) return;
+    st.busy = "calc"; st.error = null; renderSheet();
+    try { const user = "Ingredientes pesados por el usuario:\n" + rows.map((x, i) => `${i + 1}. ${x.name.trim()}: ${fmt0(x.grams)} g`).join("\n");
+      const r = await askVision(CALC_PROMPT, SCHEMA_ESTIMATE, user, st.blob || null, "low"), got = r.items || [];
+      const items = rows.map((x, i) => { const m = got.length === rows.length ? got[i] : got.find(g => String(g.name).toLowerCase() === x.name.trim().toLowerCase());
+        return m && m.kcal_per_100g >= 0 && m.kcal_per_100g <= 900 ? { ...m, name: x.name.trim(), grams: x.grams } : null; }).filter(Boolean);
+      st.result = { items, note: r.note || "" }; if (!items.length) st.error = "Claude no ha devuelto valores válidos. Revisa los nombres."; }
+    catch (e) { st.error = claudeError(e); }
+    st.busy = null; if (sheetState === st) renderSheet(); },
+  logSave() { const st = sheetState, d = dayData(ui.day); d.log[st.type] = (d.log[st.type] || []).concat(st.result.items.map(it => ({ name: it.name, grams: it.grams, per100: { kcal: it.kcal_per_100g, protein: it.protein_per_100g, carbs: it.carbs_per_100g, fat: it.fat_per_100g } })));
+    d.done[st.type] = true; save(); closeSheet(); toast("Añadido a " + MEALS.find(m => m[0] === st.type)[1].toLowerCase()); },
   async pAnalyze() { await analyzePhoto(false); },
   async pAnswer() { await analyzePhoto(true); },
   pToggle(i) { const ph = sheetState.photo, n = Number(i); ph.removed = ph.removed || []; ph.removed = ph.removed.includes(n) ? ph.removed.filter(x => x !== n) : [...ph.removed, n]; renderSheet(); },
@@ -852,6 +943,13 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("change", e => {
   const t = e.target;
+  if (t.dataset && t.dataset.logphoto && t.files[0]) { const f = t.files[0]; t.value = ""; openLog(t.dataset.logphoto, f); return; }
+  if (t.id === "logFile" && t.files[0]) { const f = t.files[0]; t.value = ""; setLogPhoto(f); return; }
+  if (t.dataset && t.dataset.lrow !== undefined) { const st = sheetState, r = st.rows[Number(t.dataset.lrow)]; if (t.dataset.f === "grams") r.grams = num(t.value); else r.name = t.value;
+    // Sin volver a pintar (no se pierde el foco al pasar al siguiente campo), salvo para quitar un resultado ya calculado.
+    if (st.result) { st.result = null; renderSheet(); return; }
+    const valid = st.rows.filter(x => x.name.trim()), btn = document.querySelector('[data-act="logCalc"]');
+    if (btn) btn.disabled = !(claudeMode() && valid.length && valid.every(x => x.grams > 0) && !st.busy); return; }
   if (t.id === "pFile" && t.files[0]) { const f = t.files[0]; readPhotoFields(); photoBlob(f).then(b => { const ph = sheetState.photo = sheetState.photo || {}; if (ph.url) URL.revokeObjectURL(ph.url); ph.blob = b; ph.url = URL.createObjectURL(b); ph.analysis = null; renderSheet(); }).catch(() => toast("No se pudo leer la foto")); return; }
   if (["pGrams", "pPlate", "pNote"].includes(t.id)) { readPhotoFields(); return; }
   if (t.dataset && t.dataset.photo && t.files[0]) { savePhoto(t.dataset.photo, t.files[0]); t.value = ""; return; }
