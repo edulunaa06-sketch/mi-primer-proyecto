@@ -135,7 +135,9 @@ struct HomeView: View {
             MacroRow(name: "Proteínas", consumed: consumed.protein, target: settings?.proteinTarget ?? 0)
             MacroRow(name: "Carbohidratos", consumed: consumed.carbs, target: settings?.carbsTarget ?? 0)
             MacroRow(name: "Grasas", consumed: consumed.fat, target: settings?.fatTarget ?? 0)
-            Text("Objetivos provisionales editables en Ajustes. No son una prescripción clínica.")
+            Text(settings?.autoTargets == true
+                 ? "Objetivos calculados con tu perfil (Mifflin-St Jeor). Estimación, no prescripción clínica."
+                 : "Objetivos manuales editables en Ajustes. No son una prescripción clínica.")
                 .font(.caption2)
                 .foregroundStyle(Theme.textTertiary)
         }
