@@ -329,7 +329,7 @@ struct CustomMealSheet: View {
     // MARK: Catálogo y manual
 
     private var catalogCard: some View {
-        let filtered = search.isEmpty ? foods : foods.filter { $0.name.localizedCaseInsensitiveContains(search) }
+        let filtered = search.isEmpty ? foods : foods.filter { FoodSearch.matches(name: $0.name, query: search) }
         return VStack(alignment: .leading, spacing: 10) {
             TextField("Buscar alimento", text: $search)
                 .padding(10)

@@ -1,0 +1,730 @@
+<title>Now or Never</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap">
+<style>
+/* Una sola columna tipo app móvil: cabecera, contenido en tarjetas y barra de pestañas fija abajo. Tema oscuro único (estética de la app nativa). */
+:root {
+  --bg: #0d0d0f;
+  --card: #1b1b1e;
+  --raised: #27272b;
+  --line: #34343a;
+  --fg: #f5f5f2;
+  --muted: #a1a19a;
+  --dim: #6c6c68;
+  --lime: #c7ff00;
+  --lime-dim: rgba(199, 255, 0, 0.16);
+  --warn: #ffb833;
+  --danger: #ff6464;
+  --font-display: "Barlow Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 18px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.45 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.app {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px calc(96px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+h1, h2, h3 { margin: 0; font-family: var(--font-display); letter-spacing: 0.01em; text-wrap: balance; }
+h1 { font-size: 38px; font-weight: 800; line-height: 1; }
+h2 { font-size: 22px; font-weight: 700; }
+h3 { font-size: 17px; font-weight: 700; font-family: var(--font-body); }
+.eyebrow { font: 700 12px/1 var(--font-body); letter-spacing: 0.12em; text-transform: uppercase; color: var(--lime); }
+.muted { color: var(--muted); }
+.dim { color: var(--dim); }
+.small { font-size: 13px; }
+.tiny { font-size: 12px; }
+.num { font-variant-numeric: tabular-nums; }
+.card { background: var(--card); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.raised { background: var(--raised); border-radius: 12px; padding: 10px 12px; }
+.row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.row > .grow { flex: 1; min-width: 0; }
+.between { justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; text-align: center; }
+.stat b { display: block; font: 700 22px/1.1 var(--font-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; color: var(--muted); }
+button, .btn {
+  font: 600 15px/1.2 var(--font-body); border: 0; border-radius: 14px; padding: 12px 14px; cursor: pointer;
+  background: var(--lime); color: #101010; text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+}
+button.ghost, .btn.ghost { background: var(--lime-dim); color: var(--lime); }
+button.plain { background: transparent; color: var(--lime); padding: 6px 4px; font-size: 14px; }
+button.danger { background: transparent; color: var(--danger); padding: 6px 4px; font-size: 14px; }
+button.block { width: 100%; }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+input, select, textarea {
+  font: 500 15px var(--font-body); color: var(--fg); background: var(--raised); border: 1px solid transparent; border-radius: 10px;
+  padding: 9px 10px; width: 100%; min-width: 0;
+}
+input.short { width: 84px; text-align: center; }
+label.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+.check { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--dim); background: transparent; padding: 0; flex: none; }
+.check.on { background: var(--lime); border-color: var(--lime); }
+.check.on::after { content: ""; width: 7px; height: 12px; border: solid #101010; border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+.bar { height: 8px; border-radius: 99px; background: var(--raised); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--lime); border-radius: 99px; }
+.pill { font: 700 12px/1 var(--font-body); padding: 5px 8px; border-radius: 99px; background: var(--lime-dim); color: var(--lime); white-space: nowrap; }
+.pill.solid { background: var(--lime); color: #101010; }
+.pill.warn { background: rgba(255, 184, 51, 0.15); color: var(--warn); }
+.note { font-size: 13px; color: var(--muted); background: rgba(255, 184, 51, 0.09); border-radius: 12px; padding: 10px 12px; }
+.line { display: flex; justify-content: space-between; gap: 10px; font-size: 14px; }
+.line .grow { min-width: 0; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; background: var(--raised); border-radius: 12px; padding: 3px; gap: 3px; }
+.seg button { background: transparent; color: var(--muted); padding: 8px 6px; font-size: 13px; border-radius: 9px; }
+.seg button.on { background: var(--card); color: var(--fg); }
+.ring { --p: 0; width: 86px; height: 86px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  background: conic-gradient(var(--lime) calc(var(--p) * 1%), var(--raised) 0); }
+.ring > span { width: 68px; height: 68px; border-radius: 50%; background: var(--card); display: grid; place-items: center; font: 700 20px var(--font-display); font-variant-numeric: tabular-nums; }
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--card); border-top: 1px solid var(--line);
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+}
+nav.tabs button { background: transparent; color: var(--dim); flex-direction: column; gap: 3px; padding: 6px 2px; font-size: 11px; border-radius: 10px; }
+nav.tabs button.on { color: var(--lime); }
+nav.tabs svg { width: 22px; height: 22px; }
+.sheet { position: fixed; inset: 0; z-index: 30; background: rgba(0, 0, 0, 0.6); display: flex; align-items: flex-end; justify-content: center; }
+.sheet > .panel {
+  background: var(--bg); width: 100%; max-width: 560px; max-height: 92%; overflow-y: auto; border-radius: 22px 22px 0 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  display: flex; flex-direction: column; gap: 12px;
+}
+.sheet-head { position: sticky; top: -16px; background: var(--bg); padding-block: 4px 8px; z-index: 2; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(86px + env(safe-area-inset-bottom, 0px)); z-index: 40;
+  background: var(--lime); color: #101010; font-weight: 600; padding: 10px 16px; border-radius: 12px; max-width: calc(100% - 32px); }
+svg text { fill: var(--muted); font: 11px var(--font-body); }
+.chip-day { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--raised); color: var(--muted); flex: none; }
+.chip-day.today { background: var(--lime); color: #101010; }
+@media (prefers-reduced-motion: no-preference) { .sheet > .panel { animation: up 0.18s ease-out; } @keyframes up { from { transform: translateY(24px); opacity: 0.6; } } }
+</style>
+
+<div class="app" id="app"></div>
+<nav class="tabs" id="tabs" aria-label="Secciones"></nav>
+<div id="sheet"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+/* ===== Datos de la app (mismo catálogo y rutina que la app nativa) ===== */
+const CATALOG = {"version":2,"disclaimer":"Catálogo y menús de EJEMPLO con valores aproximados por 100 g. No son un plan nutricional calculado clínicamente. Revisa y edita cada alimento con la etiqueta de tu producto o una base de datos fiable.","foods":[{"key":"chicken_breast","name":"Pechuga de pollo","kcal":120,"protein":22.5,"carbs":0,"fat":2.6,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"turkey_breast","name":"Pechuga de pavo","kcal":114,"protein":23.7,"carbs":0,"fat":1.5,"basis":"raw","provisional":true,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"lean_beef","name":"Ternera picada magra (5 % grasa)","kcal":137,"protein":21.4,"carbs":0,"fat":5.0,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"salmon","name":"Salmón","kcal":208,"protein":20.4,"carbs":0,"fat":13.4,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"cod","name":"Bacalao fresco","kcal":82,"protein":17.8,"carbs":0,"fat":0.7,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"tuna_drained","name":"Atún al natural","kcal":116,"protein":25.5,"carbs":0,"fat":0.8,"basis":"drained","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"egg","name":"Huevo entero (sin cáscara)","kcal":143,"protein":12.6,"carbs":0.7,"fat":9.5,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"egg_white","name":"Clara de huevo","kcal":52,"protein":10.9,"carbs":0.7,"fat":0.2,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"rice","name":"Arroz blanco","kcal":360,"protein":6.5,"carbs":79.3,"fat":0.6,"basis":"dry","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"pasta","name":"Pasta de trigo","kcal":371,"protein":13.0,"carbs":74.7,"fat":1.5,"basis":"dry","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"oats","name":"Copos de avena","kcal":389,"protein":16.9,"carbs":66.3,"fat":6.9,"basis":"dry","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"quinoa","name":"Quinoa","kcal":368,"protein":14.1,"carbs":64.2,"fat":6.1,"basis":"dry","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"bread_ww","name":"Pan integral","kcal":252,"protein":12.4,"carbs":42.7,"fat":3.5,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"rice_cakes","name":"Tortitas de arroz","kcal":387,"protein":8.2,"carbs":81.5,"fat":2.8,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"potato","name":"Patata (pelada)","kcal":77,"protein":2.0,"carbs":17.5,"fat":0.1,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"sweet_potato","name":"Boniato (pelado)","kcal":86,"protein":1.6,"carbs":20.1,"fat":0.1,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"chickpeas","name":"Garbanzos","kcal":164,"protein":8.9,"carbs":27.4,"fat":2.6,"basis":"cookedDrained","provisional":true,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto. Si son de bote, usa la etiqueta."},{"key":"lentils","name":"Lentejas","kcal":116,"protein":9.0,"carbs":20.1,"fat":0.4,"basis":"cookedDrained","provisional":true,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto. Si son de bote, usa la etiqueta."},{"key":"greek_yogurt","name":"Yogur griego natural 0 %","kcal":59,"protein":10.2,"carbs":3.6,"fat":0.4,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"skyr","name":"Skyr natural","kcal":63,"protein":11.0,"carbs":4.0,"fat":0.2,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"milk_semi","name":"Leche semidesnatada","kcal":46,"protein":3.4,"carbs":4.8,"fat":1.6,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"whey","name":"Proteína whey (en polvo)","kcal":400,"protein":80.0,"carbs":8.0,"fat":6.0,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"banana","name":"Plátano","kcal":89,"protein":1.1,"carbs":22.8,"fat":0.3,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"apple","name":"Manzana","kcal":52,"protein":0.3,"carbs":13.8,"fat":0.2,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"blueberries","name":"Arándanos","kcal":57,"protein":0.7,"carbs":14.5,"fat":0.3,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"olive_oil","name":"Aceite de oliva","kcal":884,"protein":0,"carbs":0,"fat":100,"basis":"asWeighed","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"avocado","name":"Aguacate","kcal":160,"protein":2.0,"carbs":8.5,"fat":14.7,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"walnuts","name":"Nueces (peladas)","kcal":654,"protein":15.2,"carbs":13.7,"fat":65.2,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"peanut_butter","name":"Crema de cacahuete 100 %","kcal":588,"protein":25.0,"carbs":20.0,"fat":50.0,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"broccoli","name":"Brócoli","kcal":34,"protein":2.8,"carbs":6.6,"fat":0.4,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"mixed_veg","name":"Verduras variadas (genérico)","kcal":30,"protein":1.5,"carbs":5.0,"fat":0.3,"basis":"raw","provisional":true,"macrosKnown":true,"source":"Valor genérico orientativo: las calorías reales dependen de las verduras concretas. Sustitúyelo por alimentos específicos."},{"key":"tomato","name":"Tomate","kcal":18,"protein":0.9,"carbs":3.9,"fat":0.2,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"lettuce","name":"Lechuga","kcal":15,"protein":1.4,"carbs":2.9,"fat":0.2,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"zucchini","name":"Calabacín","kcal":17,"protein":1.2,"carbs":3.1,"fat":0.3,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"red_pepper","name":"Pimiento rojo","kcal":31,"protein":1.0,"carbs":6.0,"fat":0.3,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"honey","name":"Miel","kcal":304,"protein":0.3,"carbs":82.4,"fat":0,"basis":"asWeighed","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"strawberries","name":"Fresas","kcal":32,"protein":0.7,"carbs":7.7,"fat":0.3,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"kiwi","name":"Kiwi","kcal":61,"protein":1.1,"carbs":14.7,"fat":0.5,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"orange","name":"Naranja","kcal":47,"protein":0.9,"carbs":11.8,"fat":0.1,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"pineapple","name":"Piña","kcal":50,"protein":0.5,"carbs":13.1,"fat":0.1,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"mango","name":"Mango","kcal":60,"protein":0.8,"carbs":15.0,"fat":0.4,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"almonds","name":"Almendras","kcal":579,"protein":21.2,"carbs":21.6,"fat":49.9,"basis":"edible","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"turkey_cold","name":"Fiambre de pechuga de pavo (≥90 % carne)","kcal":100,"protein":19.0,"carbs":2.0,"fat":1.5,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"serrano","name":"Jamón serrano","kcal":241,"protein":30.5,"carbs":0.5,"fat":13.0,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"fresh_cheese","name":"Queso fresco batido 0 %","kcal":46,"protein":8.0,"carbs":3.5,"fat":0.2,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"tortilla_ww","name":"Tortilla de trigo integral","kcal":300,"protein":9.0,"carbs":50.0,"fat":7.0,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"hummus","name":"Hummus","kcal":166,"protein":7.9,"carbs":14.3,"fat":9.6,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"smoked_salmon","name":"Salmón ahumado","kcal":117,"protein":18.3,"carbs":0,"fat":4.3,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"shrimp","name":"Gambas peladas","kcal":85,"protein":20.1,"carbs":0,"fat":0.5,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"tofu","name":"Tofu firme","kcal":144,"protein":17.3,"carbs":2.8,"fat":8.7,"basis":"asWeighed","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"pork_loin","name":"Lomo de cerdo (cinta)","kcal":143,"protein":21.0,"carbs":0,"fat":6.0,"basis":"raw","provisional":true,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"chicken_thigh","name":"Contramuslo de pollo sin piel","kcal":121,"protein":19.7,"carbs":0,"fat":4.1,"basis":"raw","provisional":true,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"sardines","name":"Sardinas en conserva","kcal":208,"protein":24.6,"carbs":0,"fat":11.5,"basis":"drained","provisional":true,"macrosKnown":true,"source":"Depende mucho de la marca: copia los valores de la etiqueta de tu producto."},{"key":"couscous","name":"Cuscús","kcal":376,"protein":12.8,"carbs":77.4,"fat":0.6,"basis":"dry","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"mushrooms","name":"Champiñones","kcal":22,"protein":3.1,"carbs":3.3,"fat":0.3,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"spinach","name":"Espinacas","kcal":23,"protein":2.9,"carbs":3.6,"fat":0.4,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"onion","name":"Cebolla","kcal":40,"protein":1.1,"carbs":9.3,"fat":0.1,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"carrot","name":"Zanahoria","kcal":41,"protein":0.9,"carbs":9.6,"fat":0.2,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"cucumber","name":"Pepino","kcal":15,"protein":0.7,"carbs":3.6,"fat":0.1,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"peas","name":"Guisantes","kcal":81,"protein":5.4,"carbs":14.5,"fat":0.4,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."},{"key":"green_beans","name":"Judías verdes","kcal":31,"protein":1.8,"carbs":7.0,"fat":0.2,"basis":"raw","provisional":false,"macrosKnown":true,"source":"Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."}],"menus":[{"number":1,"name":"Clásico pollo y salmón","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"oats","grams":70},{"food":"milk_semi","grams":250},{"food":"whey","grams":30},{"food":"banana","grams":120}]},{"type":"lunch","items":[{"food":"chicken_breast","grams":180},{"food":"rice","grams":90},{"food":"mixed_veg","grams":200},{"food":"olive_oil","grams":10}]},{"type":"snack","items":[{"food":"greek_yogurt","grams":250},{"food":"walnuts","grams":15},{"food":"blueberries","grams":100}]},{"type":"dinner","items":[{"food":"salmon","grams":150},{"food":"potato","grams":300},{"food":"broccoli","grams":200},{"food":"olive_oil","grams":5}]}]},{"number":2,"name":"Pasta y bacalao","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"bread_ww","grams":100},{"food":"egg","grams":120},{"food":"egg_white","grams":150},{"food":"tomato","grams":100},{"food":"olive_oil","grams":5}]},{"type":"lunch","items":[{"food":"lean_beef","grams":170},{"food":"pasta","grams":90},{"food":"tomato","grams":150},{"food":"olive_oil","grams":10}]},{"type":"snack","items":[{"food":"skyr","grams":200},{"food":"whey","grams":20},{"food":"banana","grams":120},{"food":"walnuts","grams":15}]},{"type":"dinner","items":[{"food":"cod","grams":250},{"food":"sweet_potato","grams":300},{"food":"zucchini","grams":200},{"food":"olive_oil","grams":10}]}]},{"number":3,"name":"Legumbres","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"oats","grams":80},{"food":"milk_semi","grams":250},{"food":"whey","grams":30},{"food":"blueberries","grams":100}]},{"type":"lunch","items":[{"food":"chicken_breast","grams":150},{"food":"chickpeas","grams":200},{"food":"red_pepper","grams":100},{"food":"olive_oil","grams":10}]},{"type":"snack","items":[{"food":"rice_cakes","grams":30},{"food":"tuna_drained","grams":120},{"food":"apple","grams":150},{"food":"walnuts","grams":15}]},{"type":"dinner","items":[{"food":"turkey_breast","grams":160},{"food":"lentils","grams":200},{"food":"mixed_veg","grams":200},{"food":"olive_oil","grams":10}]}]},{"number":4,"name":"Arroz y ternera","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"greek_yogurt","grams":250},{"food":"oats","grams":60},{"food":"whey","grams":25},{"food":"banana","grams":120}]},{"type":"lunch","items":[{"food":"lean_beef","grams":180},{"food":"rice","grams":90},{"food":"broccoli","grams":200},{"food":"olive_oil","grams":10}]},{"type":"snack","items":[{"food":"bread_ww","grams":60},{"food":"tuna_drained","grams":100},{"food":"tomato","grams":100},{"food":"avocado","grams":60}]},{"type":"dinner","items":[{"food":"chicken_breast","grams":200},{"food":"potato","grams":300},{"food":"lettuce","grams":100},{"food":"olive_oil","grams":15}]}]},{"number":5,"name":"Quinoa y pavo","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"bread_ww","grams":90},{"food":"egg","grams":120},{"food":"egg_white","grams":100},{"food":"avocado","grams":50}]},{"type":"lunch","items":[{"food":"turkey_breast","grams":200},{"food":"quinoa","grams":90},{"food":"mixed_veg","grams":200},{"food":"olive_oil","grams":5}]},{"type":"snack","items":[{"food":"skyr","grams":250},{"food":"whey","grams":20},{"food":"banana","grams":120}]},{"type":"dinner","items":[{"food":"salmon","grams":150},{"food":"rice","grams":80},{"food":"zucchini","grams":200},{"food":"olive_oil","grams":5}]}]},{"number":6,"name":"Pescado blanco","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"oats","grams":80},{"food":"milk_semi","grams":250},{"food":"whey","grams":30},{"food":"banana","grams":120}]},{"type":"lunch","items":[{"food":"cod","grams":250},{"food":"rice","grams":90},{"food":"red_pepper","grams":150},{"food":"avocado","grams":50},{"food":"olive_oil","grams":10}]},{"type":"snack","items":[{"food":"greek_yogurt","grams":250},{"food":"honey","grams":15},{"food":"walnuts","grams":20}]},{"type":"dinner","items":[{"food":"chicken_breast","grams":180},{"food":"sweet_potato","grams":250},{"food":"broccoli","grams":200},{"food":"olive_oil","grams":10}]}]},{"number":7,"name":"Batido y pasta","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"milk_semi","grams":300},{"food":"whey","grams":35},{"food":"oats","grams":70},{"food":"peanut_butter","grams":20},{"food":"banana","grams":100}]},{"type":"lunch","items":[{"food":"chicken_breast","grams":180},{"food":"pasta","grams":90},{"food":"tomato","grams":150},{"food":"olive_oil","grams":10}]},{"type":"snack","items":[{"food":"rice_cakes","grams":30},{"food":"skyr","grams":150},{"food":"blueberries","grams":100}]},{"type":"dinner","items":[{"food":"tuna_drained","grams":150},{"food":"potato","grams":300},{"food":"egg","grams":60},{"food":"lettuce","grams":100},{"food":"olive_oil","grams":10}]}]},{"number":8,"name":"Huevos y ternera","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"egg","grams":120},{"food":"egg_white","grams":200},{"food":"bread_ww","grams":90},{"food":"tomato","grams":100}]},{"type":"lunch","items":[{"food":"lean_beef","grams":180},{"food":"potato","grams":350},{"food":"mixed_veg","grams":200},{"food":"olive_oil","grams":10}]},{"type":"snack","items":[{"food":"greek_yogurt","grams":250},{"food":"oats","grams":40},{"food":"whey","grams":20},{"food":"apple","grams":150},{"food":"walnuts","grams":15}]},{"type":"dinner","items":[{"food":"cod","grams":250},{"food":"rice","grams":70},{"food":"zucchini","grams":200},{"food":"olive_oil","grams":10}]}]},{"number":9,"name":"Día de carrera (más carbohidrato)","note":"Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.","meals":[{"type":"breakfast","items":[{"food":"oats","grams":90},{"food":"milk_semi","grams":250},{"food":"whey","grams":30},{"food":"banana","grams":120},{"food":"honey","grams":10}]},{"type":"lunch","items":[{"food":"chicken_breast","grams":180},{"food":"rice","grams":100},{"food":"mixed_veg","grams":150},{"food":"olive_oil","grams":5}]},{"type":"snack","items":[{"food":"rice_cakes","grams":40},{"food":"skyr","grams":200},{"food":"blueberries","grams":100}]},{"type":"dinner","items":[{"food":"salmon","grams":150},{"food":"pasta","grams":70},{"food":"broccoli","grams":150},{"food":"olive_oil","grams":5}]}]}],"ideas":[{"type":"breakfast","name":"Plato de frutas con yogur","items":[{"food":"banana","grams":120},{"food":"strawberries","grams":150},{"food":"kiwi","grams":100},{"food":"pineapple","grams":150},{"food":"greek_yogurt","grams":150},{"food":"walnuts","grams":10}]},{"type":"breakfast","name":"Tostadas con aguacate y huevos","items":[{"food":"bread_ww","grams":80},{"food":"avocado","grams":60},{"food":"egg","grams":120},{"food":"tomato","grams":80}]},{"type":"breakfast","name":"Yogur griego con avena y frutos rojos","items":[{"food":"greek_yogurt","grams":250},{"food":"oats","grams":40},{"food":"blueberries","grams":100},{"food":"honey","grams":10}]},{"type":"breakfast","name":"Tortitas de avena y claras","items":[{"food":"oats","grams":60},{"food":"egg_white","grams":200},{"food":"banana","grams":100},{"food":"peanut_butter","grams":10}]},{"type":"breakfast","name":"Tostadas con pavo y queso fresco","items":[{"food":"bread_ww","grams":90},{"food":"turkey_cold","grams":80},{"food":"fresh_cheese","grams":100},{"food":"tomato","grams":80}]},{"type":"breakfast","name":"Batido de proteína, plátano y avena","items":[{"food":"milk_semi","grams":300},{"food":"whey","grams":30},{"food":"banana","grams":120},{"food":"oats","grams":40}]},{"type":"breakfast","name":"Skyr con mango y almendras","items":[{"food":"skyr","grams":250},{"food":"mango","grams":120},{"food":"almonds","grams":15}]},{"type":"breakfast","name":"Tostadas con salmón ahumado","items":[{"food":"bread_ww","grams":80},{"food":"smoked_salmon","grams":70},{"food":"fresh_cheese","grams":60},{"food":"avocado","grams":40}]},{"type":"breakfast","name":"Huevos revueltos con espinacas","items":[{"food":"egg","grams":120},{"food":"egg_white","grams":100},{"food":"spinach","grams":60},{"food":"bread_ww","grams":60},{"food":"olive_oil","grams":3}]},{"type":"breakfast","name":"Tortitas de arroz con crema de cacahuete","items":[{"food":"rice_cakes","grams":30},{"food":"peanut_butter","grams":20},{"food":"banana","grams":120},{"food":"milk_semi","grams":250}]},{"type":"lunch","name":"Pollo salteado con arroz y verduras","items":[{"food":"chicken_breast","grams":170},{"food":"rice","grams":80},{"food":"red_pepper","grams":100},{"food":"onion","grams":50},{"food":"olive_oil","grams":10}]},{"type":"lunch","name":"Macarrones con ternera y tomate","items":[{"food":"pasta","grams":90},{"food":"lean_beef","grams":130},{"food":"tomato","grams":150},{"food":"onion","grams":40},{"food":"olive_oil","grams":5}]},{"type":"lunch","name":"Lentejas con verduras y huevo","items":[{"food":"lentils","grams":250},{"food":"carrot","grams":80},{"food":"onion","grams":50},{"food":"egg","grams":60},{"food":"olive_oil","grams":10}]},{"type":"lunch","name":"Wrap de pollo y aguacate","items":[{"food":"tortilla_ww","grams":80},{"food":"chicken_breast","grams":150},{"food":"red_pepper","grams":80},{"food":"lettuce","grams":40},{"food":"avocado","grams":50}]},{"type":"lunch","name":"Salmón con patata y judías verdes","items":[{"food":"salmon","grams":150},{"food":"potato","grams":250},{"food":"green_beans","grams":150},{"food":"olive_oil","grams":5}]},{"type":"lunch","name":"Ensalada de garbanzos con atún","items":[{"food":"chickpeas","grams":200},{"food":"tuna_drained","grams":120},{"food":"tomato","grams":150},{"food":"cucumber","grams":100},{"food":"olive_oil","grams":10}]},{"type":"lunch","name":"Pavo con cuscús y calabacín","items":[{"food":"turkey_breast","grams":180},{"food":"couscous","grams":80},{"food":"zucchini","grams":150},{"food":"olive_oil","grams":10}]},{"type":"lunch","name":"Gambas salteadas con arroz y guisantes","items":[{"food":"shrimp","grams":200},{"food":"rice","grams":90},{"food":"peas","grams":80},{"food":"olive_oil","grams":10}]},{"type":"lunch","name":"Lomo de cerdo con boniato y brócoli","items":[{"food":"pork_loin","grams":170},{"food":"sweet_potato","grams":250},{"food":"broccoli","grams":150},{"food":"olive_oil","grams":5}]},{"type":"lunch","name":"Tofu salteado con quinoa","items":[{"food":"tofu","grams":200},{"food":"quinoa","grams":70},{"food":"mushrooms","grams":100},{"food":"spinach","grams":80},{"food":"olive_oil","grams":10}]},{"type":"snack","name":"Yogur griego con nueces","items":[{"food":"greek_yogurt","grams":200},{"food":"walnuts","grams":15}]},{"type":"snack","name":"Queso fresco batido con fresas","items":[{"food":"fresh_cheese","grams":200},{"food":"strawberries","grams":150},{"food":"honey","grams":5}]},{"type":"snack","name":"Hummus con zanahoria y pan","items":[{"food":"hummus","grams":60},{"food":"carrot","grams":100},{"food":"bread_ww","grams":40}]},{"type":"snack","name":"Bocadillo de pavo","items":[{"food":"bread_ww","grams":60},{"food":"turkey_cold","grams":60}]},{"type":"snack","name":"Batido de proteína y plátano","items":[{"food":"whey","grams":30},{"food":"milk_semi","grams":250},{"food":"banana","grams":100}]},{"type":"snack","name":"Tortitas de arroz con jamón","items":[{"food":"rice_cakes","grams":30},{"food":"serrano","grams":40}]},{"type":"snack","name":"Manzana con crema de cacahuete","items":[{"food":"apple","grams":180},{"food":"peanut_butter","grams":15}]},{"type":"snack","name":"Skyr con kiwi","items":[{"food":"skyr","grams":200},{"food":"kiwi","grams":100}]},{"type":"dinner","name":"Tortilla francesa con ensalada","items":[{"food":"egg","grams":180},{"food":"lettuce","grams":80},{"food":"tomato","grams":120},{"food":"bread_ww","grams":40},{"food":"olive_oil","grams":5}]},{"type":"dinner","name":"Bacalao al horno con verduras","items":[{"food":"cod","grams":250},{"food":"zucchini","grams":150},{"food":"red_pepper","grams":100},{"food":"potato","grams":150},{"food":"olive_oil","grams":10}]},{"type":"dinner","name":"Ensalada de pollo con aguacate","items":[{"food":"chicken_breast","grams":150},{"food":"lettuce","grams":100},{"food":"tomato","grams":150},{"food":"avocado","grams":60},{"food":"olive_oil","grams":5}]},{"type":"dinner","name":"Revuelto de gambas y champiñones","items":[{"food":"egg","grams":120},{"food":"shrimp","grams":120},{"food":"mushrooms","grams":150},{"food":"olive_oil","grams":5},{"food":"bread_ww","grams":40}]},{"type":"dinner","name":"Salmón con brócoli y quinoa","items":[{"food":"salmon","grams":150},{"food":"broccoli","grams":200},{"food":"quinoa","grams":40}]},{"type":"dinner","name":"Crema de calabacín con pavo","items":[{"food":"zucchini","grams":300},{"food":"potato","grams":100},{"food":"turkey_breast","grams":150},{"food":"olive_oil","grams":10}]},{"type":"dinner","name":"Wrap de atún y queso fresco","items":[{"food":"tortilla_ww","grams":60},{"food":"tuna_drained","grams":120},{"food":"lettuce","grams":50},{"food":"tomato","grams":80},{"food":"fresh_cheese","grams":50}]},{"type":"dinner","name":"Sardinas con ensalada y patata","items":[{"food":"sardines","grams":100},{"food":"lettuce","grams":80},{"food":"tomato","grams":120},{"food":"potato","grams":150}]},{"type":"dinner","name":"Contramuslos al horno con verduras","items":[{"food":"chicken_thigh","grams":180},{"food":"onion","grams":80},{"food":"red_pepper","grams":100},{"food":"zucchini","grams":150},{"food":"olive_oil","grams":10}]},{"type":"dinner","name":"Tofu con verduras y arroz","items":[{"food":"tofu","grams":150},{"food":"broccoli","grams":150},{"food":"carrot","grams":80},{"food":"rice","grams":50},{"food":"olive_oil","grams":5}]}]};
+const ROUTINE = [
+  { id: "mon-run", day: 1, title: "Carrera suave", kind: "run", detail: "Correr entre 25 y 35 minutos a ritmo fácil." },
+  { id: "tue-push-a", day: 2, title: "Push A", kind: "strength", ex: [
+    ["tue-bench-barbell", "Press de banca con barra", 3, 6, 10], ["tue-incline-db-press", "Press inclinado con mancuernas", 3, 8, 12],
+    ["tue-machine-shoulder-press", "Press de hombros en máquina", 2, 8, 12], ["tue-cable-lateral-raise", "Elevaciones laterales en polea", 3, 12, 20],
+    ["tue-overhead-triceps-ext", "Extensión de tríceps por encima de la cabeza", 2, 10, 15], ["tue-rope-triceps-ext", "Extensión de tríceps con cuerda", 2, 10, 15]] },
+  { id: "wed-pull-a", day: 3, title: "Pull A", kind: "strength", ex: [
+    ["wed-neutral-lat-pulldown", "Jalón al pecho con agarre neutro", 3, 8, 12], ["wed-chest-supported-row", "Remo con pecho apoyado", 3, 8, 12],
+    ["wed-cable-pullover", "Pullover en polea", 2, 10, 15], ["wed-reverse-pec-deck", "Pájaros en máquina / reverse pec deck", 3, 12, 20],
+    ["wed-incline-db-curl", "Curl inclinado con mancuernas", 3, 8, 12], ["wed-rope-hammer-curl", "Curl martillo con cuerda", 2, 10, 15]] },
+  { id: "thu-legs-abs", day: 4, title: "Piernas y abdominales", kind: "strength", ex: [
+    ["thu-hack-squat", "Hack squat", 3, 6, 10], ["thu-romanian-deadlift", "Peso muerto rumano", 3, 6, 10],
+    ["thu-seated-leg-curl", "Curl femoral sentado", 3, 10, 15], ["thu-leg-extension", "Extensión de cuádriceps", 2, 10, 15],
+    ["thu-standing-calf-raise", "Elevación de gemelos de pie", 3, 10, 15], ["thu-cable-crunch", "Crunch en polea", 3, 10, 20]] },
+  { id: "fri-rest", day: 5, title: "Descanso", kind: "rest", detail: "Recuperación: sueño, hidratación y paseo suave opcional. Sin fuerza." },
+  { id: "sat-run", day: 6, title: "Sesión 1 · Carrera", kind: "run", detail: "Correr entre 20 y 30 minutos." },
+  { id: "sat-chest-back", day: 6, title: "Sesión 2 · Pecho y espalda", kind: "strength", ex: [
+    ["sat-smith-incline-press", "Press inclinado en multipower", 3, 6, 10], ["sat-seated-cable-row", "Remo sentado en polea", 3, 8, 12],
+    ["sat-machine-chest-press", "Press de pecho en máquina", 2, 8, 12], ["sat-neutral-pulldown", "Jalón con agarre neutro", 3, 8, 12],
+    ["sat-cable-fly", "Aperturas en polea", 2, 12, 15]] },
+  { id: "sun-shoulders-arms", day: 7, title: "Hombros y brazos", kind: "strength", ex: [
+    ["sun-cable-lateral-raise", "Elevación lateral en polea", 3, 12, 20], ["sun-reverse-pec-deck", "Reverse pec deck", 2, 12, 20],
+    ["sun-preacher-curl", "Curl predicador", 3, 8, 12], ["sun-overhead-triceps-ext", "Extensión de tríceps por encima de la cabeza", 2, 10, 15],
+    ["sun-incline-db-curl", "Curl inclinado con mancuernas", 2, 10, 15], ["sun-rope-triceps-ext", "Extensión de tríceps con cuerda", 2, 10, 15],
+    ["sun-ez-reverse-curl", "Curl inverso con barra EZ", 2, 12, 15], ["sun-wrist-curl", "Curl de muñeca", 2, 12, 20]] },
+];
+const DAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const ALIASES = { macarr: "pasta", espagu: "pasta", tallar: "pasta", fideo: "pasta", penne: "pasta", pechuga: "pollo", filete: "ternera", platano: "platano", banana: "platano", huevos: "huevo", claras: "clara", tostada: "pan", bocadillo: "pan" };
+const fold = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+function foodMatches(name, query) {
+  const q = fold(query), n = fold(name);
+  return !q || n.includes(q) || Object.entries(ALIASES).some(([k, t]) => q.startsWith(k) && n.includes(t));
+}
+const MEALS = [["breakfast", "Desayuno"], ["lunch", "Comida"], ["snack", "Merienda"], ["dinner", "Cena"]];
+const SHARE = { breakfast: 0.25, lunch: 0.35, snack: 0.15, dinner: 0.25 };
+const BASIS = { raw: "en crudo", cooked: "cocinado", dry: "en seco", drained: "escurrido", cookedDrained: "cocido y escurrido", edible: "parte comestible", asWeighed: "peso real" };
+const FOODS = Object.fromEntries(CATALOG.foods.map(f => [f.key, f]));
+
+/* ===== Estado y guardado ===== */
+const LOCAL_KEY = "now-or-never-demo-v1";
+const KEY_STORE = "now-or-never-claude-key";
+function freshState() {
+  return {
+    v: 1, updatedAt: 0,
+    profile: { weight: null, heightCm: null, age: null, sex: null, activity: "moderate", goal: "recomposition", auto: false },
+    targets: { kcal: 2300, protein: 180, carbs: 250, fat: 65, steps: 8000 },
+    weights: [], days: {}, routine: {}, logs: {},
+  };
+}
+let S = freshState();
+let tab = "home";
+let ui = { day: dayKey(new Date()), session: null, editRoutine: false };
+let db = null, docRef = null, sample = null, downloads = null, cloudStatus = "Guardado en este navegador";
+let saveTimer = null, writing = false, pendingWrite = false;
+
+function readLocal() { try { const raw = localStorage.getItem(LOCAL_KEY); return raw ? JSON.parse(raw) : null; } catch (e) { return null; } }
+function writeLocal() { try { localStorage.setItem(LOCAL_KEY, JSON.stringify(S)); } catch (e) { /* almacenamiento no disponible */ } }
+function save() {
+  S.updatedAt = Date.now();
+  writeLocal();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(pushCloud, 800);
+}
+async function pushCloud() {
+  if (!docRef) return;
+  if (writing) { pendingWrite = true; return; }
+  writing = true;
+  try { await docRef.set(JSON.parse(JSON.stringify(S))); cloudStatus = "Guardado en tu cuenta de Claude"; }
+  catch (e) { cloudStatus = e && e.code === "quota_exceeded" ? "Sin espacio en la nube: exporta una copia" : "No se pudo guardar en la nube (sí en este navegador)"; }
+  writing = false;
+  if (pendingWrite) { pendingWrite = false; pushCloud(); }
+}
+function normalize(x) { const base = freshState(); return x && typeof x === "object" ? { ...base, ...x, profile: { ...base.profile, ...(x.profile || {}) }, targets: { ...base.targets, ...(x.targets || {}) } } : base; }
+
+/* ===== Utilidades ===== */
+function pad(n) { return String(n).padStart(2, "0"); }
+function dayKey(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function parseDay(k) { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d, 12); }
+function weekday(d) { const w = d.getDay(); return w === 0 ? 7 : w; }
+function weekStartKey(d) { const x = new Date(d); x.setDate(x.getDate() - (weekday(x) - 1)); return dayKey(x); }
+function addDays(k, n) { const d = parseDay(k); d.setDate(d.getDate() + n); return dayKey(d); }
+const fmt0 = v => Math.round(v).toLocaleString("es-ES", { useGrouping: false });
+const fmt1 = v => (Math.round(v * 10) / 10).toLocaleString("es-ES", { maximumFractionDigits: 1 });
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]); }
+function num(v) { if (v === null || v === undefined) return null; const n = parseFloat(String(v).replace(",", ".")); return isFinite(n) ? n : null; }
+function niceDate(k) { return parseDay(k).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }); }
+function toast(msg) { const t = document.getElementById("toast"); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => (t.hidden = true), 2600); }
+
+/* ===== Nutrición (misma lógica que la app nativa) ===== */
+const V0 = () => ({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
+function add(a, b) { return { kcal: a.kcal + b.kcal, protein: a.protein + b.protein, carbs: a.carbs + b.carbs, fat: a.fat + b.fat }; }
+function per(p100, g) { const f = Math.max(g, 0) / 100; return { kcal: p100.kcal * f, protein: p100.protein * f, carbs: p100.carbs * f, fat: p100.fat * f }; }
+function foodV(key) { const f = FOODS[key]; return { kcal: f.kcal, protein: f.protein, carbs: f.carbs, fat: f.fat }; }
+function scaledGrams(g, factor) {
+  if (Math.abs(factor - 1) < 0.001) return g;
+  const raw = g * factor, step = raw < 20 ? 1 : raw < 100 ? 5 : 10;
+  return Math.max(Math.round(raw / step) * step, 1);
+}
+const CANDIDATES = (() => {
+  const out = { breakfast: [], lunch: [], snack: [], dinner: [] }, seen = new Set();
+  CATALOG.menus.forEach(m => m.meals.forEach(meal => {
+    const sig = meal.type + JSON.stringify(meal.items);
+    if (seen.has(sig)) return; seen.add(sig);
+    out[meal.type].push({ id: "m" + m.number + "-" + meal.type, label: "Menú " + m.number + " · " + m.name, items: meal.items });
+  }));
+  (CATALOG.ideas || []).forEach((idea, i) => out[idea.type].push({ id: "i" + i, label: idea.name, idea: true, items: idea.items }));
+  return out;
+})();
+function candidate(type, id) { return CANDIDATES[type].find(c => c.id === id); }
+function linesOf(items, factor) {
+  return items.map(it => { const g = scaledGrams(it.grams, factor); return { name: FOODS[it.food].name, basis: BASIS[FOODS[it.food].basis] || "", grams: g, v: per(foodV(it.food), g) }; });
+}
+function totalsOf(lines) { return lines.reduce((a, l) => add(a, l.v), V0()); }
+function fit(v, t) {
+  const e = (a, b, fl) => Math.min(Math.abs(a - b) / Math.max(b, fl), 1);
+  return Math.max(0, 1 - (e(v.kcal, t.kcal, 100) + e(v.protein, t.protein, 10) + e(v.carbs, t.carbs, 10) + e(v.fat, t.fat, 5)) / 4);
+}
+function bestOption(c, target) {
+  let best = null;
+  for (let f = 0.75; f <= 1.3501; f += 0.05) {
+    const factor = Math.round(f * 100) / 100, v = totalsOf(linesOf(c.items, factor)), s = fit(v, target);
+    if (!best || s > best.fit + 0.0001 || (Math.abs(s - best.fit) <= 0.0001 && Math.abs(factor - 1) < Math.abs(best.factor - 1))) best = { id: c.id, factor, v, fit: s };
+  }
+  return best;
+}
+function rank(type, target, limit) { return CANDIDATES[type].map(c => bestOption(c, target)).sort((a, b) => b.fit - a.fit).slice(0, limit); }
+function targetFor(type, fixed) {
+  const T = S.targets, used = Object.entries(fixed).filter(([k]) => k !== type).reduce((a, [, v]) => add(a, v), V0());
+  const rem = { kcal: Math.max(T.kcal - used.kcal, 0), protein: Math.max(T.protein - used.protein, 0), carbs: Math.max(T.carbs - used.carbs, 0), fat: Math.max(T.fat - used.fat, 0) };
+  const pending = MEALS.map(m => m[0]).filter(k => k === type || !fixed[k]);
+  const share = pending.reduce((a, k) => a + SHARE[k], 0), f = SHARE[type] / share;
+  return { kcal: rem.kcal * f, protein: rem.protein * f, carbs: rem.carbs * f, fat: rem.fat * f };
+}
+function dayData(k) { return S.days[k] || (S.days[k] = { meals: {}, done: {} }); }
+/** Comida de un día: lo apuntado a mano, lo elegido o (por defecto) la del menú 1. */
+function resolve(k, type) {
+  const d = S.days[k], m = d && d.meals[type];
+  if (m && m.kind === "custom") {
+    const lines = m.items.map(it => ({ name: it.name, basis: it.source === "claude" ? "estimación de Claude (IA)" : it.source === "manual" ? "manual" : "catálogo", grams: it.grams, v: per(it.per100, it.grams) }));
+    return { kind: "custom", label: "Apuntado por ti", lines, totals: totalsOf(lines) };
+  }
+  const c = (m && candidate(type, m.id)) || CANDIDATES[type][0], factor = m ? m.factor : 1, lines = linesOf(c.items, factor);
+  return { kind: m ? "choice" : "menu", label: c.label, factor, lines, totals: totalsOf(lines) };
+}
+function dayFixed(k, except) { const out = {}; MEALS.forEach(([t]) => { if (t !== except) out[t] = resolve(k, t).totals; }); return out; }
+function dayTotals(k) { return MEALS.reduce((a, [t]) => add(a, resolve(k, t).totals), V0()); }
+function consumed(k) { const d = S.days[k]; return MEALS.reduce((a, [t]) => (d && d.done[t] ? add(a, resolve(k, t).totals) : a), V0()); }
+
+/* ===== Perfil (Mifflin-St Jeor, igual que la app) ===== */
+const ACT = { sedentary: [1.2, "Sedentario"], light: [1.375, "Ligero (1–3 días)"], moderate: [1.55, "Moderado (3–5 días)"], high: [1.725, "Alto (6–7 días)"], veryHigh: [1.9, "Muy alto"] };
+const GOAL = { loseFat: [-0.2, 2.2, "Perder grasa"], gainMuscle: [0.1, 1.8, "Ganar músculo"], recomposition: [-0.1, 2.0, "Recomposición"] };
+function latestWeight() { return S.weights.length ? S.weights[S.weights.length - 1].kg : null; }
+function energy(p) {
+  const w = p.weight, h = p.heightCm, a = p.age;
+  if (!w || !h || !a || !p.sex || w < 30 || w > 300 || h < 120 || h > 230 || a < 14 || a > 100) return null;
+  const bmr = 10 * w + 6.25 * h - 5 * a + (p.sex === "male" ? 5 : -161), tdee = bmr * ACT[p.activity][0];
+  const kcal = Math.round(tdee * (1 + GOAL[p.goal][0]) / 10) * 10, protein = Math.round(w * GOAL[p.goal][1]);
+  const fat = Math.round(Math.max(kcal * 0.25 / 9, w * 0.6)), carbs = Math.round(Math.max((kcal - protein * 4 - fat * 9) / 4, 0));
+  return { bmr, tdee, kcal, protein, carbs, fat };
+}
+function recalc() { const e = energy({ ...S.profile, weight: latestWeight() }); if (e && S.profile.auto) Object.assign(S.targets, { kcal: e.kcal, protein: e.protein, carbs: e.carbs, fat: e.fat }); return e; }
+function addWeight(dk, kg, waist) {
+  S.weights.push({ date: dk, kg, waist: waist || null });
+  S.weights.sort((a, b) => a.date.localeCompare(b.date));
+  recalc();
+}
+
+/* ===== Entrenamiento ===== */
+function exercisesOf(sid) {
+  if (!S.routine[sid]) { const s = ROUTINE.find(r => r.id === sid); S.routine[sid] = (s.ex || []).map(([id, name, sets, lo, hi]) => ({ id, name, sets, lo, hi })); }
+  return S.routine[sid];
+}
+function logOf(week, sid, create) {
+  const key = week + "|" + sid;
+  if (!S.logs[key] && create) S.logs[key] = { done: false, ex: {} };
+  return S.logs[key];
+}
+function exLog(log, ex) { if (!log.ex[ex.id]) log.ex[ex.id] = { name: ex.name, done: false, sets: [] }; const e = log.ex[ex.id]; while (e.sets.length < ex.sets) e.sets.push({ kg: null, reps: null, done: false }); e.name = ex.name; return e; }
+function previous(week, sid, exId) {
+  const keys = Object.keys(S.logs).filter(k => k.endsWith("|" + sid) && k < week + "|").sort().reverse();
+  for (const k of keys) { const e = S.logs[k].ex[exId]; if (e && e.sets.some(s => s.kg || s.reps)) return { week: k.split("|")[0], sets: e.sets }; }
+  return null;
+}
+
+/* ===== Claude (IA) ===== */
+const ESTIMATE_PROMPT = `Eres el asistente de nutrición de la app Now or Never. El usuario describe en español lo que come o va a comer.
+Desglósalo en ingredientes con su peso estimado en gramos y sus valores por 100 g (kcal, proteínas, carbohidratos y grasas) según tablas de referencia (BEDCA, USDA).
+Si indica gramos, úsalos tal cual; si no, estima una ración normal. Si el alimento está cocinado, usa valores del alimento cocinado.
+Incluye aceite, salsas o queso si se mencionan o son habituales. En "note" (máximo 2 frases) explica las suposiciones.
+Responde SOLO con JSON: {"items":[{"name":"...","grams":150,"kcal_per_100g":158,"protein_per_100g":5.8,"carbs_per_100g":30.9,"fat_per_100g":0.9}],"note":"..."}`;
+const SUGGEST_PROMPT = `Eres el asistente de nutrición de la app Now or Never. Propón 3 comidas sencillas, saludables y realistas en España que se acerquen al objetivo de kcal y macros de esa comida.
+Usa EXCLUSIVAMENTE alimentos del catálogo, por su id exacto. Gramos tal y como se pesan según el catálogo, en múltiplos de 5 (aceite en múltiplos de 1). Entre 2 y 6 ingredientes.
+Si el usuario ha comido algo concreto, propón alternativas más saludables y parecidas. "why": una frase explicando por qué encaja o es mejor.
+Responde SOLO con JSON: {"meals":[{"name":"...","why":"...","items":[{"food_id":"chicken_breast","grams":150}]}]}`;
+const SCHEMA_ESTIMATE = { type: "object", additionalProperties: false, required: ["items", "note"], properties: {
+  items: { type: "array", items: { type: "object", additionalProperties: false, required: ["name", "grams", "kcal_per_100g", "protein_per_100g", "carbs_per_100g", "fat_per_100g"],
+    properties: { name: { type: "string" }, grams: { type: "number" }, kcal_per_100g: { type: "number" }, protein_per_100g: { type: "number" }, carbs_per_100g: { type: "number" }, fat_per_100g: { type: "number" } } } },
+  note: { type: "string" } } };
+const SCHEMA_SUGGEST = { type: "object", additionalProperties: false, required: ["meals"], properties: {
+  meals: { type: "array", items: { type: "object", additionalProperties: false, required: ["name", "why", "items"], properties: {
+    name: { type: "string" }, why: { type: "string" },
+    items: { type: "array", items: { type: "object", additionalProperties: false, required: ["food_id", "grams"], properties: { food_id: { type: "string" }, grams: { type: "number" } } } } } } } } };
+function claudeKey() { try { return localStorage.getItem(KEY_STORE) || ""; } catch (e) { return ""; } }
+function claudeMode() { return sample ? "claude.ai" : claudeKey() ? "key" : null; }
+let anthropicClient = null;
+/** Pide JSON a Claude: dentro de claude.ai usa la capacidad integrada (sin clave);
+ *  en el archivo descargado usa el SDK oficial de Anthropic con tu clave. */
+async function askClaude(system, user, schema, effort) {
+  if (sample) return sample.json(system + "\n\n" + user, { modelTier: "default" });
+  const key = claudeKey();
+  if (!key) throw new Error("Añade tu clave de la API de Claude en Perfil, o abre la demo desde su enlace de claude.ai.");
+  if (!anthropicClient) {
+    const mod = await import("https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@0.131.0/+esm");
+    const Anthropic = mod.default || mod.Anthropic;
+    anthropicClient = new Anthropic({ apiKey: key, dangerouslyAllowBrowser: true });
+  }
+  const msg = await anthropicClient.beta.messages.create({
+    model: "claude-opus-5-5", max_tokens: 16000, betas: ["server-side-fallback-2026-07-01"], fallbacks: "default", system,
+    output_config: { effort, format: { type: "json_schema", schema } }, messages: [{ role: "user", content: user }],
+  });
+  if (msg.stop_reason === "refusal") throw new Error("Claude no ha podido responder a esta petición. Descríbela de otra forma.");
+  if (msg.stop_reason === "max_tokens") throw new Error("La respuesta llegó incompleta. Inténtalo de nuevo.");
+  const text = (msg.content.find(b => b.type === "text") || {}).text;
+  return JSON.parse(text);
+}
+function claudeError(e) {
+  if (e && e.code === "not_granted") return "No has dado permiso para usar Claude en esta página.";
+  if (e && e.code === "rate_limited") return "Demasiadas consultas seguidas. Espera un momento.";
+  if (e && e.status === 401) return "La clave de la API de Claude no es válida.";
+  return (e && e.message) || "No se pudo consultar a Claude.";
+}
+
+/* ===== Iconos ===== */
+const ICON = {
+  home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 11h3v9h5v-6h4v6h5v-9h3z"/></svg>',
+  food: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v9a3 3 0 0 0 2 2.8V22h2v-8.2A3 3 0 0 0 13 11V2h-2v7h-1V2H9v7H8V2zm9 0c-1.7 0-3 2.7-3 6v5h2v9h2V2z"/></svg>',
+  gym: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 10h2V8h2v8H4v-2H2zm4-4h3v12H6zm9 0h3v12h-3zm3 2h2v2h2v4h-2v2h-2zM9 11h6v2H9z"/></svg>',
+  progress: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 18l6-6 4 4 8-9"/><path d="M15 7h6v6"/></svg>',
+  profile: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-5 0-9 2.5-9 6v2h18v-2c0-3.5-4-6-9-6z"/></svg>',
+};
+const TABS = [["home", "Inicio"], ["food", "Comidas"], ["gym", "Entreno"], ["progress", "Progreso"], ["profile", "Perfil"]];
+
+/* ===== Render ===== */
+function render() {
+  document.getElementById("tabs").innerHTML = TABS.map(([id, label]) =>
+    `<button data-act="tab" data-v="${id}" class="${tab === id ? "on" : ""}" aria-current="${tab === id ? "page" : "false"}">${ICON[id]}${label}</button>`).join("");
+  const views = { home: viewHome, food: viewFood, gym: viewGym, progress: viewProgress, profile: viewProfile };
+  document.getElementById("app").innerHTML = views[tab]();
+}
+function macroBar(name, val, tgt, unit) {
+  const p = tgt > 0 ? Math.min(val / tgt, 1) * 100 : 0;
+  return `<div><div class="line small"><span>${name}</span><span class="num muted">${fmt0(val)} / ${fmt0(tgt)} ${unit || "g"}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>`;
+}
+function viewHome() {
+  const k = dayKey(new Date()), c = consumed(k), T = S.targets, planned = dayTotals(k), d = S.days[k];
+  const done = d ? Object.values(d.done).filter(Boolean).length : 0, wd = weekday(new Date()), week = weekStartKey(new Date());
+  const sessions = ROUTINE.filter(r => r.day === wd), w = latestWeight();
+  const pct = T.kcal ? Math.round(Math.min(c.kcal / T.kcal, 1) * 100) : 0;
+  return `
+  <header class="row between"><div><div class="eyebrow">Now or Never · demo</div><h1>Hoy cuenta.</h1><div class="muted small">${esc(niceDate(k))}</div></div></header>
+  <section class="card"><div class="row"><div class="ring" style="--p:${pct}"><span>${pct}%</span></div>
+    <div class="grow"><h3>Consumido hoy</h3><div class="num muted">${fmt0(c.kcal)} de ${fmt0(T.kcal)} kcal · ${done}/4 comidas</div>
+    <div class="tiny dim">Plan del día: ${fmt0(planned.kcal)} kcal · encaje ${Math.round(fit(planned, T) * 100)}%</div></div></div>
+    ${macroBar("Proteínas", c.protein, T.protein)}${macroBar("Carbohidratos", c.carbs, T.carbs)}${macroBar("Grasas", c.fat, T.fat)}
+    <button class="ghost" data-act="tab" data-v="food">Ver y elegir mis comidas</button></section>
+  <section class="card"><div class="eyebrow">Entrenamiento de hoy · ${DAYS[wd - 1]}</div>
+    ${sessions.map(s => { const log = logOf(week, s.id); return `<button class="raised row" style="color:inherit;text-align:left;width:100%" data-act="openSession" data-v="${s.id}">
+      <div class="grow"><b>${esc(s.title)}</b><div class="tiny muted">${s.kind === "strength" ? exercisesOf(s.id).length + " ejercicios" : esc(s.detail)}</div></div>
+      ${s.kind === "rest" ? "" : `<span class="pill ${log && log.done ? "solid" : ""}">${log && log.done ? "Hecha" : "Pendiente"}</span>`}</button>`; }).join("")}</section>
+  <section class="grid2">
+    <div class="card stat"><span>Peso actual</span><b>${w ? fmt1(w) + " kg" : "—"}</b><span>${S.weights.length > 1 ? (w - S.weights[0].kg >= 0 ? "+" : "−") + fmt1(Math.abs(w - S.weights[0].kg)) + " kg desde el inicio" : "Registra tu peso en Progreso"}</span></div>
+    <div class="card stat"><span>Objetivo diario</span><b>${fmt0(T.kcal)} kcal</b><span>P ${fmt0(T.protein)} · C ${fmt0(T.carbs)} · G ${fmt0(T.fat)} g${S.profile.auto ? " · perfil" : ""}</span></div>
+  </section>
+  <p class="tiny dim">${esc(cloudStatus)}. Demo web de la app nativa: los pasos de Apple Salud, las notificaciones y las fotos solo están en la app del iPhone.</p>`;
+}
+function mealCard(k, type, label) {
+  const r = resolve(k, type), d = S.days[k], done = !!(d && d.done[type]);
+  return `<section class="card"><div class="row between"><div><h3>${label}</h3><div class="tiny muted">${esc(r.label)}${r.factor && Math.abs(r.factor - 1) > 0.001 ? " · ración " + Math.round(r.factor * 100) + "%" : ""}</div></div>
+    <button class="check ${done ? "on" : ""}" data-act="toggleDone" data-v="${type}" aria-label="${done ? "Desmarcar" : "Marcar"} ${label}"></button></div>
+    ${r.lines.map(l => `<div class="line"><div class="grow">${esc(l.name)} <span class="dim small">· ${fmt0(l.grams)} g ${esc(l.basis)}</span><div class="tiny dim num">P ${fmt1(l.v.protein)} · C ${fmt1(l.v.carbs)} · G ${fmt1(l.v.fat)}</div></div><span class="num">${fmt0(l.v.kcal)} kcal</span></div>`).join("")}
+    <hr><div class="line"><b>Subtotal</b><b class="num" style="color:var(--lime)">≈ ${fmt0(r.totals.kcal)} kcal</b></div>
+    <div class="tiny muted num">P ${fmt1(r.totals.protein)} g · C ${fmt1(r.totals.carbs)} g · G ${fmt1(r.totals.fat)} g</div>
+    <div class="row wrap"><button class="ghost" data-act="swap" data-v="${type}">Cambiar</button><button class="ghost" data-act="custom" data-v="${type}">Como otra cosa</button>
+    ${r.kind !== "menu" ? `<button class="plain" data-act="resetMeal" data-v="${type}">Volver al menú</button>` : ""}</div></section>`;
+}
+function viewFood() {
+  const k = ui.day, T = S.targets, t = dayTotals(k), c = consumed(k);
+  return `
+  <header><div class="eyebrow">Comidas</div><h1>${esc(niceDate(k))}</h1></header>
+  <div class="row"><button class="ghost" data-act="dayShift" data-v="-1" aria-label="Día anterior">‹</button><input id="dayPick" type="date" value="${k}" aria-label="Día"><button class="ghost" data-act="dayShift" data-v="1" aria-label="Día siguiente">›</button></div>
+  <button class="block" data-act="builder">Elegir mis comidas paso a paso</button>
+  <button class="ghost block" data-act="rebalance">Reajustar el resto del día a mis macros</button>
+  <section class="card"><div class="eyebrow">Total del día planificado</div>
+    <div class="grid4">${[["kcal", t.kcal, T.kcal], ["Prot.", t.protein, T.protein], ["Carb.", t.carbs, T.carbs], ["Grasa", t.fat, T.fat]].map(([n, v, g]) =>
+      `<div class="stat"><b>${fmt0(v)}</b><span>${n} / ${fmt0(g)}</span></div>`).join("")}</div>
+    <div class="row between small"><span class="muted">Consumido (marcado): <span class="num">${fmt0(c.kcal)} kcal</span></span><span class="pill">Encaje ${Math.round(fit(t, T) * 100)}%</span></div></section>
+  ${MEALS.map(([type, label]) => mealCard(k, type, label)).join("")}
+  <p class="note">Valores aproximados por 100 g (tablas tipo USDA/BEDCA) y menús de ejemplo. No es un plan calculado clínicamente: revisa los alimentos con su etiqueta.</p>`;
+}
+function weekdaySessions() { return [1, 2, 3, 4, 5, 6, 7].map(d => [d, ROUTINE.filter(r => r.day === d)]); }
+function viewGym() {
+  if (ui.session) return viewSession(ui.session);
+  const week = weekStartKey(new Date()), wd = weekday(new Date());
+  const trainable = ROUTINE.filter(r => r.kind !== "rest"), doneCount = trainable.filter(r => (logOf(week, r.id) || {}).done).length;
+  return `
+  <header><div class="eyebrow">Entrenamientos</div><h1>Semana del ${parseDay(week).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}</h1></header>
+  <section class="card"><div class="row"><div class="ring" style="--p:${Math.round(doneCount / trainable.length * 100)}"><span>${doneCount}/${trainable.length}</span></div><div class="grow"><h3>Cumplimiento semanal</h3><div class="muted small">Cada lunes empieza una semana nueva; el historial se guarda.</div></div></div></section>
+  ${weekdaySessions().map(([d, list]) => `<section class="card"><div class="row"><span class="chip-day ${d === wd ? "today" : ""}">${DAYS[d - 1][0]}</span><h3 class="grow">${DAYS[d - 1]}</h3>${list.length > 1 ? '<span class="pill">2 sesiones</span>' : ""}</div>
+    ${list.map(s => { const log = logOf(week, s.id); return `<button class="raised row" style="color:inherit;text-align:left;width:100%" data-act="openSession" data-v="${s.id}"><div class="grow"><b>${esc(s.title)}</b><div class="tiny muted">${s.kind === "strength" ? exercisesOf(s.id).length + " ejercicios" : esc(s.detail)}</div></div>${s.kind === "rest" ? "" : `<span class="pill ${log && log.done ? "solid" : ""}">${log && log.done ? "Hecha" : "Abrir"}</span>`}</button>`; }).join("")}</section>`).join("")}`;
+}
+function viewSession(sid) {
+  const s = ROUTINE.find(r => r.id === sid), week = weekStartKey(new Date());
+  const head = `<button class="plain" data-act="closeSession">‹ Volver</button><header><div class="eyebrow">${DAYS[s.day - 1]}</div><h1>${esc(s.title)}</h1></header>`;
+  if (s.kind === "rest") return head + `<section class="card"><p>${esc(s.detail)}</p></section>`;
+  const log = logOf(week, sid, false);
+  if (s.kind === "run") return head + `<section class="card"><p>${esc(s.detail)}</p>
+    <a class="btn" href="https://www.strava.com/" target="_blank" rel="noopener">Abrir Strava</a>
+    <p class="tiny muted">Graba y guarda la carrera en Strava. En la app del iPhone el botón abre la app de Strava directamente.</p>
+    <button class="${log && log.done ? "ghost" : ""}" data-act="sessionDone" data-v="${sid}">${log && log.done ? "Carrera completada · deshacer" : "Marcar carrera completada"}</button></section>`;
+  const list = exercisesOf(sid);
+  if (ui.editRoutine) return head + `<section class="card"><div class="row between"><h2>Editar rutina</h2><button class="plain" data-act="editRoutine">Hecho</button></div>
+    ${list.map((e, i) => `<div class="raised" style="display:flex;flex-direction:column;gap:8px"><input id="en-${i}" value="${esc(e.name)}" data-act="exName" data-v="${i}" aria-label="Nombre">
+      <div class="row wrap small"><label class="row">Series <input class="short" id="es-${i}" inputmode="numeric" value="${e.sets}" data-act="exSets" data-v="${i}"></label>
+      <label class="row">Reps <input class="short" id="el-${i}" inputmode="numeric" value="${e.lo}" data-act="exLo" data-v="${i}">–<input class="short" id="eh-${i}" inputmode="numeric" value="${e.hi}" data-act="exHi" data-v="${i}"></label></div>
+      <div class="row"><button class="plain" data-act="exUp" data-v="${i}" ${i === 0 ? "disabled" : ""}>Subir</button><button class="plain" data-act="exDown" data-v="${i}" ${i === list.length - 1 ? "disabled" : ""}>Bajar</button><span class="grow"></span><button class="danger" data-act="exDel" data-v="${i}">Eliminar</button></div></div>`).join("")}
+    <button class="ghost" data-act="exAdd">Añadir ejercicio</button><button class="plain" data-act="exRestore">Restaurar rutina predeterminada</button>
+    <p class="tiny dim">Los cambios se guardan al momento. El historial de semanas anteriores no se modifica.</p></section>`;
+  const L = logOf(week, sid, false), doneEx = L ? list.filter(e => L.ex[e.id] && L.ex[e.id].done).length : 0;
+  return head + `<section class="card"><div class="row between"><div><b class="num">${doneEx} de ${list.length} ejercicios</b><div class="tiny muted">Apunta kg y repeticiones de cada serie.</div></div><button class="plain" data-act="editRoutine">Editar</button></div></section>
+  ${list.map((e, i) => { const el = L && L.ex[e.id], prev = previous(week, sid, e.id); const sets = Array.from({ length: e.sets }, (_, j) => (el && el.sets[j]) || { kg: null, reps: null, done: false });
+    return `<section class="card"><div class="row"><div class="grow"><h3>${i + 1}. ${esc(e.name)}</h3><div class="tiny muted">${e.sets} series · ${e.lo === e.hi ? e.lo : e.lo + "–" + e.hi} reps</div></div>
+      <button class="check ${el && el.done ? "on" : ""}" data-act="exDone" data-v="${i}" aria-label="Ejercicio completado"></button></div>
+      ${sets.map((st, j) => `<div class="row small"><span class="dim num" style="width:20px">${j + 1}</span><input class="grow" id="kg-${i}-${j}" inputmode="decimal" placeholder="kg" value="${st.kg ?? ""}" data-act="setKg" data-v="${i}:${j}" aria-label="Kg serie ${j + 1}"><input class="grow" id="rp-${i}-${j}" inputmode="numeric" placeholder="reps" value="${st.reps ?? ""}" data-act="setReps" data-v="${i}:${j}" aria-label="Repeticiones serie ${j + 1}"><button class="check ${st.done ? "on" : ""}" data-act="setDone" data-v="${i}:${j}" aria-label="Serie terminada"></button></div>`).join("")}
+      ${prev ? `<div class="raised tiny"><b style="color:var(--lime)">Anterior (${prev.week})</b><div class="muted num">${prev.sets.filter(s => s.kg || s.reps).map(s => (s.kg ?? "—") + " kg × " + (s.reps ?? "—")).join(" · ")}</div></div>` : ""}</section>`; }).join("")}
+  <button class="${L && L.done ? "ghost" : ""}" data-act="sessionDone" data-v="${sid}">${L && L.done ? "Sesión completada · deshacer" : "Marcar sesión completa"}</button>`;
+}
+function viewProgress() {
+  const ws = S.weights, first = ws[0], last = ws[ws.length - 1];
+  return `
+  <header><div class="eyebrow">Progreso</div><h1>Peso y evolución</h1></header>
+  <section class="card"><h3>Registrar peso</h3><div class="grid2"><label class="field">Fecha<input id="wDate" type="date" value="${dayKey(new Date())}"></label><label class="field">Peso (kg)<input id="wKg" inputmode="decimal" placeholder="85,1"></label></div>
+    <label class="field">Cintura (cm, opcional)<input id="wWaist" inputmode="decimal" placeholder="—"></label><button data-act="addWeight">Guardar pesaje</button></section>
+  <section class="grid2"><div class="card stat"><span>Primer registro</span><b>${first ? fmt1(first.kg) + " kg" : "—"}</b><span>${first ? first.date : "Sin datos"}</span></div>
+    <div class="card stat"><span>Diferencia total</span><b>${ws.length > 1 ? (last.kg - first.kg >= 0 ? "+" : "−") + fmt1(Math.abs(last.kg - first.kg)) + " kg" : "—"}</b><span>${last ? "Último: " + fmt1(last.kg) + " kg" : "Registra tu primer peso"}</span></div></section>
+  ${ws.length > 1 ? `<section class="card"><div class="eyebrow">Evolución</div>${chart(ws)}</section>` : ""}
+  <section class="card"><h3>Historial</h3>${ws.length ? ws.slice().reverse().map((w, i, arr) => { const prev = arr[i + 1];
+    return `<div class="line"><span class="num">${w.date}${w.waist ? ` <span class="dim">· ${fmt1(w.waist)} cm</span>` : ""}</span><span class="num"><b>${fmt1(w.kg)} kg</b> <span class="dim tiny">${prev ? (w.kg - prev.kg >= 0 ? "+" : "−") + fmt1(Math.abs(w.kg - prev.kg)) + " vs anterior" : "primer registro"}</span> <button class="danger" data-act="delWeight" data-v="${w.date}|${w.kg}" aria-label="Eliminar">×</button></span></div>`; }).join("") : '<p class="muted small">Aún no hay pesajes.</p>'}</section>
+  <p class="note">El peso fluctúa a diario por agua, glucógeno y digestión: fíjate en la tendencia de varias semanas, no en un día.</p>`;
+}
+function chart(ws) {
+  const W = 320, H = 150, P = { l: 34, r: 8, t: 10, b: 22 }, kg = ws.map(w => w.kg);
+  const lo = Math.floor(Math.min(...kg) - 0.5), hi = Math.ceil(Math.max(...kg) + 0.5);
+  const t0 = parseDay(ws[0].date).getTime(), t1 = Math.max(parseDay(ws[ws.length - 1].date).getTime(), t0 + 1);
+  const x = d => P.l + (parseDay(d).getTime() - t0) / (t1 - t0) * (W - P.l - P.r), y = v => P.t + (hi - v) / (hi - lo) * (H - P.t - P.b);
+  const pts = ws.map(w => `${x(w.date).toFixed(1)},${y(w.kg).toFixed(1)}`).join(" ");
+  const ticks = [lo, (lo + hi) / 2, hi];
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Evolución del peso">
+    ${ticks.map(v => `<line x1="${P.l}" x2="${W - P.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/><text x="${P.l - 6}" y="${y(v) + 4}" text-anchor="end">${fmt1(v)}</text>`).join("")}
+    <polyline points="${pts}" fill="none" stroke="var(--lime)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${ws.map(w => `<circle cx="${x(w.date)}" cy="${y(w.kg)}" r="3.5" fill="var(--lime)"/>`).join("")}
+    <text x="${P.l}" y="${H - 5}">${ws[0].date}</text><text x="${W - P.r}" y="${H - 5}" text-anchor="end">${ws[ws.length - 1].date}</text></svg></div>`;
+}
+function viewProfile() {
+  const p = S.profile, e = energy({ ...p, weight: latestWeight() }), T = S.targets, mode = claudeMode();
+  return `
+  <header><div class="eyebrow">Perfil</div><h1>Tus datos y objetivos</h1></header>
+  <section class="card"><h3>Datos personales</h3>
+    <div class="grid2"><label class="field">Peso (kg)<input id="pWeight" inputmode="decimal" value="${latestWeight() ?? ""}" placeholder="85,1"></label>
+    <label class="field">Altura (cm)<input id="pHeight" inputmode="decimal" value="${p.heightCm ?? ""}" placeholder="180"></label>
+    <label class="field">Edad<input id="pAge" inputmode="numeric" value="${p.age ?? ""}" placeholder="30"></label>
+    <label class="field">Sexo (lo usa la fórmula)<select id="pSex"><option value="">Sin indicar</option><option value="male" ${p.sex === "male" ? "selected" : ""}>Hombre</option><option value="female" ${p.sex === "female" ? "selected" : ""}>Mujer</option></select></label></div>
+    <label class="field">Actividad física<select id="pAct">${Object.entries(ACT).map(([k, [, l]]) => `<option value="${k}" ${p.activity === k ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+    <div class="seg" role="group" aria-label="Objetivo">${Object.entries(GOAL).map(([k, [, , l]]) => `<button data-act="goal" data-v="${k}" class="${p.goal === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    <label class="row small"><input type="checkbox" id="pAuto" ${p.auto ? "checked" : ""} style="width:auto"> Objetivos automáticos (se recalculan con cada peso nuevo)</label>
+    <button data-act="saveProfile">Guardar perfil</button>
+    ${e ? `<div class="raised small num"><b>Mifflin-St Jeor</b><div>Basal ${fmt0(e.bmr)} kcal · gasto ${fmt0(e.tdee)} kcal</div><div style="color:var(--lime)">Objetivo ${fmt0(e.kcal)} kcal · P ${e.protein} · C ${e.carbs} · G ${e.fat} g</div></div>` : '<p class="tiny muted">Completa peso, altura, edad y sexo para ver el cálculo.</p>'}
+    <p class="tiny dim">Basal = 10×peso + 6,25×altura − 5×edad + 5 (hombre) / −161 (mujer) × actividad; −20 % perder grasa, +10 % ganar músculo, −10 % recomposición. Estimación, no pauta médica.</p></section>
+  <section class="card"><h3>Objetivos diarios</h3>
+    <div class="grid2"><label class="field">Kcal<input id="tK" inputmode="numeric" value="${T.kcal}"></label><label class="field">Proteínas (g)<input id="tP" inputmode="numeric" value="${T.protein}"></label>
+    <label class="field">Carbohidratos (g)<input id="tC" inputmode="numeric" value="${T.carbs}"></label><label class="field">Grasas (g)<input id="tF" inputmode="numeric" value="${T.fat}"></label></div>
+    <button class="ghost" data-act="saveTargets">Guardar objetivos a mano</button><p class="tiny dim">Si los editas a mano, dejan de ser automáticos.</p></section>
+  <section class="card"><h3>Claude (IA)</h3>
+    <p class="small muted">${mode === "claude.ai" ? "Activo: dentro de claude.ai Claude funciona sin clave." : mode === "key" ? "Activo con tu clave (guardada solo en este navegador)." : "Fuera de claude.ai necesita tu clave de la API de Claude (console.anthropic.com, coste por uso)."}</p>
+    ${sample ? "" : `<label class="field">Clave de la API<input id="cKey" type="password" placeholder="sk-ant-…" autocomplete="off"></label><div class="row"><button class="ghost" data-act="saveKey">Guardar clave</button>${claudeKey() ? '<button class="danger" data-act="delKey">Borrar clave</button>' : ""}</div>`}</section>
+  <section class="card"><h3>Tus datos</h3><p class="small muted">${esc(cloudStatus)}.</p>
+    <div class="row wrap"><button class="ghost" data-act="export">Descargar copia (JSON)</button><label class="btn ghost" for="importFile">Importar copia</label><input id="importFile" type="file" accept="application/json,.json" hidden></div>
+    <p class="tiny dim">La copia sirve para pasar tus datos a otro navegador. La app nativa del iPhone guarda los suyos por separado.</p></section>`;
+}
+
+/* ===== Hojas (paneles) ===== */
+let sheetState = null;
+function openSheet(st) { sheetState = st; renderSheet(); }
+function closeSheet() { sheetState = null; document.getElementById("sheet").innerHTML = ""; render(); }
+function renderSheet() {
+  const el = document.getElementById("sheet");
+  if (!sheetState) { el.innerHTML = ""; return; }
+  const body = { swap: sheetSwap, builder: sheetBuilder, custom: sheetCustom }[sheetState.kind]();
+  el.innerHTML = `<div class="sheet" data-act="sheetBg"><div class="panel" role="dialog" aria-modal="true">${body}</div></div>`;
+}
+function optionCard(type, o, tgt, action) {
+  const c = candidate(type, o.id), lines = linesOf(c.items, o.factor);
+  return `<section class="card"><div class="row between"><div class="grow"><h3>${esc(c.label)}</h3><div class="tiny muted">${c.idea ? "Idea" : "Comida del menú"} · ${Math.abs(o.factor - 1) < 0.001 ? "ración del menú" : "ración " + Math.round(o.factor * 100) + "%"}</div></div><span class="pill ${o.fit >= 0.85 ? "solid" : ""}">Encaja ${Math.round(o.fit * 100)}%</span></div>
+    ${lines.map(l => `<div class="line small"><span class="grow">${esc(l.name)}</span><span class="num muted">${fmt0(l.grams)} g · ${fmt0(l.v.kcal)} kcal</span></div>`).join("")}
+    <div class="tiny num"><b style="color:var(--lime)">${fmt0(o.v.kcal)}/${fmt0(tgt.kcal)} kcal</b> · P ${fmt0(o.v.protein)}/${fmt0(tgt.protein)} · C ${fmt0(o.v.carbs)}/${fmt0(tgt.carbs)} · G ${fmt0(o.v.fat)}/${fmt0(tgt.fat)}</div>
+    <button data-act="${action}" data-v="${type}|${o.id}|${o.factor}">Elegir esta opción</button></section>`;
+}
+function targetHead(title, sub, t) { return `<div class="sheet-head"><div class="row between"><div class="eyebrow">${title}</div><button class="plain" data-act="closeSheet">Cerrar</button></div><div class="small muted">${sub}</div><div class="num"><b>≈ ${fmt0(t.kcal)} kcal</b> · P ${fmt0(t.protein)} · C ${fmt0(t.carbs)} · G ${fmt0(t.fat)} g</div></div>`; }
+function sheetSwap() {
+  const { type, all } = sheetState, label = MEALS.find(m => m[0] === type)[1], tgt = targetFor(type, dayFixed(ui.day, type));
+  const opts = rank(type, tgt, all ? 99 : 4);
+  return targetHead("Cambiar " + label.toLowerCase(), "Opciones que encajan con tus otras tres comidas de este día", tgt)
+    + opts.map(o => optionCard(type, o, tgt, "pickSwap")).join("")
+    + (all ? "" : `<button class="ghost" data-act="showAll">Ver las ${CANDIDATES[type].length} opciones</button>`);
+}
+function sheetBuilder() {
+  const st = sheetState, order = MEALS.map(m => m[0]);
+  if (st.step >= 4) {
+    const total = order.reduce((a, t) => add(a, st.values[t]), V0());
+    return `<div class="sheet-head"><div class="row between"><div class="eyebrow">Tu día</div><button class="plain" data-act="closeSheet">Cerrar</button></div></div>
+    <section class="card"><h2>Resumen del día · encaje ${Math.round(fit(total, S.targets) * 100)}%</h2>
+    ${macroBar("Calorías", total.kcal, S.targets.kcal, "kcal")}${macroBar("Proteínas", total.protein, S.targets.protein)}${macroBar("Carbohidratos", total.carbs, S.targets.carbs)}${macroBar("Grasas", total.fat, S.targets.fat)}
+    <button data-act="builderSave">Guardar mi día</button><button class="plain" data-act="builderBack">‹ Atrás</button></section>`;
+  }
+  const type = order[st.step], label = MEALS[st.step][1], fixed = {};
+  order.slice(0, st.step).forEach(t => (fixed[t] = st.values[t]));
+  const tgt = targetFor(type, fixed), opts = rank(type, tgt, st.all ? 99 : 4);
+  const sub = st.step === 0 ? "Elige una de estas opciones o apunta lo que vas a comer" : type === "dinner" ? "La cena cuadra con lo que te falta del día" : "Según lo que ya has elegido";
+  return targetHead("Paso " + (st.step + 1) + " de 4 · " + label, sub, tgt)
+    + `<div class="row">${order.map((t, i) => `<span class="pill ${i < st.step ? "solid" : i === st.step ? "" : "warn"}">${MEALS[i][1]}</span>`).join("")}</div>`
+    + (st.step > 0 ? '<button class="plain" data-act="builderBack">‹ Paso anterior</button>' : "")
+    + `<button class="ghost" data-act="builderCustom" data-v="${type}">Voy a comer otra cosa: apuntarla</button>`
+    + opts.map(o => optionCard(type, o, tgt, "pickBuilder")).join("")
+    + (st.all ? "" : `<button class="ghost" data-act="showAll">Ver las ${CANDIDATES[type].length} opciones</button>`);
+}
+function sheetCustom() {
+  const st = sheetState, label = MEALS.find(m => m[0] === st.type)[1], total = st.items.reduce((a, it) => add(a, per(it.per100, it.grams)), V0());
+  const q = st.q || "", foods = CATALOG.foods.filter(f => foodMatches(f.name, q)).slice(0, 25), mode = claudeMode();
+  return targetHead("Lo que como · " + label, "Objetivo de esta comida según el resto del día", st.target)
+    + `<section class="card"><h3>Lo apuntado</h3>${st.items.length ? st.items.map((it, i) => { const v = per(it.per100, it.grams);
+        return `<div class="line"><div class="grow">${esc(it.name)} <span class="dim small">· ${fmt0(it.grams)} g · ${it.source === "claude" ? "estimación de Claude" : it.source}</span><div class="tiny dim num">P ${fmt1(v.protein)} · C ${fmt1(v.carbs)} · G ${fmt1(v.fat)}</div></div><span class="num">${fmt0(v.kcal)} kcal <button class="danger" data-act="cDel" data-v="${i}" aria-label="Quitar">×</button></span></div>`; }).join("")
+        + `<hr><div class="num"><b>Total: ${fmt0(total.kcal)} kcal</b> · P ${fmt0(total.protein)} · C ${fmt0(total.carbs)} · G ${fmt0(total.fat)} g</div>` : '<p class="small muted">Aún no has añadido nada.</p>'}</section>
+    <div class="seg">${[["claude", "Describir (Claude)"], ["catalog", "Catálogo"], ["manual", "Manual"]].map(([k, l]) => `<button data-act="cMode" data-v="${k}" class="${st.mode === k ? "on" : ""}">${l}</button>`).join("")}</div>
+    ${st.mode === "claude" ? `<section class="card"><label class="field">Descríbelo y Claude calcula kcal y macros<textarea id="cDesc" rows="3" placeholder="150 g de macarrones con tomate y un poco de queso">${esc(st.desc || "")}</textarea></label>
+        ${mode ? "" : '<p class="note">Fuera de claude.ai necesita tu clave de la API (Perfil). Mientras, usa Catálogo o Manual.</p>'}
+        <button data-act="cEstimate" ${mode && !st.busy ? "" : "disabled"}>${st.busy === "estimate" ? "Calculando…" : "Calcular con Claude"}</button>
+        ${st.estimate ? st.estimate.items.map(it => `<div class="line small"><span class="grow">${esc(it.name)} · ${fmt0(it.grams)} g</span><span class="num">${fmt0(it.kcal_per_100g * it.grams / 100)} kcal</span></div>`).join("") + `<p class="tiny muted">${esc(st.estimate.note || "")}</p><button class="ghost" data-act="cAddEstimate">Añadir a mi ${label.toLowerCase()}</button>` : ""}</section>`
+    : st.mode === "catalog" ? `<section class="card"><input id="cSearch" placeholder="Buscar alimento" value="${esc(st.q || "")}">
+        ${st.pick ? `<div class="raised row"><span class="grow">${esc(FOODS[st.pick].name)} <span class="dim small">(${BASIS[FOODS[st.pick].basis]})</span></span><input class="short" id="cGrams" inputmode="decimal" value="100" aria-label="Gramos"> g</div><button data-act="cAddFood">Añadir</button>` : ""}
+        ${foods.map(f => `<button class="raised line" style="color:inherit;width:100%" data-act="cPick" data-v="${f.key}"><span class="grow" style="text-align:left">${esc(f.name)}</span><span class="dim small num">${fmt0(f.kcal)} kcal/100 g</span></button>`).join("")}</section>`
+    : `<section class="card"><label class="field">Nombre<input id="mName" placeholder="Bocadillo de lomo"></label><div class="grid2"><label class="field">Gramos<input id="mGrams" inputmode="decimal"></label><label class="field">Kcal totales<input id="mKcal" inputmode="decimal"></label>
+        <label class="field">Proteínas (g)<input id="mP" inputmode="decimal" placeholder="opcional"></label><label class="field">Carbohidratos (g)<input id="mC" inputmode="decimal" placeholder="opcional"></label><label class="field">Grasas (g)<input id="mF" inputmode="decimal" placeholder="opcional"></label></div><button data-act="cAddManual">Añadir</button></section>`}
+    <section class="card"><h3>Alternativa más saludable</h3><p class="tiny muted">Claude propone comidas solo con alimentos del catálogo; las kcal y los macros los calcula la app.</p>
+      <button class="ghost" data-act="cSuggest" ${mode && !st.busy ? "" : "disabled"}>${st.busy === "suggest" ? "Pensando…" : "Pedir ideas a Claude"}</button>
+      ${(st.suggestions || []).map((m, i) => { const v = m.lines.reduce((a, l) => add(a, per(foodV(l.food), l.grams)), V0());
+        return `<div class="raised" style="display:flex;flex-direction:column;gap:6px"><div class="row between"><b>${esc(m.name)}</b><span class="pill">Encaja ${Math.round(fit(v, st.target) * 100)}%</span></div><div class="tiny muted">${esc(m.why)}</div>
+        ${m.lines.map(l => `<div class="line tiny"><span>${esc(FOODS[l.food].name)}</span><span class="num">${fmt0(l.grams)} g · ${fmt0(per(foodV(l.food), l.grams).kcal)} kcal</span></div>`).join("")}
+        <div class="tiny num"><b>${fmt0(v.kcal)} kcal</b> · P ${fmt0(v.protein)} · C ${fmt0(v.carbs)} · G ${fmt0(v.fat)}</div><button data-act="cUse" data-v="${i}">Usar esta comida</button></div>`; }).join("")}
+    </section>
+    ${st.error ? `<p class="note" style="color:var(--danger)">${esc(st.error)}</p>` : ""}
+    <button data-act="cSave">${st.fromBuilder ? "Guardar y seguir" : "Guardar"}</button>`;
+}
+
+/* ===== Acciones ===== */
+function weekLogEnsure(sid) { return logOf(weekStartKey(new Date()), sid, true); }
+function setMeal(k, type, value) { const d = dayData(k); d.meals[type] = value; }
+function rebalance(k) {
+  const d = dayData(k), fixed = {};
+  MEALS.forEach(([t]) => { const m = d.meals[t]; if ((m && m.kind === "custom") || d.done[t]) fixed[t] = resolve(k, t).totals; });
+  const changed = [];
+  MEALS.forEach(([t, l]) => {
+    if (fixed[t]) return;
+    const best = rank(t, targetFor(t, fixed), 1)[0];
+    setMeal(k, t, { kind: "choice", id: best.id, factor: best.factor }); fixed[t] = best.v; changed.push(l.toLowerCase());
+  });
+  return changed;
+}
+const actions = {
+  tab(v) { tab = v; ui.session = null; ui.editRoutine = false; render(); window.scrollTo(0, 0); },
+  dayShift(v) { ui.day = addDays(ui.day, Number(v)); render(); },
+  toggleDone(t) { const d = dayData(ui.day); d.done[t] = !d.done[t]; save(); render(); },
+  resetMeal(t) { const d = dayData(ui.day); delete d.meals[t]; save(); render(); },
+  swap(t) { openSheet({ kind: "swap", type: t, all: false }); },
+  showAll() { sheetState.all = true; renderSheet(); },
+  pickSwap(v) { const [t, id, f] = v.split("|"); setMeal(ui.day, t, { kind: "choice", id, factor: Number(f) }); save(); closeSheet(); toast("Comida cambiada"); },
+  builder() { openSheet({ kind: "builder", step: 0, values: {}, picks: {}, all: false }); },
+  pickBuilder(v) { const [t, id, f] = v.split("|"), st = sheetState; st.picks[t] = { kind: "choice", id, factor: Number(f) }; st.values[t] = totalsOf(linesOf(candidate(t, id).items, Number(f))); st.step++; st.all = false; renderSheet(); },
+  builderBack() { sheetState.step = Math.max(sheetState.step - 1, 0); sheetState.all = false; renderSheet(); },
+  builderCustom(t) { const prev = sheetState, fixed = {}; MEALS.map(m => m[0]).slice(0, prev.step).forEach(x => (fixed[x] = prev.values[x]));
+    const d = S.days[ui.day], cur = d && d.meals[t] && d.meals[t].kind === "custom" ? d.meals[t].items : [];
+    openSheet({ kind: "custom", type: t, items: JSON.parse(JSON.stringify(cur)), mode: "claude", target: targetFor(t, fixed), fromBuilder: prev }); },
+  builderSave() { const st = sheetState; Object.entries(st.picks).forEach(([t, m]) => setMeal(ui.day, t, m)); save(); closeSheet(); toast("Día guardado"); },
+  rebalance() { const ch = rebalance(ui.day); save(); render(); toast(ch.length ? "Reajustado: " + ch.join(", ") : "No quedan comidas pendientes"); },
+  custom(t) { const d = S.days[ui.day], cur = d && d.meals[t] && d.meals[t].kind === "custom" ? d.meals[t].items : [];
+    openSheet({ kind: "custom", type: t, items: JSON.parse(JSON.stringify(cur)), mode: "claude", target: targetFor(t, dayFixed(ui.day, t)) }); },
+  cMode(v) { sheetState.mode = v; sheetState.error = null; renderSheet(); },
+  cDel(i) { sheetState.items.splice(Number(i), 1); renderSheet(); },
+  cPick(k) { sheetState.pick = k; renderSheet(); },
+  cAddFood() { const g = num(document.getElementById("cGrams").value); if (!g || g <= 0) return; const f = FOODS[sheetState.pick];
+    sheetState.items.push({ name: f.name, grams: g, per100: foodV(f.key), source: "catálogo" }); sheetState.pick = null; renderSheet(); },
+  cAddManual() { const name = document.getElementById("mName").value.trim(), g = num(document.getElementById("mGrams").value), k = num(document.getElementById("mKcal").value);
+    if (!name || !g || g <= 0 || k === null) { sheetState.error = "Pon nombre, gramos y kcal totales."; renderSheet(); return; }
+    const f = 100 / g, val = id => (num(document.getElementById(id).value) || 0) * f;
+    sheetState.items.push({ name, grams: g, per100: { kcal: k * f, protein: val("mP"), carbs: val("mC"), fat: val("mF") }, source: "manual" }); sheetState.error = null; renderSheet(); },
+  async cEstimate() { const st = sheetState, desc = document.getElementById("cDesc").value.trim(); st.desc = desc; if (!desc) return;
+    st.busy = "estimate"; st.error = null; renderSheet();
+    try { const r = await askClaude(ESTIMATE_PROMPT, desc, SCHEMA_ESTIMATE, "low");
+      const items = (r.items || []).filter(it => it.grams > 0 && it.grams <= 3000 && it.kcal_per_100g >= 0 && it.kcal_per_100g <= 900);
+      st.estimate = { items, note: r.note || "" }; if (!items.length) st.error = "Claude no devolvió ingredientes válidos."; }
+    catch (e) { st.error = claudeError(e); }
+    st.busy = null; if (sheetState === st) renderSheet(); },
+  cAddEstimate() { const st = sheetState; st.estimate.items.forEach(it => st.items.push({ name: it.name, grams: it.grams, per100: { kcal: it.kcal_per_100g, protein: it.protein_per_100g, carbs: it.carbs_per_100g, fat: it.fat_per_100g }, source: "claude" }));
+    st.estimate = null; st.desc = ""; renderSheet(); },
+  async cSuggest() { const st = sheetState, label = MEALS.find(m => m[0] === st.type)[1];
+    const cat = CATALOG.foods.map(f => `${f.key} | ${f.name} | ${BASIS[f.basis]} | ${fmt0(f.kcal)} kcal, P ${f.protein}, C ${f.carbs}, G ${f.fat}`).join("\n");
+    const ctx = st.items.length ? "Había apuntado: " + st.items.map(i => fmt0(i.grams) + " g de " + i.name).join(", ") + ". Quiere una opción más saludable." : (st.desc ? "Quiere algo parecido a: " + st.desc : "");
+    const user = `Comida: ${label}\nObjetivo: ${fmt0(st.target.kcal)} kcal, proteínas ${fmt0(st.target.protein)} g, carbohidratos ${fmt0(st.target.carbs)} g, grasas ${fmt0(st.target.fat)} g.\n${ctx}\nCatálogo (id | nombre | cómo se pesa | por 100 g):\n${cat}`;
+    st.busy = "suggest"; st.error = null; renderSheet();
+    try { const r = await askClaude(SUGGEST_PROMPT, user, SCHEMA_SUGGEST, "medium");
+      st.suggestions = (r.meals || []).map(m => ({ name: m.name, why: m.why, lines: (m.items || []).filter(i => FOODS[i.food_id] && i.grams > 0 && i.grams <= 1500).map(i => ({ food: i.food_id, grams: Math.round(i.grams) })) })).filter(m => m.lines.length);
+      if (!st.suggestions.length) st.error = "Claude no devolvió comidas válidas con el catálogo."; }
+    catch (e) { st.error = claudeError(e); }
+    st.busy = null; if (sheetState === st) renderSheet(); },
+  cUse(i) { const st = sheetState, m = st.suggestions[Number(i)]; st.items = m.lines.map(l => ({ name: FOODS[l.food].name, grams: l.grams, per100: foodV(l.food), source: "catálogo" })); st.suggestions = []; renderSheet(); },
+  cSave() { const st = sheetState;
+    if (st.fromBuilder) { const b = st.fromBuilder;
+      if (st.items.length) { b.picks[st.type] = { kind: "custom", items: st.items }; b.values[st.type] = st.items.reduce((a, it) => add(a, per(it.per100, it.grams)), V0()); b.step++; b.all = false; }
+      openSheet(b); return; }
+    if (st.items.length) setMeal(ui.day, st.type, { kind: "custom", items: st.items }); else { const d = dayData(ui.day); if (d.meals[st.type] && d.meals[st.type].kind === "custom") delete d.meals[st.type]; }
+    save(); closeSheet(); toast("Comida guardada"); },
+  closeSheet() { if (sheetState && sheetState.fromBuilder) { openSheet(sheetState.fromBuilder); return; } closeSheet(); },
+  sheetBg() {},
+  openSession(v) { tab = "gym"; ui.session = v; ui.editRoutine = false; render(); window.scrollTo(0, 0); },
+  closeSession() { ui.session = null; ui.editRoutine = false; render(); },
+  sessionDone(sid) { const L = weekLogEnsure(sid); L.done = !L.done; save(); render(); },
+  exDone(i) { const sid = ui.session, ex = exercisesOf(sid)[Number(i)], e = exLog(weekLogEnsure(sid), ex); e.done = !e.done; save(); render(); },
+  setDone(v) { const [i, j] = v.split(":").map(Number), sid = ui.session, e = exLog(weekLogEnsure(sid), exercisesOf(sid)[i]); e.sets[j].done = !e.sets[j].done; save(); render(); },
+  editRoutine() { ui.editRoutine = !ui.editRoutine; render(); },
+  exUp(i) { const l = exercisesOf(ui.session), n = Number(i); [l[n - 1], l[n]] = [l[n], l[n - 1]]; save(); render(); },
+  exDown(i) { const l = exercisesOf(ui.session), n = Number(i); [l[n + 1], l[n]] = [l[n], l[n + 1]]; save(); render(); },
+  exDel(i) { exercisesOf(ui.session).splice(Number(i), 1); save(); render(); },
+  exAdd() { exercisesOf(ui.session).push({ id: "custom-" + Date.now(), name: "Nuevo ejercicio", sets: 3, lo: 8, hi: 12 }); save(); render(); },
+  exRestore() { delete S.routine[ui.session]; save(); render(); toast("Rutina restaurada"); },
+  addWeight() { const kg = num(document.getElementById("wKg").value), dk = document.getElementById("wDate").value, waist = num(document.getElementById("wWaist").value);
+    if (!kg || kg < 20 || kg > 400 || !dk) { toast("Introduce un peso válido"); return; } addWeight(dk, kg, waist); save(); render(); toast("Pesaje guardado"); },
+  delWeight(v) { const [d, kg] = v.split("|"); const i = S.weights.findIndex(w => w.date === d && String(w.kg) === kg); if (i >= 0) S.weights.splice(i, 1); recalc(); save(); render(); },
+  goal(v) { S.profile.goal = v; save(); render(); },
+  saveProfile() { const p = S.profile, w = num(document.getElementById("pWeight").value);
+    p.heightCm = num(document.getElementById("pHeight").value); p.age = num(document.getElementById("pAge").value); p.sex = document.getElementById("pSex").value || null;
+    p.activity = document.getElementById("pAct").value; p.auto = document.getElementById("pAuto").checked;
+    if (w && Math.abs(w - (latestWeight() || 0)) >= 0.05) addWeight(dayKey(new Date()), w); const e = recalc(); save(); render();
+    toast(e && p.auto ? `Objetivos: ${e.kcal} kcal · P ${e.protein} · C ${e.carbs} · G ${e.fat}` : "Perfil guardado"); },
+  saveTargets() { const T = S.targets; T.kcal = num(document.getElementById("tK").value) || T.kcal; T.protein = num(document.getElementById("tP").value) || T.protein;
+    T.carbs = num(document.getElementById("tC").value) || T.carbs; T.fat = num(document.getElementById("tF").value) || T.fat; S.profile.auto = false; save(); render(); toast("Objetivos guardados"); },
+  saveKey() { const k = document.getElementById("cKey").value.trim(); if (!k) return; try { localStorage.setItem(KEY_STORE, k); } catch (e) { toast("Este navegador no permite guardar la clave"); return; } anthropicClient = null; render(); toast("Clave guardada en este navegador"); },
+  delKey() { try { localStorage.removeItem(KEY_STORE); } catch (e) { /* nada */ } anthropicClient = null; render(); },
+  async export() { const text = JSON.stringify(S, null, 1), name = "now-or-never-copia-" + dayKey(new Date()) + ".json";
+    if (downloads) { try { await downloads.save({ filename: name, data: text }); toast("Copia descargada"); } catch (e) { if (e.code !== "declined") toast("No se pudo descargar la copia"); } return; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; a.click(); },
+};
+function onEdit(t) {
+  const act = t.dataset.act, v = t.dataset.v;
+  if (!act) return;
+  const sid = ui.session;
+  if (act === "setKg" || act === "setReps") { const [i, j] = v.split(":").map(Number), e = exLog(weekLogEnsure(sid), exercisesOf(sid)[i]); e.sets[j][act === "setKg" ? "kg" : "reps"] = num(t.value); save(); }
+  if (act === "exName") { exercisesOf(sid)[Number(v)].name = t.value.trim() || "Ejercicio"; save(); }
+  if (act === "exSets") { const n = Math.round(num(t.value)); if (n >= 1 && n <= 10) { exercisesOf(sid)[Number(v)].sets = n; save(); } }
+  if (act === "exLo" || act === "exHi") { const n = Math.round(num(t.value)), ex = exercisesOf(sid)[Number(v)]; if (n >= 1 && n <= 100) { ex[act === "exLo" ? "lo" : "hi"] = n; if (ex.hi < ex.lo) ex.hi = ex.lo; save(); } }
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-act]");
+  if (!t || t.tagName === "INPUT" || t.tagName === "TEXTAREA") return;
+  if (t.dataset.act === "sheetBg" && e.target !== t) return;
+  if (t.dataset.act === "sheetBg") { actions.closeSheet(); return; }
+  const fn = actions[t.dataset.act]; if (fn) fn(t.dataset.v);
+});
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.id === "dayPick" && t.value) { ui.day = t.value; render(); return; }
+  if (t.id === "importFile" && t.files[0]) { const r = new FileReader(); r.onload = () => { try { const x = JSON.parse(r.result); if (!x || !x.targets || !x.days) throw 0; S = normalize(x); save(); render(); toast("Copia importada"); } catch (err) { toast("Ese archivo no es una copia de Now or Never"); } }; r.readAsText(t.files[0]); return; }
+  onEdit(t);
+});
+document.addEventListener("input", e => { if (e.target.id === "cSearch") { sheetState.q = e.target.value; const pos = e.target.selectionStart; renderSheet(); const n = document.getElementById("cSearch"); n.focus(); n.setSelectionRange(pos, pos); } });
+
+/* ===== Arranque ===== */
+S = normalize(readLocal());
+render();
+(async function connect() {
+  if (!window.claude || !window.claude.use) return;
+  const [dbNs, userNs, sampleNs, dlNs] = await Promise.all(["db", "user", "sample", "downloads"].map(n => window.claude.use(n).catch(() => null)));
+  sample = sampleNs; downloads = dlNs;
+  const id = userNs ? await userNs.id().catch(() => null) : null;
+  if (dbNs && id) {
+    db = dbNs; docRef = db.doc("data/users/" + id + "/state");
+    try {
+      const snap = await docRef.get(), remote = snap.exists ? snap.data() : null;
+      if (remote && (remote.updatedAt || 0) > (S.updatedAt || 0)) { S = normalize(JSON.parse(JSON.stringify(remote))); writeLocal(); cloudStatus = "Guardado en tu cuenta de Claude"; }
+      else if (S.updatedAt) { await pushCloud(); }
+      else cloudStatus = "Se guardará en tu cuenta de Claude";
+    } catch (e) { cloudStatus = "Guardado en este navegador (la nube no responde)"; docRef = null; }
+  }
+  if (!sheetState) render();
+})();
+</script>

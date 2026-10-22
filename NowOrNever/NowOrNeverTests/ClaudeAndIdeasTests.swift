@@ -120,3 +120,13 @@ final class IdeasCatalogTests: XCTestCase {
         }
     }
 }
+
+final class FoodSearchTests: XCTestCase {
+    func testCommonNamesFindCatalogFoods() {
+        XCTAssertTrue(FoodSearch.matches(name: "Pasta de trigo", query: "macarrones"))
+        XCTAssertTrue(FoodSearch.matches(name: "Plátano", query: "platano"))
+        XCTAssertTrue(FoodSearch.matches(name: "Pechuga de pollo", query: "POLLO"))
+        XCTAssertTrue(FoodSearch.matches(name: "Arroz", query: ""))
+        XCTAssertFalse(FoodSearch.matches(name: "Arroz", query: "macarrones"))
+    }
+}
