@@ -147,8 +147,8 @@ final class UserFlowUITests: XCTestCase {
         // Si la pulsación llega mientras la pantalla aún se está cargando, se repite una vez.
         if !element(containing: "Objetivo para tu desayuno").waitForExistence(timeout: 5) { builder.tap() }
 
-        // Cuatro pasos: desayuno, comida, merienda y cena; en cada uno se elige la primera opción.
-        for meal in ["desayuno", "comida", "merienda", "cena"] {
+        // Cuatro pasos: desayuno, almuerzo, merienda y cena; en cada uno se elige la primera opción.
+        for meal in ["desayuno", "almuerzo", "merienda", "cena"] {
             assertAppears(element(containing: "Objetivo para tu \(meal)"), "Paso de \(meal)")
             let options = app.buttons.matching(NSPredicate(format: "label == %@", "Elegir esta opción"))
             XCTAssertGreaterThanOrEqual(options.count, 4, "Al menos 4 opciones de \(meal)")
@@ -161,7 +161,7 @@ final class UserFlowUITests: XCTestCase {
         let swap = app.buttons["Cambiar comida"]
         XCTAssertTrue(scrollTo(swap).exists)
         swap.tap()
-        assertAppears(element(containing: "Objetivo para tu comida"), "Selector de comida")
+        assertAppears(element(containing: "Objetivo para tu almuerzo"), "Selector de almuerzo")
         app.buttons.matching(NSPredicate(format: "label == %@", "Elegir esta opción")).element(boundBy: 1).tap()
         XCTAssertTrue(scrollTo(app.buttons["Volver al menú"].firstMatch).exists)
     }
