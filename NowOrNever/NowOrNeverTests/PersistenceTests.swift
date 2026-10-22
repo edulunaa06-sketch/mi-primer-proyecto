@@ -161,6 +161,23 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(push.renamed(titles).title, push.title)
     }
 
+    func testRoutineFromScratchAndBackToDefaults() throws {
+        DataStore.seedRoutineIfNeeded(context, defaults: defaults)
+        XCTAssertFalse(try context.fetch(FetchDescriptor<RoutineExercise>()).isEmpty)
+        DataStore.startRoutineFromScratch(in: context)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<RoutineExercise>()).isEmpty, "Sesiones vacías")
+        let titles = try context.fetch(FetchDescriptor<SessionTitle>())
+        let push = try XCTUnwrap(WeeklyRoutine.session(id: "tue-push-a"))
+        XCTAssertEqual(push.renamed(titles).title, "Fuerza · martes")
+        DataStore.addExercise(to: push.id, name: "Hip thrust", sets: 4, repMin: 8, repMax: 12, in: context)
+        DataStore.renameSession(push.id, to: "Glúteo", in: context)
+        XCTAssertEqual(push.resolved(with: try context.fetch(FetchDescriptor<RoutineExercise>()),
+                                     titles: try context.fetch(FetchDescriptor<SessionTitle>())).title, "Glúteo")
+        DataStore.restoreAllDefaults(in: context)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<SessionTitle>()).isEmpty)
+        XCTAssertEqual(DataStore.routine(for: push.id, in: context).count, push.exercises.count)
+    }
+
     // MARK: Perfil y objetivos
 
     func testAutoTargetsRecalculateOnNewWeight() {

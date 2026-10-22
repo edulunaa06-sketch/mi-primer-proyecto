@@ -63,9 +63,9 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - **Frase motivadora** (gimnasio y desarrollo personal; 40 frases, nunca la misma dos veces seguidas). Se cierra sola a los 3 s o al tocarla y aparece la interfaz. Vuelve a salir si regresas a la app tras 10 minutos o más fuera.
 
 ### Inicio
+- **Calorías de hoy** arriba del todo, sin anillos: «Te quedan X kcal» (objetivo − lo comido) y lo que te queda de proteínas, carbohidratos y grasas. Baja a medida que registras comidas; si te pasas, lo indica en naranja. Al tocarla se abre *Comidas*.
 - **Tarjeta de pasos de hoy** arriba del todo: número grande, anillo de % del objetivo, cuántos te faltan, ≈ km (zancada media de 0,76 m) y ≈ kcal (0,04 kcal/paso), y de dónde salen los datos. Si Apple Salud no da datos (por ejemplo, porque la instalación por SideStore no incluye el permiso de Salud), usa el **sensor de movimiento del iPhone** (Movimiento y forma física, últimos 7 días). Si aún no has dado permiso, muestra el botón *Conectar Apple Salud*.
 - Peso más reciente y diferencia respecto al primer peso registrado.
-- Objetivo de kcal y barras de proteínas, carbohidratos y grasas (consumido según las comidas marcadas / objetivo).
 - Entrenamiento(s) programado(s) para hoy con su estado.
 - Comidas completadas (x/4).
 - **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso) y pasos/objetivo (máx. 100 %; se omite si Salud no da datos). El desglose se muestra en pantalla.
@@ -76,12 +76,13 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - El peso del perfil es tu **último pesaje**; si lo cambias, se guarda como pesaje nuevo de hoy (queda en el historial).
 - Cálculo con **Mifflin‑St Jeor**: basal = 10×peso + 6,25×altura − 5×edad + 5 (hombre) / −161 (mujer); gasto = basal × factor de actividad (1,2 / 1,375 / 1,55 / 1,725 / 1,9).
 - Calorías objetivo: −20 % (perder grasa), +10 % (ganar músculo), −10 % (recomposición), redondeadas a 10 kcal.
-- Macros: proteína 2,2 / 1,8 / 2,0 g/kg según objetivo; grasa 25 % de las kcal (mín. 0,6 g/kg); carbohidratos, el resto.
+- Macros: proteína = 35 % (perder grasa), 30 % (recomposición) o 25 % (ganar músculo) de las kcal, dentro de 1,6–2,4 g/kg de peso; grasa 25 % de las kcal (mín. 0,6 g/kg); carbohidratos, el resto. Así los tres macros cambian cuando cambian las kcal.
 - Con **Objetivos automáticos** activado, kcal y macros se recalculan al guardar el perfil y **cada vez que registras un peso nuevo**. Si editas los objetivos a mano en Ajustes, pasan a ser manuales y ya no se sobrescriben.
 - Es una estimación orientativa, no una pauta médica.
 
 ### Entrenamientos
 - Rutina semanal **exacta** de la especificación (`Models/Routine.swift`), con identificadores estables. Las pruebas `RoutineTests` comprueban ejercicios, orden, series y rangos.
+- **Cambiar el nombre de cualquier sesión** (lápiz arriba a la derecha dentro de la sesión, o mantener pulsada en la lista). El historial se conserva y *Nombre original* lo deshace.
 - **Sábado con dos sesiones separadas** (Carrera y Pecho y espalda), cada una con su propio estado.
 - Viernes: descanso con indicaciones de recuperación, sin fuerza.
 - Por sesión de fuerza: marcar cada ejercicio, marcar cada serie, registrar kg y repeticiones, ver la **sesión anterior** con datos, % de ejercicios completados y botón de **sesión completa**.
@@ -94,7 +95,15 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
   - Cada registro semanal guarda una copia del nombre y la prescripción, así que el historial sigue siendo legible aunque cambies la rutina.
 - **Progresión de cargas** por ejercicio (*Ver progresión de cargas*): gráfica de la carga máxima por semana, mejor serie, volumen (kg × reps), repeticiones totales y 1RM estimado (Epley, orientativo).
 
-### Nutrición
+### Nutrición › Comidas (lo que comes de verdad, por foto)
+- Cuatro comidas: **Desayuno, Almuerzo, Merienda y Cena**. Al tocar una se abre **directamente la cámara**.
+- Haces la foto del plato (o de los ingredientes) y **Claude detecta qué alimentos hay** (pollo, atún, boniato, queso cottage…). Los dudosos aparecen con «(?)».
+- Puedes **corregir nombres, quitar alimentos o añadir los que no haya detectado**, y **pones los gramos de cada uno** (lo que marca la báscula).
+- *Calcular calorías*: Claude da los valores por 100 g de cada alimento tal y como está (cocinado, crudo…) y la app calcula kcal y macros **con tus gramos**. Ves cada alimento y el **total**, y *Añadir* lo suma a esa comida. Se pueden hacer varias fotos para la misma comida.
+- Cada alimento se puede quitar después (✕) y el total se actualiza. También sin foto: *Añadir ingrediente* y escribirlo a mano.
+- Las kcal registradas se restan en **Inicio** (lo que te queda).
+
+### Nutrición › Menús (ideas y planificación)
 - Objetivos editables en Ajustes (iniciales **provisionales**: 2.300 kcal, 180 g P, 250 g C, 65 g G).
 - Desayuno, comida, merienda y cena, con casilla para marcar cada comida en el día elegido (puedes navegar a días anteriores).
 - **9 modelos de menú** seleccionables por día, más un menú predeterminado.
@@ -142,6 +151,13 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Aviso de que la fluctuación diaria no es pérdida/ganancia de grasa confirmada.
 - **Fotos mensuales** (frente, lateral, espalda): **cámara integrada** (delantera o trasera, temporizador de 3 o 10 s para hacerte la de espalda tú solo, y la foto del mismo ángulo del mes anterior superpuesta en transparencia para repetir la postura; revisas la foto antes de guardarla) o selector de fotos del sistema, indicador de vistas que faltan, guardado por mes/año, una foto por vista y mes (sin duplicados), reemplazo con confirmación, meses anteriores, **comparación de dos meses** (lado a lado o superpuesta con deslizador), eliminación de una foto o de todo el historial.
 
+### Amigos (cuentas y seguir a otras personas)
+- Cada persona usa la app en **su iPhone con su cuenta** (correo + contraseña + @usuario). Los datos completos siguen en cada móvil.
+- **Seguir** a alguien por su @usuario. La otra persona recibe la solicitud y puede *Aceptar y seguir*, *Solo aceptar* o rechazarla.
+- En **Sigues a** ves los **últimos 14 días** de cada persona: sesiones programadas **hechas (✓) o sin hacer (✗)** con sus mejores series, sus comidas y kcal, la proteína y los pasos. Arriba aparece el resumen semanal, con los días en que **no ha entrenado**.
+- Lo que se comparte se sube al abrir la app, al salir de ella y al entrar en *Amigos*. Lo puedes desactivar en *Compartir* y quitar seguidores cuando quieras.
+- Necesita un servidor gratuito de **Supabase**, que se crea una vez (guía en `AMIGOS.md`; esquema y reglas de privacidad en `docs/supabase/schema.sql`).
+
 ### Ajustes y recordatorios
 - Objetivos de kcal, macros y pasos.
 - **Creatina**: activar/desactivar, elegir hora, notificación de prueba. Usa un identificador fijo, así que cambiar la hora **sustituye** el recordatorio (no lo duplica). La app solo dice «programada» cuando iOS acepta la solicitud sin error.
@@ -158,7 +174,9 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 | Pesos, cintura, entrenamientos (series, kg, reps, estados), menús, catálogo, comidas marcadas, ajustes, carreras importadas | Base de datos **SwiftData** local (`Application Support`), sin iCloud |
 | Fotos de progreso | Archivos JPEG en `Application Support/ProgressPhotos` con protección de datos completa de iOS |
 | Tokens OAuth de Strava | **Llavero** de iOS (solo este dispositivo) |
-| Clave de la API de Claude (opcional) | **Llavero** de iOS. Solo se envía a `api.anthropic.com` cuando pulsas *Calcular* o *Pedir ideas*, junto con el texto que escribes y (para ideas) la lista de alimentos del catálogo |
+| Sesión de Amigos | **Llavero** de iOS. La URL y la clave pública del servidor, en ajustes locales |
+| Resumen diario compartido (si usas Amigos) | Tu proyecto de Supabase. Solo lo leen las personas que aceptas (reglas por fila en `docs/supabase/schema.sql`) |
+| Clave de la API de Claude (opcional) | **Llavero** de iOS. Se envía a `api.anthropic.com` solo cuando usas Claude: la **foto de la comida** (reducida) y los ingredientes con sus gramos, el texto que describes o, para ideas, tu objetivo y la lista del catálogo. Nunca las fotos de progreso, tu peso ni datos de Salud |
 | Client ID de Strava y URL del backend | Ajustes locales (no son secretos) |
 
 - La app **no tiene servidores ni cuentas propias** y no sube fotos a ningún sitio.

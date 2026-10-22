@@ -10,6 +10,8 @@ struct TrainingView: View {
     @Query private var titles: [SessionTitle]
     @State private var path: [String] = []
     @State private var renaming: SessionDefinition?
+    @State private var confirmScratch = false
+    @State private var confirmDefaults = false
     @State private var newTitle = ""
 
     private let weekStart: Date
@@ -44,6 +46,15 @@ struct TrainingView: View {
                         Label("Historial de semanas anteriores", systemImage: "clock.arrow.circlepath")
                     }
                     .buttonStyle(LimeButtonStyle(filled: false))
+                    Menu {
+                        Button("Empezar mi rutina desde cero", role: .destructive) { confirmScratch = true }
+                        Button("Volver a la rutina predeterminada") { confirmDefaults = true }
+                    } label: {
+                        Label("Opciones de la rutina", systemImage: "slider.horizontal.3")
+                    }
+                    .font(.footnote.weight(.semibold))
+                    Text("Mantén pulsada una sesión para cambiarle el nombre; dentro de cada sesión de fuerza, «Editar» para sus ejercicios.")
+                        .font(.caption2).foregroundStyle(Theme.textTertiary)
                 }
                 .padding(16)
             }
@@ -53,6 +64,16 @@ struct TrainingView: View {
                 if let session = WeeklyRoutine.session(id: sessionID) {
                     SessionDestination(session: session, weekStart: weekStart)
                 }
+            }
+            .confirmationDialog("¿Empezar la rutina desde cero?", isPresented: $confirmScratch, titleVisibility: .visible) {
+                Button("Vaciar las sesiones de fuerza", role: .destructive) { DataStore.startRoutineFromScratch(in: context) }
+            } message: {
+                Text("Las sesiones de fuerza se quedan sin ejercicios y con nombre genérico para que pongas los tuyos. El historial de semanas anteriores se conserva.")
+            }
+            .confirmationDialog("¿Volver a la rutina predeterminada?", isPresented: $confirmDefaults, titleVisibility: .visible) {
+                Button("Restaurar Push / Pull / Pierna") { DataStore.restoreAllDefaults(in: context) }
+            } message: {
+                Text("Se recuperan los ejercicios y nombres originales. El historial se conserva.")
             }
             .alert("Nombre de la sesión", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } })) {
                 TextField("Nombre", text: $newTitle)

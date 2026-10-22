@@ -744,7 +744,8 @@ function viewLog(k) {
   ${leftCard(k, k === dayKey(new Date()) ? "Hoy" : niceDate(k))}
   ${MEALS.map(([t, label]) => { const items = logOfDay(k, t), tot = logTotals(items), d = S.days[k], menuDone = !items.length && d && d.done[t];
     return `<section class="card"><div class="row between"><div><h3>${label}</h3><div class="tiny muted num">${items.length ? `${fmt0(tot.kcal)} kcal · P ${fmt0(tot.protein)} g` : menuDone ? "Marcada desde Menús: " + fmt0(resolve(k, t).totals.kcal) + " kcal" : "Toca la cámara para hacer la foto"}</div></div>
-      <label class="photo-btn" style="width:auto;padding:10px 14px" aria-label="${label}: añadir con foto">📷 Foto<input type="file" accept="image/*" capture="environment" data-logphoto="${t}" hidden></label></div>
+      <div class="row" style="gap:6px"><label class="photo-btn" style="width:auto;padding:10px 12px" aria-label="${label}: hacer foto">📷 Foto<input type="file" accept="image/*" capture="environment" data-logphoto="${t}" hidden></label>
+      <label class="photo-btn" style="width:auto;padding:10px 12px;background:var(--raised);color:var(--fg)" aria-label="${label}: foto de la galería">🖼 Galería<input type="file" accept="image/*" data-logphoto="${t}" hidden></label></div></div>
       ${items.map((it, i) => { const v = per(it.per100, it.grams); return `<div class="line small"><span class="grow">${esc(it.name)} <span class="dim">· ${fmt0(it.grams)} g</span><div class="tiny dim num">P ${fmt1(v.protein)} · C ${fmt1(v.carbs)} · G ${fmt1(v.fat)}</div></span><span class="num">${fmt0(v.kcal)} kcal</span><button class="plain tiny" data-act="logDel" data-v="${t}|${i}" aria-label="Quitar ${esc(it.name)}">✕</button></div>`; }).join("")}
       <button class="plain tiny" data-act="logOpen" data-v="${t}">Sin foto: escribir ingredientes</button></section>`; }).join("")}
   <p class="note">Las kcal las estima Claude con los gramos que pesas tú; son aproximadas. Para ideas de qué comer, abre «Menús».</p>`;
@@ -761,7 +762,8 @@ function sheetLog() {
   return `<div class="sheet-head"><div class="row between"><div class="eyebrow">${esc(label)}</div><button class="plain" data-act="closeSheet">Cerrar</button></div></div>
   ${mode ? "" : '<p class="note">Fuera de claude.ai, Claude necesita tu clave de la API (Perfil).</p>'}
   <section class="card"><div class="row">${st.url ? `<img src="${st.url}" alt="Foto" style="width:88px;height:88px;object-fit:cover;border-radius:12px">` : ""}
-    <label class="photo-btn grow" style="text-align:center">${st.url ? "Repetir foto" : "Hacer foto"}<input type="file" accept="image/*" capture="environment" id="logFile" hidden></label></div>
+    <div class="grow" style="display:flex;flex-direction:column;gap:6px"><label class="photo-btn" style="text-align:center">${st.url ? "Repetir foto" : "Hacer foto"}<input type="file" accept="image/*" capture="environment" data-logfile="1" hidden></label>
+    <label class="photo-btn" style="text-align:center;background:var(--raised);color:var(--fg)">Elegir de la galería<input type="file" accept="image/*" data-logfile="1" hidden></label></div></div>
     ${st.busy === "detect" ? '<p class="small muted">Claude está mirando qué hay en el plato…</p>' : st.note ? `<p class="tiny muted">${esc(st.note)}</p>` : ""}</section>
   <section class="card"><h3>Ingredientes y gramos</h3><p class="tiny muted">${st.rows.length ? "Revisa lo detectado, añade lo que falte y pon lo que pesa cada uno." : "Haz la foto o añade los ingredientes a mano."}</p>
     ${st.rows.map((x, i) => `<div class="row"><input class="grow" data-lrow="${i}" data-f="name" value="${esc(x.name)}" placeholder="Ingrediente" aria-label="Ingrediente"><input class="short" data-lrow="${i}" data-f="grams" inputmode="decimal" value="${x.grams || ""}" placeholder="g" aria-label="Gramos de ${esc(x.name)}"><span class="tiny muted">g</span><button class="plain" data-act="lrowDel" data-v="${i}" aria-label="Quitar">✕</button></div>`).join("")}
@@ -944,7 +946,7 @@ document.addEventListener("click", e => {
 document.addEventListener("change", e => {
   const t = e.target;
   if (t.dataset && t.dataset.logphoto && t.files[0]) { const f = t.files[0]; t.value = ""; openLog(t.dataset.logphoto, f); return; }
-  if (t.id === "logFile" && t.files[0]) { const f = t.files[0]; t.value = ""; setLogPhoto(f); return; }
+  if (t.dataset && t.dataset.logfile && t.files[0]) { const f = t.files[0]; t.value = ""; setLogPhoto(f); return; }
   if (t.dataset && t.dataset.lrow !== undefined) { const st = sheetState, r = st.rows[Number(t.dataset.lrow)]; if (t.dataset.f === "grams") r.grams = num(t.value); else r.name = t.value;
     // Sin volver a pintar (no se pierde el foco al pasar al siguiente campo), salvo para quitar un resultado ya calculado.
     if (st.result) { st.result = null; renderSheet(); return; }

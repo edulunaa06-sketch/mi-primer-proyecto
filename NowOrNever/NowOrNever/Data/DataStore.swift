@@ -234,6 +234,26 @@ enum DataStore {
         try? context.save()
     }
 
+    /// Rutina desde cero: las sesiones de fuerza se quedan sin ejercicios y con un nombre genérico
+    /// («Fuerza · martes»), para que cada persona ponga los suyos. El historial no se toca.
+    @MainActor
+    static func startRoutineFromScratch(in context: ModelContext) {
+        for session in WeeklyRoutine.allSessions where session.kind == .strength {
+            routine(for: session.id, in: context).forEach { context.delete($0) }
+            renameSession(session.id, to: "Fuerza · \(WeeklyRoutine.weekdayName(session.weekday).lowercased())", in: context)
+        }
+        try? context.save()
+    }
+
+    /// Vuelve a la rutina predeterminada completa (ejercicios y nombres originales).
+    @MainActor
+    static func restoreAllDefaults(in context: ModelContext) {
+        for session in WeeklyRoutine.allSessions where session.kind == .strength {
+            restoreDefaultRoutine(for: session, in: context)
+        }
+        for session in WeeklyRoutine.allSessions { renameSession(session.id, to: "", in: context) }
+    }
+
     // MARK: Entrenamiento
 
     @MainActor

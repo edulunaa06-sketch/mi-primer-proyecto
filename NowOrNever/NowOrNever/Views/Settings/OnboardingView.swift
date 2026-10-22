@@ -13,6 +13,7 @@ struct OnboardingView: View {
     @State private var weight: Double?
     @State private var startDate = Date()
     @State private var message: String?
+    @State private var fromScratch = false
 
     static let suggestedWeight = 85.1
     static var suggestedDate: Date {
@@ -44,6 +45,20 @@ struct OnboardingView: View {
                             startDate = Self.suggestedDate
                         }
                         .font(.footnote.weight(.semibold))
+                    }
+                    .card()
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("Tu rutina").font(.headline)
+                        Picker("Rutina", selection: $fromScratch) {
+                            Text("Predeterminada").tag(false)
+                            Text("Desde cero").tag(true)
+                        }
+                        .pickerStyle(.segmented)
+                        Text(fromScratch
+                             ? "Las sesiones de fuerza empiezan vacías y con nombre genérico. En Entrenos pones el nombre (por ejemplo «Glúteo») y los ejercicios que quieras."
+                             : "Empiezas con la rutina Push / Pull / Pierna. Puedes cambiar el nombre de cada sesión y sus ejercicios cuando quieras.")
+                            .font(.caption).foregroundStyle(Theme.textSecondary)
                     }
                     .card()
 
@@ -84,6 +99,7 @@ struct OnboardingView: View {
     private func finish(saveStart: Bool) {
         let settings = settingsList.first ?? DataStore.settings(context)
         if saveStart { settings.trackingStartDate = DateUtils.startOfDay(startDate) }
+        if fromScratch { DataStore.startRoutineFromScratch(in: context) }
         settings.onboardingCompleted = true
         try? context.save()
         onFinish()
