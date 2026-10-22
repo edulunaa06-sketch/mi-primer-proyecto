@@ -104,6 +104,14 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
   - *Cambiar* en cada comida del día: propone las alternativas que mejor encajan con las otras tres comidas que ya tienes. *Volver al menú* deshace el cambio.
   - Las opciones son las comidas de ese tipo de los 9 menús. Cada una se propone con una **ración ajustada** (75–135 %) para acercarse a los macros que te quedan, con gramos redondeados a cantidades pesables, y una puntuación «Encaja X %». Reparto orientativo del día: desayuno 25 %, comida 35 %, merienda 15 %, cena 25 %.
   - Las elecciones se guardan por día. Si una comida ya estaba marcada como hecha y la cambias, su registro se actualiza.
+- **38 ideas de comida con pesos** (además de las 36 comidas de los 9 menús): por ejemplo *Plato de frutas con yogur* (plátano, fresas, kiwi, piña, yogur griego y nueces, ≈ 445 kcal). Aparecen como opciones en el asistente y en *Cambiar*, con la ración ajustada a lo que te queda del día. Si eliges un desayuno ligero (un plato de fruta), la comida, la merienda y la cena se proponen con más cantidad para cuadrar el día.
+- **«Lo que como»** (*Como otra cosa: apuntarla* en cada comida, y *Voy a comer otra cosa* dentro del asistente): apunta lo que realmente comes de tres formas:
+  - *Describir (Claude)*: escribes «150 g de macarrones con tomate» y Claude estima los gramos, kcal y macros de cada ingrediente. Revisas el resultado antes de añadirlo.
+  - *Catálogo*: buscas el alimento (entiende nombres comunes: «macarrones» encuentra la pasta) y pones los gramos.
+  - *Manual*: nombre, gramos y kcal (macros opcionales), por ejemplo copiados de la etiqueta.
+  - *Alternativa más saludable*: Claude propone comidas hechas **solo con alimentos del catálogo** que encajan con el objetivo de esa comida; las kcal y macros las calcula la app, no Claude.
+- **Reajustar el resto del día a mis macros**: mantiene lo que has apuntado y lo que ya has marcado como comido, y vuelve a elegir las demás comidas para cuadrar el día.
+- **Claude (opcional)**: necesita tu propia clave de la API de Anthropic (*Ajustes › Claude*), que se guarda en el Llavero. Cada consulta cuesta unos céntimos en tu cuenta de Anthropic. Sin clave, *Catálogo* y *Manual* funcionan igual.
 - **Ajustar a tus requerimientos** (*Nutrición › ⋯ › Los 9 menús*): cada menú indica cuánto se desvía de tu objetivo calórico y puedes escalar un menú o los nueve a tus kcal. El ajuste es proporcional (mantiene las proporciones de macros de cada menú) y redondea a cantidades pesables (1 g por debajo de 20 g, 5 g por debajo de 100 g y 10 g a partir de ahí). Las comidas ya marcadas en días anteriores no cambian.
 - **Catálogo local editable** de alimentos (valores por 100 g), con indicador ⚠︎ de valor provisional, aviso si kcal y macros no cuadran y opción de crear alimentos.
 - Registro diario de comidas consumidas e historial con % de calorías.
@@ -146,6 +154,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 | Pesos, cintura, entrenamientos (series, kg, reps, estados), menús, catálogo, comidas marcadas, ajustes, carreras importadas | Base de datos **SwiftData** local (`Application Support`), sin iCloud |
 | Fotos de progreso | Archivos JPEG en `Application Support/ProgressPhotos` con protección de datos completa de iOS |
 | Tokens OAuth de Strava | **Llavero** de iOS (solo este dispositivo) |
+| Clave de la API de Claude (opcional) | **Llavero** de iOS. Solo se envía a `api.anthropic.com` cuando pulsas *Calcular* o *Pedir ideas*, junto con el texto que escribes y (para ideas) la lista de alimentos del catálogo |
 | Client ID de Strava y URL del backend | Ajustes locales (no son secretos) |
 
 - La app **no tiene servidores ni cuentas propias** y no sube fotos a ningún sitio.
@@ -186,6 +195,9 @@ Detalles técnicos:
 - Errores gestionados: cancelación/denegación, `state` distinto, permisos insuficientes, 401, límite de peticiones (429) y respuestas inválidas del backend.
 - *Desconectar* revoca el token en Strava y lo borra del Llavero.
 - Strava limita a las apps nuevas a 1 atleta (tú) hasta que solicitas más capacidad; suficiente para uso personal.
+
+### Demo web (sin instalar nada)
+`demo/NowOrNever-demo.html` es una versión web de la parte de comidas, rutina, peso y perfil, con el mismo catálogo y el mismo planificador. Guarda los datos en el navegador (y en tu cuenta de Claude si la abres como artefacto) y permite exportar/importar una copia en JSON. Se regenera con `python3 tools/build_demo.py`. No tiene Salud, notificaciones ni fotos.
 
 ### Nada más
 Salud, notificaciones, fotos y el botón de abrir Strava funcionan sin credenciales.
