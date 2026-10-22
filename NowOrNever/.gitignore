@@ -4,3 +4,6 @@ screenshots/
 *.xcuserstate
 xcuserdata/
 .DS_Store
+ipa/
+*.ipa
+build-release/

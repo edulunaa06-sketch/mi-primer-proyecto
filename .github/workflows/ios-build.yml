@@ -28,6 +28,26 @@ jobs:
             CODE_SIGNING_ALLOWED=NO build | tee build-device.log | grep -E "error:|warning:|BUILD" || true
           grep -q "BUILD SUCCEEDED" build-device.log
 
+      - name: Build IPA for SideStore/AltStore (Release, firma ad-hoc con entitlements)
+        run: |
+          set -o pipefail
+          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
+            -destination 'generic/platform=iOS' -configuration Release \
+            -derivedDataPath build-release CODE_SIGNING_ALLOWED=NO build | tee build-release.log | grep -E "error:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build-release.log
+          APP=build-release/Build/Products/Release-iphoneos/NowOrNever.app
+          # Firma ad-hoc para incrustar los entitlements (HealthKit). SideStore/AltStore vuelven a firmar con tu Apple ID.
+          codesign --force --sign - --entitlements Config/NowOrNever.entitlements --timestamp=none "$APP"
+          codesign -d --entitlements - "$APP" 2>/dev/null | grep -q healthkit
+          rm -rf ipa && mkdir -p ipa/Payload && cp -R "$APP" ipa/Payload/
+          (cd ipa && zip -qry ../NowOrNever.ipa Payload)
+          ls -la NowOrNever.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NowOrNever-ipa
+          path: NowOrNever/NowOrNever.ipa
+
       - name: Run unit tests on simulator
         run: |
           set -o pipefail
