@@ -42,7 +42,10 @@ final class UserFlowUITests: XCTestCase {
     @discardableResult
     private func scrollTo(_ element: XCUIElement, maxSwipes: Int = 12) -> XCUIElement {
         var swipes = 0
-        while !(element.exists && element.isHittable) && swipes < maxSwipes {
+        // Visible = pulsable y por encima de la barra de pestañas propia (que tapa la parte inferior).
+        let tabBarTop = app.buttons["Inicio"].firstMatch.exists ? app.buttons["Inicio"].firstMatch.frame.minY - 8 : .greatestFiniteMagnitude
+        func visible() -> Bool { element.exists && element.isHittable && element.frame.maxY < tabBarTop }
+        while !visible() && swipes < maxSwipes {
             app.swipeUp(velocity: .slow)
             swipes += 1
         }
