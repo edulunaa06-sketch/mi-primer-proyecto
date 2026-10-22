@@ -14,6 +14,8 @@ Para que tu iPhone y el de tu pareja se vean hace falta un pequeño servidor. Se
 ## 2. Crear las tablas y las reglas de privacidad
 1. En el menú de la izquierda, entra en **SQL Editor** y pulsa **New query**.
 2. Abre el archivo `docs/supabase/schema.sql` de este proyecto, copia todo su contenido, pégalo y pulsa **Run**. Debe salir «Success».
+   - Crea también dos carpetas privadas de archivos (**avatars** para las fotos de perfil y **progress** para las fotos de progreso) con sus reglas de acceso.
+   - Si ya lo ejecutaste con una versión anterior, vuelve a ejecutarlo entero: añade lo nuevo sin borrar nada.
 
 ## 3. Que las cuentas funcionen al momento (recomendado)
 En **Authentication › Sign In / Providers › Email**, desactiva **Confirm email** y guarda.
@@ -34,9 +36,19 @@ En **Project Settings › API Keys** (o en el botón **Connect** de arriba):
 4. Uno escribe el @usuario del otro y pulsa **Seguir**. Al otro le aparece la solicitud: con **Aceptar y seguir** os seguís los dos.
 5. Toca su nombre en **Sigues a** para ver sus últimos 14 días: entrenos hechos (✓) o sin hacer (✗), mejores series, comidas, kcal y pasos. Arriba verás el resumen de la semana, con los días en que no ha entrenado.
 
+## Tu perfil
+En *Amigos*, toca tu nombre (**Ver mi perfil**):
+- **Foto de perfil**: toca el círculo y elígela de la galería.
+- **Seguidores y seguidos**: el número y la lista.
+- **Estadísticas**: tu altura (de *Ajustes › Perfil*) y tu último peso. Interruptor *Mostrar altura y peso a mis seguidores*.
+- **Fotos de progreso**: las de *Progreso › Fotos*, agrupadas por fecha (por ejemplo «Viernes, 23 de octubre» con frente, lateral y espalda). Cada vez que haces una, se añade. La primera vez que entras te pregunta si quieres compartirlas. Si lo desactivas, se borran del servidor y en tu iPhone se quedan.
+
+En el perfil de tu pareja (*Sigues a* › su nombre) ves su foto, sus seguidores y seguidos, su altura y peso, y dos pestañas: **Entrenos y comidas** (sus días) y **Fotos** (sus fotos con fecha).
+
 ## Qué se comparte y cuándo
 - **Qué**: un resumen por día con las sesiones programadas (hechas o no) y sus mejores series, las 4 comidas (marcadas o no) con sus kcal, las kcal y la proteína registradas y los pasos.
-- **Qué no**: fotos, peso corporal, cintura ni otros datos de Salud.
+- **Además, si lo activas en tu perfil**: tu altura y tu peso, y tus fotos de progreso con su fecha. Tu foto de perfil la ve cualquiera que use el mismo servidor, para que te reconozca al buscarte.
+- **Qué no**: cintura, fotos de comidas, ni otros datos de Salud.
 - **Cuándo**: al abrir la app, al salir de ella y al entrar en *Amigos*. Se suben los últimos 7 días, contados desde que empezaste a usar la app.
 - **Quién lo ve**: solo las personas cuya solicitud aceptas. Puedes quitar a un seguidor o desactivar *Compartir* cuando quieras.
 - **Dónde**: tus datos completos siguen **solo en tu iPhone**. Si borras la app, el resumen compartido se queda en el servidor hasta que lo borres desde Supabase.

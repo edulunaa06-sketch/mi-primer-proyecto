@@ -82,6 +82,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 
 ### Entrenamientos
 - Rutina semanal **exacta** de la especificación (`Models/Routine.swift`), con identificadores estables. Las pruebas `RoutineTests` comprueban ejercicios, orden, series y rangos.
+- **Rutina predeterminada o desde cero**: al empezar (y en *Entrenos › Opciones de la rutina*) puedes vaciar las sesiones de fuerza para montar tu propia rutina, o volver a la predeterminada. El historial se conserva.
 - **Cambiar el nombre de cualquier sesión** (lápiz arriba a la derecha dentro de la sesión, o mantener pulsada en la lista). El historial se conserva y *Nombre original* lo deshace.
 - **Sábado con dos sesiones separadas** (Carrera y Pecho y espalda), cada una con su propio estado.
 - Viernes: descanso con indicaciones de recuperación, sin fuerza.
@@ -155,6 +156,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Cada persona usa la app en **su iPhone con su cuenta** (correo + contraseña + @usuario). Los datos completos siguen en cada móvil.
 - **Seguir** a alguien por su @usuario. La otra persona recibe la solicitud y puede *Aceptar y seguir*, *Solo aceptar* o rechazarla.
 - En **Sigues a** ves los **últimos 14 días** de cada persona: sesiones programadas **hechas (✓) o sin hacer (✗)** con sus mejores series, sus comidas y kcal, la proteína y los pasos. Arriba aparece el resumen semanal, con los días en que **no ha entrenado**.
+- **Perfil**: foto de perfil, número y lista de seguidores y seguidos, altura y peso (opcional) y **fotos de progreso agrupadas por fecha** («Viernes, 23 de octubre» con las tres vistas), que se añaden cada vez que haces una (opcional; la primera vez te pregunta). En el perfil de otra persona: sus *Entrenos y comidas* y sus *Fotos*.
 - Lo que se comparte se sube al abrir la app, al salir de ella y al entrar en *Amigos*. Lo puedes desactivar en *Compartir* y quitar seguidores cuando quieras.
 - Necesita un servidor gratuito de **Supabase**, que se crea una vez (guía en `AMIGOS.md`; esquema y reglas de privacidad en `docs/supabase/schema.sql`).
 

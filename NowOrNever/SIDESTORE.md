@@ -19,13 +19,20 @@
 1. Pasa `NowOrNever.ipa` al iPhone, por ejemplo por AirDrop, iCloud Drive, correo o Drive, y guárdalo en **Archivos**.
 2. Con **LocalDevVPN conectado**, abre SideStore › **My Apps** › **+** (arriba a la izquierda).
 3. Elige `NowOrNever.ipa`. En un minuto aproximadamente aparece el icono en tu pantalla de inicio, como cualquier otra app.
-4. La primera vez que abras la app, acepta los permisos que pide: Salud (pasos), notificaciones (creatina y fotos) y cámara (fotos de progreso).
+4. La primera vez que abras la app, acepta los permisos que pide: Salud y Movimiento (pasos), notificaciones (creatina y fotos) y cámara (fotos de comidas y de progreso).
 
 ## Paso 3 · Renovar cada semana (2 toques, sin ordenador)
 Con una cuenta de Apple gratuita, las apps caducan a los **7 días**.
 - Activa LocalDevVPN, abre SideStore › My Apps y pulsa **Refresh All**.
 - También puedes hacerlo automático con un atajo: SideStore trae una acción para la app **Atajos** con la que crear una automatización diaria.
 - Si se te pasa y caduca, **no pierdes los datos**: renueva la app y vuelve a abrirla.
+
+## Instalarla en el iPhone de tu pareja
+Necesita su propio SideStore en su iPhone, con su cuenta de Apple. Repite los pasos 1 y 2 en su móvil; el ordenador solo hace falta la primera vez. Pásale `NowOrNever.ipa` por AirDrop o WhatsApp (como documento).
+
+Al abrir la app por primera vez podrá elegir **Rutina: Predeterminada o Desde cero**. Con *Desde cero*, las sesiones de fuerza empiezan vacías: mantiene pulsada cada sesión para ponerle nombre (por ejemplo «Glúteo») y dentro pulsa *Editar* para añadir sus ejercicios. También puede cambiarlo más tarde en *Entrenos › Opciones de la rutina*.
+
+Después, en *Amigos*, pega la misma URL y clave del servidor (ver `AMIGOS.md`), crea su cuenta y seguíos.
 
 ## Actualizar a una versión nueva
 En SideStore › My Apps › **+**, elige el `.ipa` nuevo. Se instala encima y **conserva tus datos**, siempre que uses la misma cuenta de Apple.
