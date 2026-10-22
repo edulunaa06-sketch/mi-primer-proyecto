@@ -86,6 +86,9 @@ jobs:
           xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -NNMealBuilder; sleep 6
           xcrun simctl io "$UDID" screenshot screenshots/meal-builder.png
           xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNSplash; sleep 4
+          xcrun simctl io "$UDID" screenshot screenshots/splash.png
+          xcrun simctl terminate "$UDID" "$BID" || true
           for flag in NNCustomMeal NNSwapMeal; do
             xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -$flag; sleep 6
             xcrun simctl io "$UDID" screenshot "screenshots/$flag.png"

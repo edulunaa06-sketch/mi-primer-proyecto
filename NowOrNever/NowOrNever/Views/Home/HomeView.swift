@@ -50,6 +50,7 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     header
+                    stepsCard
                     complianceCard
                     weightCard
                     nutritionCard
@@ -144,17 +145,54 @@ struct HomeView: View {
         .card()
     }
 
+    private var stepsCard: some View {
+        let goal = settings?.stepGoal ?? 8000
+        let steps = health.todaySteps
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                ProgressRing(fraction: steps.map { StepEstimates.fraction($0, goal: goal) } ?? 0, size: 84,
+                             label: steps == nil ? "—" : nil)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PASOS DE HOY").font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
+                    Text(steps.map { NumberFormat.integer($0) } ?? "—")
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .accessibilityIdentifier("home.steps")
+                    Text(steps.map { $0 >= goal ? "¡Objetivo de \(NumberFormat.integer(goal)) cumplido!" : "Te faltan \(NumberFormat.integer(goal - $0)) para \(NumberFormat.integer(goal))" }
+                         ?? "Objetivo: \(NumberFormat.integer(goal)) pasos")
+                        .font(.subheadline).foregroundStyle(Theme.textSecondary)
+                }
+                Spacer(minLength: 0)
+            }
+            if let steps {
+                HStack {
+                    Label(String(format: "≈ %.1f km", StepEstimates.kilometers(steps)).replacingOccurrences(of: ".", with: ","), systemImage: "map")
+                    Spacer()
+                    Label("≈ \(NumberFormat.integer(StepEstimates.kcal(steps))) kcal", systemImage: "flame.fill")
+                    Spacer()
+                    Text(health.stepsSource ?? "").foregroundStyle(Theme.textTertiary)
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+            } else if health.state == .notDetermined {
+                Button("Conectar Apple Salud para contar tus pasos") {
+                    Task { await health.requestAuthorization() }
+                }
+                .buttonStyle(LimeButtonStyle())
+            } else {
+                Text(health.state == .unavailable
+                     ? "Este dispositivo no tiene Apple Salud ni sensor de pasos."
+                     : "Sin pasos todavía. Si no aparecen, revisa Ajustes › Salud › Acceso a datos › Now or Never, o Ajustes › Privacidad › Movimiento y forma física.")
+                    .font(.caption).foregroundStyle(Theme.textTertiary)
+            }
+        }
+        .card()
+        .task { await health.refresh() }
+    }
+
     private var stepsAndTraining: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
-                MetricTile(
-                    title: "Pasos hoy",
-                    value: health.todaySteps.map { NumberFormat.integer($0) } ?? "—",
-                    detail: health.todaySteps != nil
-                        ? "Objetivo \(NumberFormat.integer(settings?.stepGoal ?? 8000))"
-                        : "Sin datos de Salud",
-                    symbol: "figure.walk"
-                )
                 MetricTile(
                     title: "Comidas",
                     value: "\(Set(todayMeals.map(\.mealTypeRaw)).count)/4",

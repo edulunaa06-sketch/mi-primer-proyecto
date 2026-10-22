@@ -122,6 +122,13 @@ svg text { fill: var(--muted); font: 11px var(--font-body); }
 .photo-btn{display:block;padding:8px 4px;border-radius:10px;background:var(--lime);color:#000;font-weight:700;font-size:13px;cursor:pointer}
 .photo-full{position:fixed;inset:0;background:#000;z-index:200;display:flex;align-items:center;justify-content:center}
 .photo-full img{max-width:100%;max-height:100%}
+.splash{position:fixed;inset:0;z-index:300;background:var(--bg);display:flex;flex-direction:column;justify-content:center;gap:18px;padding:28px;cursor:pointer;transition:opacity .35s;animation:splashIn .5s ease-out}
+.splash i{display:block;width:48px;height:4px;background:var(--lime)}
+.splash p{margin:0;font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:36px;line-height:1.1;color:var(--fg)}
+.splash span{color:var(--muted);font-weight:600}
+.splash small{position:absolute;bottom:40px;left:0;right:0;text-align:center;color:var(--dim);font-weight:600}
+.splash.out{opacity:0}
+@keyframes splashIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 </style>
 
 <div class="app" id="app"></div>
@@ -132,6 +139,7 @@ svg text { fill: var(--muted); font: 11px var(--font-body); }
 <script>
 /* ===== Datos de la app (mismo catálogo y rutina que la app nativa) ===== */
 const CATALOG = /*@@CATALOG@@*/null;
+const QUOTES = /*@@QUOTES@@*/[];
 const ROUTINE = [
   { id: "mon-run", day: 1, title: "Carrera suave", kind: "run", detail: "Correr entre 25 y 35 minutos a ritmo fácil." },
   { id: "tue-push-a", day: 2, title: "Push A", kind: "strength", ex: [
@@ -766,6 +774,17 @@ document.addEventListener("input", e => {
 /* ===== Arranque ===== */
 S = normalize(readLocal());
 render();
+(function splash() {
+  if (!QUOTES.length) return;
+  let last = -1; try { last = Number(localStorage.getItem("now-or-never-quote") ?? -1); } catch (e) {}
+  let i = Math.floor(Math.random() * QUOTES.length); if (i === last) i = (i + 1) % QUOTES.length;
+  try { localStorage.setItem("now-or-never-quote", String(i)); } catch (e) {}
+  const q = QUOTES[i], el = document.createElement("div");
+  el.className = "splash"; el.setAttribute("role", "dialog"); el.setAttribute("aria-label", "Frase del día");
+  el.innerHTML = `<div class="eyebrow">Now or Never</div><i></i><p>${esc(q.text)}</p>${q.author ? `<span>— ${esc(q.author)}</span>` : ""}<small>Toca para empezar</small>`;
+  const close = () => { el.classList.add("out"); setTimeout(() => el.remove(), 350); };
+  el.onclick = close; setTimeout(close, 3000); document.body.appendChild(el);
+})();
 loadPhotos().then(() => { if (tab === "progress" && !sheetState) render(); });
 (async function connect() {
   if (!window.claude || !window.claude.use) return;

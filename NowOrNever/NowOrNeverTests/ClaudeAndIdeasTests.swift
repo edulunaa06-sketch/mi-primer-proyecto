@@ -152,3 +152,19 @@ final class ManualKcalMacrosTests: XCTestCase {
         XCTAssertGreaterThan(m.carbs, 0)
     }
 }
+
+final class MotivationTests: XCTestCase {
+    func testQuotesAreUniqueAndNeverRepeatTwiceInARow() {
+        XCTAssertGreaterThanOrEqual(Motivation.quotes.count, 30)
+        XCTAssertEqual(Set(Motivation.quotes.map(\.text)).count, Motivation.quotes.count)
+        XCTAssertNotEqual(Motivation.next(after: 5, random: { _ in 5 }), 5)
+        XCTAssertEqual(Motivation.next(after: nil, random: { _ in 3 }), 3)
+    }
+
+    func testStepEstimates() {
+        XCTAssertEqual(StepEstimates.kilometers(10_000), 7.6, accuracy: 0.001)
+        XCTAssertEqual(StepEstimates.kcal(10_000), 400, accuracy: 0.001)
+        XCTAssertEqual(StepEstimates.fraction(12_000, goal: 8_000), 1)
+        XCTAssertEqual(StepEstimates.fraction(4_000, goal: 8_000), 0.5)
+    }
+}

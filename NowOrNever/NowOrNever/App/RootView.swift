@@ -48,6 +48,18 @@ struct RootView: View {
     @Query private var settingsList: [UserSettings]
     @State private var showOnboarding = false
     @State private var bootstrapped = false
+    @State private var splashQuote: Motivation.Quote? = RootView.nextQuote()
+    @State private var splashAutoDismiss = true
+    @State private var backgroundedAt: Date?
+
+    /// Elige una frase distinta de la última mostrada.
+    static func nextQuote() -> Motivation.Quote {
+        let key = "motivation.lastIndex"
+        let last = UserDefaults.standard.object(forKey: key) as? Int
+        let index = Motivation.next(after: last)
+        UserDefaults.standard.set(index, forKey: key)
+        return Motivation.quotes[index]
+    }
 
     var body: some View {
         content
@@ -67,13 +79,28 @@ struct RootView: View {
                 await notifications.refreshStatus()
                 await refreshPhotoRemindersIfNeeded(settings)
                 await health.refreshAuthorizationState()
-                if health.state == .requested { await health.refresh() }
+                await health.refresh()
+            }
+            .overlay {
+                if let quote = splashQuote {
+                    MotivationSplash(quote: quote, autoDismiss: splashAutoDismiss) {
+                        withAnimation(.easeInOut(duration: 0.35)) { splashQuote = nil }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
+                }
             }
             .onChange(of: scenePhase) { _, phase in
+                if phase == .background { backgroundedAt = Date() }
+                // Al volver a la app tras 10 minutos o más fuera, otra frase.
+                if phase == .active, let since = backgroundedAt, Date().timeIntervalSince(since) >= 600 {
+                    splashQuote = RootView.nextQuote()
+                }
+                if phase == .active { backgroundedAt = nil }
                 guard phase == .active, bootstrapped else { return }
                 Task {
                     await notifications.refreshStatus()
-                    if health.state == .requested { await health.refresh() }
+                    await health.refresh()
                 }
             }
             .onOpenURL { url in
@@ -136,6 +163,8 @@ struct RootView: View {
     private func applyScreenshotArguments() {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-NNSkipOnboarding") { showOnboarding = false }
+        // Las pruebas y capturas no esperan a la frase; con -NNSplash se queda fija para la captura.
+        if args.contains("-NNSplash") { splashAutoDismiss = false } else if args.contains("-NNSkipOnboarding") { splashQuote = nil }
         if let i = args.firstIndex(of: "-NNTab"), i + 1 < args.count, let tab = AppTab(rawValue: args[i + 1]) {
             router.tab = tab
         }

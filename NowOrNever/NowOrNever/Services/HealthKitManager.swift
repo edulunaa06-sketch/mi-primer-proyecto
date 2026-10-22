@@ -1,3 +1,4 @@
+import CoreMotion
 import Foundation
 import HealthKit
 import Observation
@@ -29,6 +30,9 @@ final class HealthKitManager {
     private(set) var state: State = .notDetermined
     /// nil = Salud no ha devuelto datos para hoy (no se muestra un 0 ficticio).
     private(set) var todaySteps: Int?
+    /// De dónde salen los pasos de hoy: Apple Salud o, si Salud no da datos, el sensor de movimiento del iPhone.
+    private(set) var stepsSource: String?
+    private let pedometer = CMPedometer()
     private(set) var history: [DaySteps] = []
     private(set) var lastUpdated: Date?
     private(set) var isLoading = false
@@ -66,14 +70,31 @@ final class HealthKitManager {
     }
 
     func refresh(historyDays: Int = 30) async {
-        guard isAvailable else { return }
         isLoading = true
         defer { isLoading = false }
         let now = Date()
         let startToday = DateUtils.startOfDay(now)
-        todaySteps = await sumSteps(from: startToday, to: now)
-        history = await dailySteps(days: historyDays, endingAt: now)
+        let canReadHealth = isAvailable && state == .requested
+        todaySteps = canReadHealth ? await sumSteps(from: startToday, to: now) : nil
+        stepsSource = todaySteps == nil ? nil : "Apple Salud"
+        if todaySteps == nil, let motion = await pedometerSteps(from: startToday, to: now) {
+            todaySteps = motion
+            stepsSource = "Sensor del iPhone"
+        }
+        history = canReadHealth ? await dailySteps(days: historyDays, endingAt: now) : []
         lastUpdated = now
+    }
+
+    /// Respaldo sin Apple Salud: el podómetro del iPhone (Movimiento y forma física) guarda los últimos 7 días.
+    private func pedometerSteps(from start: Date, to end: Date) async -> Int? {
+        guard CMPedometer.isStepCountingAvailable(),
+              CMPedometer.authorizationStatus() != .denied, CMPedometer.authorizationStatus() != .restricted else { return nil }
+        let pedometer = pedometer
+        return await withCheckedContinuation { continuation in
+            pedometer.queryPedometerData(from: start, to: end) { data, _ in
+                continuation.resume(returning: data.map { $0.numberOfSteps.intValue })
+            }
+        }
     }
 
     /// Suma acumulada (deduplicada por HealthKit entre iPhone y Apple Watch).
