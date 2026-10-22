@@ -72,7 +72,8 @@ struct CustomItemRow: View {
     }
 }
 
-/// Apuntar lo que como en una comida: del catálogo, a mano o describiéndolo para que Claude lo calcule.
+/// Apuntar lo que como en una comida: con una foto del plato pesado, describiéndolo para que Claude lo calcule,
+/// del catálogo o a mano.
 /// También pide a Claude alternativas más saludables con alimentos del catálogo.
 struct CustomMealSheet: View {
     let type: MealType
@@ -82,7 +83,7 @@ struct CustomMealSheet: View {
     var onDone: () -> Void
 
     enum Mode: String, CaseIterable, Identifiable {
-        case claude = "Describir (Claude)", catalog = "Catálogo", manual = "Manual"
+        case photo = "Foto", claude = "Describir", catalog = "Catálogo", manual = "Manual"
         var id: String { rawValue }
     }
 
@@ -92,7 +93,7 @@ struct CustomMealSheet: View {
     @Query(sort: \FoodItem.name) private var foods: [FoodItem]
     @Query(sort: \CustomMealItem.order) private var allItems: [CustomMealItem]
 
-    @State private var mode: Mode = .claude
+    @State private var mode: Mode = .photo
     // Claude
     @State private var description = ""
     @State private var estimate: ClaudeAPI.Estimate?
@@ -135,6 +136,7 @@ struct CustomMealSheet: View {
                     }
                     .pickerStyle(.segmented)
                     switch mode {
+                    case .photo: PhotoMealCard(type: type, day: day)
                     case .claude: claudeCard
                     case .catalog: catalogCard
                     case .manual: manualCard

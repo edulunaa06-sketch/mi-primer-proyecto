@@ -5,7 +5,8 @@ import Observation
 ///
 /// Usa TU clave de la API de Claude (console.anthropic.com), guardada solo en el Llavero del iPhone.
 /// No va en el código de la app. Lo que se envía a Anthropic: el texto que escribes, tu objetivo
-/// de macros para esa comida y la lista de alimentos del catálogo. Nunca se envían fotos, peso ni datos de Salud.
+/// de macros para esa comida, la lista de alimentos del catálogo y, solo si usas «Foto del plato», esa foto
+/// y su peso. Nunca se envían tus fotos de progreso, tu peso corporal ni datos de Salud.
 @MainActor
 @Observable
 final class ClaudeService {
@@ -42,6 +43,18 @@ final class ClaudeService {
                  catalog: [ClaudeAPI.CatalogEntry]) async throws -> [ClaudeAPI.SuggestedMeal] {
         let request = ClaudeAPI.suggestRequest(mealLabel: mealLabel, target: target, context: context, catalog: catalog)
         return try await send(request, as: ClaudeAPI.Suggestions.self).meals
+    }
+
+    /// Analiza la foto de un plato pesado. Devuelve también el JSON crudo para poder responder a sus preguntas.
+    func analyzePhoto(jpeg: Data, totalGrams: Double, comment: String, previous: String? = nil,
+                      answers: [ClaudeAPI.Answer] = []) async throws -> (analysis: ClaudeAPI.PhotoAnalysis, raw: String) {
+        let request = ClaudeAPI.photoRequest(imageBase64: jpeg.base64EncodedString(), totalGrams: totalGrams, comment: comment,
+                                             previous: previous, answers: answers)
+        let result = try await send(request, as: ClaudeAPI.PhotoAnalysis.self)
+        let items = ClaudeAPI.scaled(result.items.filter(\.isPlausible), toTotal: totalGrams)
+        let clean = ClaudeAPI.PhotoAnalysis(items: items, questions: Array(result.questions.prefix(3)), note: result.note)
+        let raw = (try? JSONEncoder().encode(result)).flatMap { String(data: $0, encoding: .utf8) } ?? ""
+        return (clean, raw)
     }
 
     private func send<T: Decodable>(_ body: [String: Any], as type: T.Type) async throws -> T {

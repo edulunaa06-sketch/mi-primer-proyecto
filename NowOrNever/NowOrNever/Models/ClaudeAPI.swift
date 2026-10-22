@@ -90,6 +90,82 @@ enum ClaudeAPI {
         body(system: estimateSystem, user: description, schema: estimateSchema, effort: "low")
     }
 
+    // MARK: Foto del plato
+
+    /// Resultado de analizar la foto de un plato: ingredientes con gramos y valores por 100 g,
+    /// y preguntas cuando Claude no está seguro de algún alimento (p. ej. «¿es queso cottage o requesón?»).
+    struct PhotoAnalysis: Codable, Equatable {
+        let items: [EstimatedItem]
+        let questions: [String]
+        let note: String
+    }
+
+    /// Una pregunta de Claude y la respuesta del usuario.
+    struct Answer: Equatable {
+        let question: String
+        let answer: String
+    }
+
+    static let photoSystem = """
+    Eres el asistente de nutrición de la app Now or Never. Recibes la foto de un plato y el peso total de la comida en gramos
+    (pesada en báscula, sin el plato). Identifica cada alimento visible (por ejemplo: pollo a la plancha, boniato asado,
+    queso cottage, arroz, aceite) y reparte el peso total entre ellos según lo que ves.
+    - La suma de los gramos de todos los ingredientes debe ser igual al peso total indicado.
+    - Usa valores por 100 g del alimento tal y como está en el plato (cocinado si está cocinado), según tablas de referencia (BEDCA, USDA).
+    - Si hay aceite o salsa visibles o probables, inclúyelos como ingrediente con una cantidad prudente y dilo en la nota.
+    - Si dudas de qué es un alimento, de cómo está cocinado o de una cantidad importante, haz una pregunta corta y concreta
+      en "questions" (máximo 3) y da igualmente tu mejor estimación. Si no tienes dudas, deja "questions" vacío.
+    - Si el usuario ya ha respondido a tus preguntas, usa sus respuestas y no vuelvas a preguntar lo mismo.
+    - Si la foto no muestra comida, devuelve "items" vacío y explícalo en la nota.
+    - Nota en español, máximo 2 frases. Son estimaciones, no valores exactos.
+    """
+
+    static let photoSchema: [String: Any] = [
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["items", "questions", "note"],
+        "properties": [
+            "items": (estimateSchema["properties"] as! [String: Any])["items"]!,
+            "questions": ["type": "array", "items": ["type": "string"]],
+            "note": ["type": "string"],
+        ],
+    ]
+
+    /// Primera petición con la foto; si ya hubo preguntas, se añade la respuesta anterior y las respuestas del usuario.
+    static func photoRequest(imageBase64: String, mediaType: String = "image/jpeg", totalGrams: Double, comment: String,
+                             previous: String? = nil, answers: [Answer] = []) -> [String: Any] {
+        let intro = """
+        Peso total de la comida (sin el plato): \(Int(totalGrams.rounded())) g.
+        \(comment.isEmpty ? "" : "Comentario del usuario: \(comment)")
+        """
+        var messages: [[String: Any]] = [[
+            "role": "user",
+            "content": [
+                ["type": "image", "source": ["type": "base64", "media_type": mediaType, "data": imageBase64]],
+                ["type": "text", "text": intro],
+            ],
+        ]]
+        if let previous, !answers.isEmpty {
+            messages.append(["role": "assistant", "content": previous])
+            let text = answers.map { "- \($0.question)\n  Respuesta: \($0.answer)" }.joined(separator: "\n")
+            messages.append(["role": "user", "content": "Mis respuestas:\n\(text)\nRecalcula el plato con esta información."])
+        }
+        var request = body(system: photoSystem, user: "", schema: photoSchema, effort: "medium")
+        request["messages"] = messages
+        return request
+    }
+
+    /// Ajusta los gramos para que sumen exactamente el peso de la báscula (Claude reparte «a ojo»).
+    static func scaled(_ items: [EstimatedItem], toTotal total: Double) -> [EstimatedItem] {
+        let sum = items.reduce(0) { $0 + $1.grams }
+        guard sum > 0, total > 0, abs(sum - total) >= 1 else { return items }
+        let factor = total / sum
+        return items.map {
+            EstimatedItem(name: $0.name, grams: ($0.grams * factor).rounded(), kcalPer100g: $0.kcalPer100g,
+                          proteinPer100g: $0.proteinPer100g, carbsPer100g: $0.carbsPer100g, fatPer100g: $0.fatPer100g)
+        }
+    }
+
     // MARK: Proponer comidas más saludables
 
     struct CatalogEntry: Equatable {
@@ -276,7 +352,7 @@ enum ClaudeAPI {
         guard let response = try? JSONDecoder().decode(Response.self, from: data) else { throw ClaudeError.badResponse }
         if response.stopReason == "refusal" { throw ClaudeError.refused }
         if response.stopReason == "max_tokens" { throw ClaudeError.truncated }
-        guard let text = response.content.first(where: { $0.type == "text" })?.text,
+        guard let text = response.content.last(where: { $0.type == "text" })?.text,
               let json = text.data(using: .utf8),
               let value = try? JSONDecoder().decode(T.self, from: json) else { throw ClaudeError.badResponse }
         return value

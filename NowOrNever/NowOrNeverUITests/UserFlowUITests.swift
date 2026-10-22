@@ -170,6 +170,7 @@ final class UserFlowUITests: XCTestCase {
         XCTAssertTrue(scrollTo(custom).exists)
         custom.tap()
         assertAppears(element(containing: "Lo que como"), "Pantalla de comida libre")
+        assertAppears(element(containing: "Foto del plato"), "Modo foto por defecto")
         app.buttons["Manual"].tap()
         let name = app.textFields["Nombre (p. ej. bocadillo de lomo)"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))

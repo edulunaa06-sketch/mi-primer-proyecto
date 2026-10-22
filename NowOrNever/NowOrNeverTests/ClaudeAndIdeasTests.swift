@@ -170,3 +170,51 @@ final class MotivationTests: XCTestCase {
         XCTAssertEqual(StepEstimates.fraction(4_000, goal: 8_000), 0.5)
     }
 }
+
+final class PhotoMealTests: XCTestCase {
+    func testPhotoRequestSendsImageAndWeight() throws {
+        let body = ClaudeAPI.photoRequest(imageBase64: "QUJD", totalGrams: 420, comment: "lleva salsa")
+        let messages = try XCTUnwrap(body["messages"] as? [[String: Any]])
+        XCTAssertEqual(messages.count, 1)
+        let content = try XCTUnwrap(messages[0]["content"] as? [[String: Any]])
+        XCTAssertEqual(content[0]["type"] as? String, "image")
+        let source = try XCTUnwrap(content[0]["source"] as? [String: Any])
+        XCTAssertEqual(source["data"] as? String, "QUJD")
+        XCTAssertEqual(source["media_type"] as? String, "image/jpeg")
+        let text = try XCTUnwrap(content[1]["text"] as? String)
+        XCTAssertTrue(text.contains("420 g"))
+        XCTAssertTrue(text.contains("lleva salsa"))
+        let output = try XCTUnwrap(body["output_config"] as? [String: Any])
+        let format = try XCTUnwrap(output["format"] as? [String: Any])
+        let schema = try XCTUnwrap(format["schema"] as? [String: Any])
+        XCTAssertEqual(schema["required"] as? [String], ["items", "questions", "note"])
+        XCTAssertNoThrow(try JSONSerialization.data(withJSONObject: body))
+    }
+
+    func testFollowUpIncludesPreviousAnswerAndUserReplies() throws {
+        let body = ClaudeAPI.photoRequest(imageBase64: "QUJD", totalGrams: 300, comment: "", previous: "{\"items\":[]}",
+                                          answers: [ClaudeAPI.Answer(question: "¿Es queso cottage o requesón?", answer: "cottage")])
+        let messages = try XCTUnwrap(body["messages"] as? [[String: Any]])
+        XCTAssertEqual(messages.map { $0["role"] as? String }, ["user", "assistant", "user"])
+        XCTAssertTrue((messages[2]["content"] as? String ?? "").contains("cottage"))
+    }
+
+    func testItemsAreScaledToTheScaleWeight() {
+        let items = [
+            ClaudeAPI.EstimatedItem(name: "Pollo", grams: 150, kcalPer100g: 165, proteinPer100g: 31, carbsPer100g: 0, fatPer100g: 3.6),
+            ClaudeAPI.EstimatedItem(name: "Boniato", grams: 250, kcalPer100g: 90, proteinPer100g: 2, carbsPer100g: 20.7, fatPer100g: 0.2),
+        ]
+        let scaled = ClaudeAPI.scaled(items, toTotal: 480)
+        XCTAssertEqual(scaled.map(\.grams), [180, 300])
+        XCTAssertEqual(ClaudeAPI.scaled(items, toTotal: 400).map(\.grams), [150, 250])
+    }
+
+    func testDecodePhotoAnalysisWithQuestions() throws {
+        let inner = #"{"items":[{"name":"Queso cottage","grams":100,"kcal_per_100g":98,"protein_per_100g":11,"carbs_per_100g":3.4,"fat_per_100g":4.3}],"questions":["¿Es queso cottage o requesón?"],"note":"Estimación."}"#
+        let response: [String: Any] = ["content": [["type": "text", "text": inner]], "stop_reason": "end_turn"]
+        let data = try JSONSerialization.data(withJSONObject: response)
+        let result = try ClaudeAPI.decode(ClaudeAPI.PhotoAnalysis.self, status: 200, data: data)
+        XCTAssertEqual(result.items.first?.name, "Queso cottage")
+        XCTAssertEqual(result.questions, ["¿Es queso cottage o requesón?"])
+    }
+}
