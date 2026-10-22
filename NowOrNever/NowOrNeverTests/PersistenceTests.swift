@@ -274,7 +274,7 @@ final class PersistenceTests: XCTestCase {
     func testIdeasSeededAsLibraryAndOfferedAsOptions() throws {
         let plans = try seedCatalog()
         XCTAssertEqual(plans.filter { !$0.isLibrary }.count, 9)
-        XCTAssertEqual(plans.filter(\.isLibrary).count, 38)
+        XCTAssertEqual(plans.filter(\.isLibrary).count, 44)
         XCTAssertTrue(plans.filter(\.isLibrary).allSatisfy { $0.meals.count == 1 })
         let breakfasts = DataStore.candidates(for: .breakfast, plans: plans)
         XCTAssertTrue(breakfasts.contains { $0.plan.name == "Plato de frutas con yogur" })
@@ -299,9 +299,19 @@ final class PersistenceTests: XCTestCase {
 
         DataStore.seedCatalogIfNeeded(context, defaults: defaults, catalog: catalog)
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<FoodItem>()), foodsBefore)
-        XCTAssertEqual(try context.fetch(FetchDescriptor<MenuPlan>()).filter(\.isLibrary).count, 38)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<MenuPlan>()).filter(\.isLibrary).count, 44)
         XCTAssertEqual(chicken.kcalPer100, 110, "No se sobrescriben los cambios del usuario")
-        XCTAssertEqual(defaults.integer(forKey: DataStore.seedVersionKey), 2)
+        XCTAssertEqual(defaults.integer(forKey: DataStore.seedVersionKey), 3)
+
+        // Actualización con ideas ya instaladas: solo se añaden las que faltan, sin duplicar.
+        let breadIdea = try XCTUnwrap(try context.fetch(FetchDescriptor<MenuPlan>()).first { $0.name == "Pan blanco con jamón serrano y tomate" })
+        context.delete(breadIdea)
+        try context.save()
+        defaults.set(2, forKey: DataStore.seedVersionKey)
+        DataStore.seedCatalogIfNeeded(context, defaults: defaults, catalog: catalog)
+        let library = try context.fetch(FetchDescriptor<MenuPlan>()).filter(\.isLibrary)
+        XCTAssertEqual(library.count, 44)
+        XCTAssertEqual(Set(library.map(\.name)).count, 44)
     }
 
     func testCustomMealAndRebalanceRestOfDay() throws {

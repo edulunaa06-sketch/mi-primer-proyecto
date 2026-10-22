@@ -1,5 +1,5 @@
 {
- "version": 2,
+ "version": 3,
  "disclaimer": "Catálogo y menús de EJEMPLO con valores aproximados por 100 g. No son un plan nutricional calculado clínicamente. Revisa y edita cada alimento con la etiqueta de tu producto o una base de datos fiable.",
  "foods": [
   {
@@ -525,6 +525,30 @@
    "protein": 30.5,
    "carbs": 0.5,
    "fat": 13.0,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "bread_white",
+   "name": "Pan blanco (barra)",
+   "kcal": 266,
+   "protein": 8.9,
+   "carbs": 49.2,
+   "fat": 3.3,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "cooked_ham",
+   "name": "Jamón cocido extra",
+   "kcal": 110,
+   "protein": 19.0,
+   "carbs": 1.5,
+   "fat": 3.0,
    "basis": "asWeighed",
    "provisional": true,
    "macrosKnown": true,
@@ -1769,6 +1793,46 @@
   },
   {
    "type": "breakfast",
+   "name": "Pan blanco con jamón serrano y tomate",
+   "items": [
+    {
+     "food": "bread_white",
+     "grams": 100
+    },
+    {
+     "food": "serrano",
+     "grams": 50
+    },
+    {
+     "food": "tomato",
+     "grams": 60
+    },
+    {
+     "food": "olive_oil",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "type": "breakfast",
+   "name": "Pan blanco con jamón cocido y café con leche",
+   "items": [
+    {
+     "food": "bread_white",
+     "grams": 90
+    },
+    {
+     "food": "cooked_ham",
+     "grams": 80
+    },
+    {
+     "food": "milk_semi",
+     "grams": 200
+    }
+   ]
+  },
+  {
+   "type": "breakfast",
    "name": "Tortitas de arroz con crema de cacahuete",
    "items": [
     {
@@ -2009,6 +2073,54 @@
   },
   {
    "type": "lunch",
+   "name": "Pasta con atún y tomate",
+   "items": [
+    {
+     "food": "pasta",
+     "grams": 90
+    },
+    {
+     "food": "tuna_drained",
+     "grams": 120
+    },
+    {
+     "food": "tomato",
+     "grams": 150
+    },
+    {
+     "food": "olive_oil",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "type": "lunch",
+   "name": "Hamburguesa casera de ternera con patata",
+   "items": [
+    {
+     "food": "lean_beef",
+     "grams": 170
+    },
+    {
+     "food": "potato",
+     "grams": 250
+    },
+    {
+     "food": "lettuce",
+     "grams": 50
+    },
+    {
+     "food": "tomato",
+     "grams": 80
+    },
+    {
+     "food": "olive_oil",
+     "grams": 5
+    }
+   ]
+  },
+  {
+   "type": "lunch",
    "name": "Tofu salteado con quinoa",
    "items": [
     {
@@ -2140,6 +2252,20 @@
     {
      "food": "peanut_butter",
      "grams": 15
+    }
+   ]
+  },
+  {
+   "type": "snack",
+   "name": "Bocadillo de jamón serrano",
+   "items": [
+    {
+     "food": "bread_white",
+     "grams": 60
+    },
+    {
+     "food": "serrano",
+     "grams": 35
     }
    ]
   },
@@ -2372,6 +2498,32 @@
     {
      "food": "olive_oil",
      "grams": 10
+    }
+   ]
+  },
+  {
+   "type": "dinner",
+   "name": "Sándwich de jamón cocido, huevo y ensalada",
+   "items": [
+    {
+     "food": "bread_white",
+     "grams": 80
+    },
+    {
+     "food": "cooked_ham",
+     "grams": 60
+    },
+    {
+     "food": "egg",
+     "grams": 60
+    },
+    {
+     "food": "lettuce",
+     "grams": 40
+    },
+    {
+     "food": "tomato",
+     "grams": 80
     }
    ]
   },

@@ -90,14 +90,16 @@ enum DataStore {
             context.insert(item)
             foodsByKey[food.key] = item
         }
-        let hasIdeas = ((try? context.fetch(FetchDescriptor<MenuPlan>(predicate: #Predicate { $0.isLibrary }))) ?? []).isEmpty == false
-        if !hasIdeas { insertIdeas(catalog, foodsByKey: foodsByKey, into: context) }
+        // Solo se añaden las ideas nuevas (por nombre); las que ya tienes, editadas o no, se respetan.
+        let library = (try? context.fetch(FetchDescriptor<MenuPlan>(predicate: #Predicate { $0.isLibrary }))) ?? []
+        insertIdeas(catalog, foodsByKey: foodsByKey, skipping: Set(library.map(\.name)), into: context)
     }
 
     /// Cada idea se guarda como un "menú" de biblioteca con una sola comida (editable como cualquier menú).
     @MainActor
-    private static func insertIdeas(_ catalog: SeedCatalog, foodsByKey: [String: FoodItem], into context: ModelContext) {
-        for (index, idea) in catalog.ideas.enumerated() {
+    private static func insertIdeas(_ catalog: SeedCatalog, foodsByKey: [String: FoodItem],
+                                    skipping existingNames: Set<String> = [], into context: ModelContext) {
+        for (index, idea) in catalog.ideas.enumerated() where !existingNames.contains(idea.name) {
             guard let type = MealType(rawValue: idea.type) else { continue }
             let plan = MenuPlan(number: 100 + index, name: idea.name, note: "Idea de \(type.label.lowercased()) con pesos exactos.", isExample: true)
             plan.isLibrary = true

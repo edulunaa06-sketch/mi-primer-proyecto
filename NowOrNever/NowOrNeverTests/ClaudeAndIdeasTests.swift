@@ -105,13 +105,13 @@ final class IdeasCatalogTests: XCTestCase {
 
     func testIdeasLibrary() throws {
         let catalog = try loadCatalog()
-        XCTAssertEqual(catalog.version, 2)
+        XCTAssertEqual(catalog.version, 3)
         XCTAssertEqual(catalog.validationErrors(), [])
         let counts = Dictionary(grouping: catalog.ideas, by: \.type).mapValues(\.count)
-        XCTAssertEqual(counts["breakfast"], 10)
-        XCTAssertEqual(counts["lunch"], 10)
-        XCTAssertEqual(counts["snack"], 8)
-        XCTAssertEqual(counts["dinner"], 10)
+        XCTAssertEqual(counts["breakfast"], 12)
+        XCTAssertEqual(counts["lunch"], 12)
+        XCTAssertEqual(counts["snack"], 9)
+        XCTAssertEqual(counts["dinner"], 11)
         let fruit = try XCTUnwrap(catalog.ideas.first { $0.name == "Plato de frutas con yogur" })
         XCTAssertEqual(catalog.totals(forIdea: fruit).kcal, 445, accuracy: 1)
         for idea in catalog.ideas {
