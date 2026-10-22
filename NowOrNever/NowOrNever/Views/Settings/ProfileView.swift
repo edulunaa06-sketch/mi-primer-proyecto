@@ -84,7 +84,7 @@ struct ProfileView: View {
             } header: {
                 Text("Cálculo (Mifflin-St Jeor)")
             } footer: {
-                Text("Basal = 10×peso + 6,25×altura − 5×edad + 5 (hombre) / −161 (mujer). Gasto = basal × factor de actividad (\(NumberFormat.oneDecimal(activity.factor))). Objetivo: −20 % perder grasa, +10 % ganar músculo, −10 % recomposición. Proteína \(NumberFormat.oneDecimal(goal.proteinPerKg)) g/kg, grasa 25 % de las kcal, carbohidratos el resto. Es una ESTIMACIÓN orientativa, no una pauta médica.")
+                Text("Basal = 10×peso + 6,25×altura − 5×edad + 5 (hombre) / −161 (mujer). Gasto = basal × factor de actividad (\(NumberFormat.oneDecimal(activity.factor))). Objetivo: −20 % perder grasa, +10 % ganar músculo, −10 % recomposición. Proteína \(Int(goal.proteinShare * 100)) % de las kcal (entre 1,6 y 2,4 g/kg), grasa 25 % de las kcal, carbohidratos el resto. Es una ESTIMACIÓN orientativa, no una pauta médica.")
             }
 
             Section {

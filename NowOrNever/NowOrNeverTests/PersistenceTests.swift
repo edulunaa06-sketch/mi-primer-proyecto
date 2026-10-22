@@ -136,13 +136,13 @@ final class PersistenceTests: XCTestCase {
         s.autoTargets = true
         DataStore.addWeight(85.1, waist: nil, date: Date(), in: context)
         XCTAssertEqual(s.kcalTarget, 2550)
-        XCTAssertEqual(s.proteinTarget, 170)
+        XCTAssertEqual(s.proteinTarget, 191)
 
         DataStore.addWeight(80, waist: nil, date: Date().addingTimeInterval(60), in: context)
         let expected = EnergyCalculator.targets(for: BodyProfile(weightKg: 80, heightCm: 180, age: 30, sex: .male,
                                                                  activity: .moderate, goal: .recomposition))
         XCTAssertEqual(s.kcalTarget, expected.kcal)
-        XCTAssertEqual(s.proteinTarget, 160)
+        XCTAssertEqual(s.proteinTarget, 186)
     }
 
     func testManualTargetsAreNotOverwritten() {

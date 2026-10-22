@@ -81,7 +81,7 @@ final class UserFlowUITests: XCTestCase {
 
         scrollTo(app.buttons["Guardar perfil"]).tap()
         assertAppears(element(containing: "Objetivos: 2550 kcal"), "Mensaje de objetivos guardados")
-        XCTAssertTrue(element(containing: "P 170 g").exists)
+        XCTAssertTrue(element(containing: "P 191 g").exists)
 
         // El peso del perfil queda en el historial de Progreso.
         app.navigationBars.buttons.firstMatch.tap()

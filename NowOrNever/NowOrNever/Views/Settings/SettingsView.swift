@@ -134,7 +134,7 @@ private struct SettingsForm: View {
             Text((settings.autoTargets
                  ? "Calculados automáticamente desde tu perfil. Si los cambias y guardas aquí pasarán a ser manuales. No son una recomendación clínica."
                  : "Valores manuales (iniciales provisionales: 2.300 kcal, 180 g P, 250 g C, 65 g G, 8.000 pasos). No son una recomendación clínica.")
-                + " Al escribir las calorías, las proteínas, los carbohidratos y las grasas se calculan solos (proteína según tu peso y objetivo, 25 % grasa, resto carbohidratos); luego puedes retocarlos.")
+                + " Al escribir las calorías, las proteínas, los carbohidratos y las grasas se calculan solos (proteína: 25–35 % de las kcal según tu objetivo, entre 1,6 y 2,4 g/kg; grasa 25 %; resto carbohidratos); luego puedes retocarlos.")
         }
     }
 

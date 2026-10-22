@@ -9,9 +9,9 @@ final class EnergyCalculatorTests: XCTestCase {
         let t = EnergyCalculator.targets(for: p)
         XCTAssertEqual(t.tdee, 1831 * 1.55, accuracy: 0.001)
         XCTAssertEqual(t.kcal, 2550)          // 2838 × 0,9 = 2554 → redondeo a 10
-        XCTAssertEqual(t.protein, 170)        // 2,0 g/kg
+        XCTAssertEqual(t.protein, 191)        // 30 % de 2550 / 4 (entre 1,6 y 2,4 g/kg)
         XCTAssertEqual(t.fat, 71)             // 25 % de 2550 / 9
-        XCTAssertEqual(t.carbs, 308)          // (2550 − 680 − 639) / 4
+        XCTAssertEqual(t.carbs, 287)          // (2550 − 764 − 639) / 4
     }
 
     func testMifflinStJeorFemale() {
@@ -19,7 +19,7 @@ final class EnergyCalculatorTests: XCTestCase {
         XCTAssertEqual(EnergyCalculator.bmr(p), 1345.25, accuracy: 0.001)
         let t = EnergyCalculator.targets(for: p)
         XCTAssertEqual(t.kcal, ((1345.25 * 1.2 * 0.8) / 10).rounded() * 10)
-        XCTAssertEqual(t.protein, 132) // 2,2 g/kg
+        XCTAssertEqual(t.protein, 113) // 35 % de 1290 / 4
     }
 
     func testGoalsChangeCalories() {

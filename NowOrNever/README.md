@@ -59,10 +59,13 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 
 ## 2. Funciones implementadas
 
+### Al abrir la app
+- **Frase motivadora** (gimnasio y desarrollo personal; 40 frases, nunca la misma dos veces seguidas). Se cierra sola a los 3 s o al tocarla y aparece la interfaz. Vuelve a salir si regresas a la app tras 10 minutos o más fuera.
+
 ### Inicio
+- **Tarjeta de pasos de hoy** arriba del todo: número grande, anillo de % del objetivo, cuántos te faltan, ≈ km (zancada media de 0,76 m) y ≈ kcal (0,04 kcal/paso), y de dónde salen los datos. Si Apple Salud no da datos (por ejemplo, porque la instalación por SideStore no incluye el permiso de Salud), usa el **sensor de movimiento del iPhone** (Movimiento y forma física, últimos 7 días). Si aún no has dado permiso, muestra el botón *Conectar Apple Salud*.
 - Peso más reciente y diferencia respecto al primer peso registrado.
 - Objetivo de kcal y barras de proteínas, carbohidratos y grasas (consumido según las comidas marcadas / objetivo).
-- Pasos del día (de Apple Salud; si no hay datos se muestra «—», nunca un número inventado).
 - Entrenamiento(s) programado(s) para hoy con su estado.
 - Comidas completadas (x/4).
 - **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso) y pasos/objetivo (máx. 100 %; se omite si Salud no da datos). El desglose se muestra en pantalla.
@@ -104,7 +107,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
   - *Cambiar* en cada comida del día: propone las alternativas que mejor encajan con las otras tres comidas que ya tienes. *Volver al menú* deshace el cambio.
   - Las opciones son las comidas de ese tipo de los 9 menús. Cada una se propone con una **ración ajustada** (75–135 %) para acercarse a los macros que te quedan, con gramos redondeados a cantidades pesables, y una puntuación «Encaja X %». Reparto orientativo del día: desayuno 25 %, comida 35 %, merienda 15 %, cena 25 %.
   - Las elecciones se guardan por día. Si una comida ya estaba marcada como hecha y la cambias, su registro se actualiza.
-- **38 ideas de comida con pesos** (además de las 36 comidas de los 9 menús): por ejemplo *Plato de frutas con yogur* (plátano, fresas, kiwi, piña, yogur griego y nueces, ≈ 445 kcal). Aparecen como opciones en el asistente y en *Cambiar*, con la ración ajustada a lo que te queda del día. Si eliges un desayuno ligero (un plato de fruta), la comida, la merienda y la cena se proponen con más cantidad para cuadrar el día.
+- **44 ideas de comida con pesos** (además de las 36 comidas de los 9 menús): por ejemplo *Plato de frutas con yogur* (plátano, fresas, kiwi, piña, yogur griego y nueces, ≈ 445 kcal) o *Pan blanco con jamón serrano y tomate* (≈ 442 kcal). Aparecen como opciones en el asistente y en *Cambiar*, con la ración ajustada a lo que te queda del día. Si eliges un desayuno ligero (un plato de fruta), la comida, la merienda y la cena se proponen con más cantidad para cuadrar el día.
 - **«Lo que como»** (*Como otra cosa: apuntarla* en cada comida, y *Voy a comer otra cosa* dentro del asistente): apunta lo que realmente comes de tres formas:
   - *Describir (Claude)*: escribes «150 g de macarrones con tomate» y Claude estima los gramos, kcal y macros de cada ingrediente. Revisas el resultado antes de añadirlo.
   - *Catálogo*: buscas el alimento (entiende nombres comunes: «macarrones» encuentra la pasta) y pones los gramos.
@@ -112,6 +115,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
   - *Alternativa más saludable*: Claude propone comidas hechas **solo con alimentos del catálogo** que encajan con el objetivo de esa comida; las kcal y macros las calcula la app, no Claude.
 - **Reajustar el resto del día a mis macros**: mantiene lo que has apuntado y lo que ya has marcado como comido, y vuelve a elegir las demás comidas para cuadrar el día.
 - **Claude (opcional)**: necesita tu propia clave de la API de Anthropic (*Ajustes › Claude*), que se guarda en el Llavero. Cada consulta cuesta unos céntimos en tu cuenta de Anthropic. Sin clave, *Catálogo* y *Manual* funcionan igual.
+- **Objetivos a mano**: al escribir las kcal en *Ajustes › Objetivos diarios*, las proteínas, los carbohidratos y las grasas se calculan solos (proteína: 25–35 % de las kcal según tu objetivo, entre 1,6 y 2,4 g/kg de peso; grasa 25 %; el resto carbohidratos). Después puedes retocarlos.
 - **Ajustar a tus requerimientos** (*Nutrición › ⋯ › Los 9 menús*): cada menú indica cuánto se desvía de tu objetivo calórico y puedes escalar un menú o los nueve a tus kcal. El ajuste es proporcional (mantiene las proporciones de macros de cada menú) y redondea a cantidades pesables (1 g por debajo de 20 g, 5 g por debajo de 100 g y 10 g a partir de ahí). Las comidas ya marcadas en días anteriores no cambian.
 - **Catálogo local editable** de alimentos (valores por 100 g), con indicador ⚠︎ de valor provisional, aviso si kcal y macros no cuadran y opción de crear alimentos.
 - Registro diario de comidas consumidas e historial con % de calorías.
@@ -136,7 +140,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Registro de peso con fecha/hora y **cintura opcional**; evita duplicar un registro idéntico el mismo día.
 - Primer peso, más reciente, diferencia total, diferencia con el **registro anterior** (también en cada fila del historial), variación **semanal** y **mensual** (solo si hay registros suficientemente antiguos), gráfica de evolución e historial (mantener pulsado para eliminar).
 - Aviso de que la fluctuación diaria no es pérdida/ganancia de grasa confirmada.
-- **Fotos mensuales** (frente, lateral, espalda): selector de fotos del sistema, indicador de vistas que faltan, guardado por mes/año, una foto por vista y mes (sin duplicados), reemplazo con confirmación, meses anteriores, **comparación de dos meses** (lado a lado o superpuesta con deslizador), eliminación de una foto o de todo el historial.
+- **Fotos mensuales** (frente, lateral, espalda): **cámara integrada** (delantera o trasera, temporizador de 3 o 10 s para hacerte la de espalda tú solo, y la foto del mismo ángulo del mes anterior superpuesta en transparencia para repetir la postura; revisas la foto antes de guardarla) o selector de fotos del sistema, indicador de vistas que faltan, guardado por mes/año, una foto por vista y mes (sin duplicados), reemplazo con confirmación, meses anteriores, **comparación de dos meses** (lado a lado o superpuesta con deslizador), eliminación de una foto o de todo el historial.
 
 ### Ajustes y recordatorios
 - Objetivos de kcal, macros y pasos.
@@ -165,6 +169,7 @@ Permisos que pide la app:
 - **Apple Salud** (lectura de pasos) — capacidad HealthKit + `NSHealthShareUsageDescription`.
 - **Notificaciones** (creatina, fotos, prueba).
 - **Fotos**: se usa `PhotosPicker`, que **no** necesita permiso de acceso a la fototeca (solo recibe las fotos que eliges).
+- **Cámara** (fotos de progreso) y **Movimiento y forma física** (pasos cuando Salud no da datos).
 
 ---
 

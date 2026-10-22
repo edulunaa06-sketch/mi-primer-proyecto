@@ -64,12 +64,12 @@ enum FitnessGoal: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    /// Proteína en gramos por kg de peso corporal.
-    var proteinPerKg: Double {
+    /// Parte de las kcal que va a proteína (más al perder grasa, para conservar músculo).
+    var proteinShare: Double {
         switch self {
-        case .loseFat: return 2.2
-        case .gainMuscle: return 1.8
-        case .recomposition: return 2.0
+        case .loseFat: return 0.35
+        case .gainMuscle: return 0.25
+        case .recomposition: return 0.30
         }
     }
 }
@@ -104,8 +104,9 @@ struct EnergyTargets: Equatable {
 /// 2. Gasto diario = basal × factor de actividad.
 /// 3. Calorías objetivo = gasto × (1 + ajuste del objetivo): −20 % perder grasa, +10 % ganar músculo,
 ///    −10 % recomposición. Se redondea a 10 kcal.
-/// 4. Proteína = g/kg según objetivo (2,2 / 1,8 / 2,0). Grasa = 25 % de las kcal (mínimo 0,6 g/kg).
-///    Carbohidratos = kcal restantes / 4.
+/// 4. Proteína = % de las kcal según objetivo (35 % perder grasa, 30 % recomposición, 25 % ganar músculo),
+///    limitada a 1,6–2,4 g/kg de peso. Grasa = 25 % de las kcal (mínimo 0,6 g/kg, máximo 35 %).
+///    Carbohidratos = kcal restantes / 4. Así los tres macros cambian cuando cambian las kcal.
 enum EnergyCalculator {
     static let fatShare = 0.25
     static let minFatPerKg = 0.6
@@ -119,26 +120,25 @@ enum EnergyCalculator {
         let basal = bmr(p)
         let tdee = basal * p.activity.factor
         let kcal = (tdee * (1 + p.goal.calorieAdjustment) / 10).rounded() * 10
-        let protein = (p.weightKg * p.goal.proteinPerKg).rounded()
-        let fat = max(kcal * fatShare / 9, p.weightKg * minFatPerKg).rounded()
-        let carbs = max((kcal - protein * 4 - fat * 9) / 4, 0).rounded()
-        return EnergyTargets(bmr: basal, tdee: tdee, kcal: kcal, protein: protein, carbs: carbs, fat: fat)
+        let m = macros(forKcal: kcal, weightKg: p.weightKg, goal: p.goal)
+        return EnergyTargets(bmr: basal, tdee: tdee, kcal: kcal, protein: m.protein, carbs: m.carbs, fat: m.fat)
     }
 
-    /// Reparte unas kcal elegidas a mano en macros, con el criterio del cálculo automático.
-    /// Sin peso conocido: 30 % proteína, 25 % grasa y el resto carbohidratos.
-    /// La proteína nunca pasa del 40 % de las kcal, para que siempre queden carbohidratos.
+    static let minProteinPerKg = 1.6
+    static let maxProteinPerKg = 2.4
+
+    /// Reparte unas kcal en macros (cálculo automático y objetivos escritos a mano).
+    /// Sin peso conocido no se aplican los límites por kg.
     static func macros(forKcal kcal: Double, weightKg: Double?, goal: FitnessGoal) -> (protein: Double, carbs: Double, fat: Double) {
         guard kcal > 0 else { return (0, 0, 0) }
-        let protein: Double
-        let fat: Double
+        var protein = kcal * goal.proteinShare / 4
+        var fat = kcal * fatShare / 9
         if let w = weightKg, w > 0 {
-            protein = min(w * goal.proteinPerKg, kcal * 0.40 / 4).rounded()
-            fat = min(max(kcal * fatShare / 9, w * minFatPerKg), kcal * 0.35 / 9).rounded()
-        } else {
-            protein = (kcal * 0.30 / 4).rounded()
-            fat = (kcal * fatShare / 9).rounded()
+            protein = min(max(protein, w * minProteinPerKg), w * maxProteinPerKg, kcal * 0.40 / 4)
+            fat = min(max(fat, w * minFatPerKg), kcal * 0.35 / 9)
         }
+        protein = protein.rounded()
+        fat = fat.rounded()
         let carbs = max((kcal - protein * 4 - fat * 9) / 4, 0).rounded()
         return (protein, carbs, fat)
     }

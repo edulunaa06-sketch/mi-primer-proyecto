@@ -134,14 +134,16 @@ final class FoodSearchTests: XCTestCase {
 final class ManualKcalMacrosTests: XCTestCase {
     func testMacrosFromKcalAddUpAndUseWeight() {
         let m = EnergyCalculator.macros(forKcal: 2500, weightKg: 80, goal: .recomposition)
-        XCTAssertEqual(m.protein, 160)            // 2,0 g/kg × 80
+        XCTAssertEqual(m.protein, 188)            // 30 % de 2500 / 4
+        let lower = EnergyCalculator.macros(forKcal: 2000, weightKg: 80, goal: .recomposition)
+        XCTAssertEqual(lower.protein, 150, "La proteína cambia con las kcal")
         XCTAssertEqual(m.fat, 69)                 // 25 % de 2500 / 9
         XCTAssertEqual(m.protein * 4 + m.carbs * 4 + m.fat * 9, 2500, accuracy: 10)
     }
 
     func testMacrosFromKcalWithoutWeight() {
         let m = EnergyCalculator.macros(forKcal: 2000, weightKg: nil, goal: .loseFat)
-        XCTAssertEqual(m.protein, 150)            // 30 %
+        XCTAssertEqual(m.protein, 175)            // 35 % (perder grasa)
         XCTAssertEqual(m.fat, 56)                 // 25 %
         XCTAssertEqual(m.protein * 4 + m.carbs * 4 + m.fat * 9, 2000, accuracy: 10)
     }
