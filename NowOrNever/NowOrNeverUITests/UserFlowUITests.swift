@@ -136,6 +136,8 @@ final class UserFlowUITests: XCTestCase {
         let builder = app.buttons["Elegir mis comidas paso a paso"]
         XCTAssertTrue(builder.waitForExistence(timeout: 10))
         builder.tap()
+        // Si la pulsación llega mientras la pantalla aún se está cargando, se repite una vez.
+        if !element(containing: "Objetivo para tu desayuno").waitForExistence(timeout: 5) { builder.tap() }
 
         // Cuatro pasos: desayuno, comida, merienda y cena; en cada uno se elige la primera opción.
         for meal in ["desayuno", "comida", "merienda", "cena"] {
