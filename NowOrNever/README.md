@@ -7,7 +7,7 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 - Todos los datos se guardan **solo en el iPhone**.
 
 <p>
-<img src="docs/screenshots/home.jpg" width="200"> <img src="docs/screenshots/profile.jpg" width="200"> <img src="docs/screenshots/routine-editor.jpg" width="200"> <img src="docs/screenshots/session-tue-push-a.jpg" width="200">
+<img src="docs/screenshots/meal-builder.jpg" width="200"> <img src="docs/screenshots/profile.jpg" width="200"> <img src="docs/screenshots/routine-editor.jpg" width="200"> <img src="docs/screenshots/session-tue-push-a.jpg" width="200">
 </p>
 
 *Capturas reales del simulador (iOS 18.5) generadas por el CI después de que las pruebas de interfaz introdujeran esos datos tocando la app. Más en `docs/screenshots/`.*
@@ -99,6 +99,11 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Subtotales por comida y **total diario calculados automáticamente** (no hay ningún total escrito a mano).
 - Al cambiar los gramos de un ingrediente se recalculan ingrediente, comida y día. Si esa comida ya estaba marcada en el día visible, su registro se actualiza.
 - Añadir/quitar ingredientes, renombrar menús.
+- **Comidas a elegir (menú abierto)**: en lugar de un menú cerrado puedes escoger cada comida:
+  - *Elegir mis comidas paso a paso*: primero 4 opciones de desayuno; después, según los macros del desayuno elegido, 4 opciones de comida; luego merienda y, por último, la cena, que cuadra con lo que te falta del día. Al final ves el resumen del día frente a tus objetivos y lo guardas.
+  - *Cambiar* en cada comida del día: propone las alternativas que mejor encajan con las otras tres comidas que ya tienes. *Volver al menú* deshace el cambio.
+  - Las opciones son las comidas de ese tipo de los 9 menús. Cada una se propone con una **ración ajustada** (75–135 %) para acercarse a los macros que te quedan, con gramos redondeados a cantidades pesables, y una puntuación «Encaja X %». Reparto orientativo del día: desayuno 25 %, comida 35 %, merienda 15 %, cena 25 %.
+  - Las elecciones se guardan por día. Si una comida ya estaba marcada como hecha y la cambias, su registro se actualiza.
 - **Ajustar a tus requerimientos** (*Nutrición › ⋯ › Los 9 menús*): cada menú indica cuánto se desvía de tu objetivo calórico y puedes escalar un menú o los nueve a tus kcal. El ajuste es proporcional (mantiene las proporciones de macros de cada menú) y redondea a cantidades pesables (1 g por debajo de 20 g, 5 g por debajo de 100 g y 10 g a partir de ahí). Las comidas ya marcadas en días anteriores no cambian.
 - **Catálogo local editable** de alimentos (valores por 100 g), con indicador ⚠︎ de valor provisional, aviso si kcal y macros no cuadran y opción de crear alimentos.
 - Registro diario de comidas consumidas e historial con % de calorías.

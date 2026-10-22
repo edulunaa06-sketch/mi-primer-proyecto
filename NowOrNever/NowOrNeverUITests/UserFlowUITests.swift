@@ -19,7 +19,8 @@ final class UserFlowUITests: XCTestCase {
     }
 
     private func element(containing text: String) -> XCUIElement {
-        app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch
+        // Sin distinguir mayúsculas: algunos títulos se muestran en MAYÚSCULAS.
+        app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", text)).firstMatch
     }
 
     /// Cierra el teclado numérico con el botón "Listo" de la barra del teclado.
@@ -42,9 +43,11 @@ final class UserFlowUITests: XCTestCase {
     private func scrollTo(_ element: XCUIElement, maxSwipes: Int = 12) -> XCUIElement {
         var swipes = 0
         while !(element.exists && element.isHittable) && swipes < maxSwipes {
-            app.swipeUp()
+            app.swipeUp(velocity: .slow)
             swipes += 1
         }
+        // Espera a que termine la inercia: un toque durante el desplazamiento solo lo frena.
+        if swipes > 0 { Thread.sleep(forTimeInterval: 1.0) }
         if !element.exists { print("UI-DUMP scroll:\n\(app.debugDescription)") }
         XCTAssertTrue(element.exists, "No se encontró \(element)")
         return element
