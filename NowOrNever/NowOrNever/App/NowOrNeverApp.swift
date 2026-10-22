@@ -24,6 +24,7 @@ struct NowOrNeverApp: App {
         MealItem.self,
         MealRecord.self,
         DayPlanSelection.self,
+        DayMealChoice.self,
         ProgressPhoto.self,
         StravaActivityRecord.self,
     ])

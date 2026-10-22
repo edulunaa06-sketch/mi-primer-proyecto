@@ -361,6 +361,64 @@ final class MealRecord {
     var values: NutritionValues { NutritionValues(kcal: kcal, protein: protein, carbs: carbs, fat: fat) }
 }
 
+/// Comida elegida para un día concreto (sustituye a la del menú del día).
+/// Apunta a la comida de ese tipo de un menú (`planID`) con una ración ajustada (`factor`).
+@Model
+final class DayMealChoice {
+    /// "yyyy-MM-dd|tipo": una elección por comida y día.
+    @Attribute(.unique) var key: String = ""
+    var dayKey: String = ""
+    var mealTypeRaw: String = MealType.breakfast.rawValue
+    var planID: UUID = UUID()
+    var factor: Double = 1
+
+    init(dayKey: String, mealType: MealType, planID: UUID, factor: Double) {
+        self.key = DayMealChoice.makeKey(dayKey: dayKey, mealType: mealType)
+        self.dayKey = dayKey
+        self.mealTypeRaw = mealType.rawValue
+        self.planID = planID
+        self.factor = factor
+    }
+
+    static func makeKey(dayKey: String, mealType: MealType) -> String { "\(dayKey)|\(mealType.rawValue)" }
+
+    var mealType: MealType { MealType(rawValue: mealTypeRaw) ?? .breakfast }
+}
+
+/// Comida tal y como se come un día: comida de un menú con su ración (factor).
+struct ResolvedMeal {
+    let type: MealType
+    let template: MealTemplate
+    let plan: MenuPlan
+    let factor: Double
+    /// true si viene de una elección del usuario (no del menú del día).
+    let isChoice: Bool
+
+    struct Line {
+        let item: MealItem
+        let grams: Double
+        let values: NutritionValues
+    }
+
+    var lines: [Line] {
+        template.sortedItems.map { item in
+            let g = MealPlanner.grams(item.grams, factor: factor)
+            let v = item.food.map { NutritionMath.values(per100: $0.per100, grams: g) } ?? .zero
+            return Line(item: item, grams: g, values: v)
+        }
+    }
+
+    var totals: NutritionValues { NutritionMath.sum(lines.map(\.values)) }
+
+    var sourceName: String { "Menú \(plan.number) · \(plan.name)" }
+
+    var plannerCandidate: MealPlanner.Candidate {
+        MealPlanner.Candidate(id: plan.id.uuidString, items: template.sortedItems.compactMap { item in
+            item.food.map { MealPlanner.Item(per100: $0.per100, grams: item.grams) }
+        })
+    }
+}
+
 /// Menú elegido para un día concreto.
 @Model
 final class DayPlanSelection {

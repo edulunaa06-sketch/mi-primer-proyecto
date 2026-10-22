@@ -83,6 +83,9 @@ jobs:
           xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab training -NNSession tue-push-a -NNEditRoutine; sleep 6
           xcrun simctl io "$UDID" screenshot screenshots/routine-editor.png
           xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -NNMealBuilder; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/meal-builder.png
+          xcrun simctl terminate "$UDID" "$BID" || true
           for session in tue-push-a sat-run; do
             xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab training -NNSession "$session"; sleep 5
             xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"

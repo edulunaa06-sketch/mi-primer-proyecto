@@ -215,5 +215,58 @@ final class PersistenceTests: XCTestCase {
         records = try context.fetch(FetchDescriptor<MealRecord>())
         XCTAssertTrue(records.isEmpty)
     }
+
+    // MARK: Comidas elegibles
+
+    func testChoosingMealsOverridesMenuAndBuildsDay() throws {
+        let plans = try seedCatalog()
+        let settings = DataStore.settings(context)
+        let day = Date()
+        var meals = DataStore.resolvedMeals(for: day, plans: plans, selections: [], choices: [], settings: settings)
+        XCTAssertEqual(meals.map(\.type), MealType.allCases)
+        XCTAssertTrue(meals.allSatisfy { !$0.isChoice && $0.plan.number == 1 })
+
+        // 9 opciones de desayuno (una por menú) y se elige una de las 4 mejores.
+        let daily = NutritionValues(kcal: settings.kcalTarget, protein: settings.proteinTarget,
+                                    carbs: settings.carbsTarget, fat: settings.fatTarget)
+        let breakfasts = DataStore.candidates(for: .breakfast, plans: plans)
+        XCTAssertGreaterThanOrEqual(breakfasts.count, 4)
+        let target = MealPlanner.target(for: .breakfast, daily: daily, fixed: [:])
+        let top = MealPlanner.rank(breakfasts.map(\.plannerCandidate), target: target)
+        XCTAssertEqual(top.count, 4)
+        DataStore.choose(.breakfast, planID: UUID(uuidString: top[0].id)!, factor: top[0].factor, on: day, in: context)
+
+        let choices = try context.fetch(FetchDescriptor<DayMealChoice>())
+        meals = DataStore.resolvedMeals(for: day, plans: plans, selections: [], choices: choices, settings: settings)
+        let breakfast = meals.first { $0.type == .breakfast }!
+        XCTAssertTrue(breakfast.isChoice)
+        XCTAssertEqual(breakfast.factor, top[0].factor)
+        XCTAssertEqual(breakfast.totals.kcal, top[0].values.kcal, accuracy: 0.001)
+
+        // Marcar la comida guarda los valores de la ración elegida; cambiarla luego actualiza el registro.
+        DataStore.setMeal(.breakfast, values: breakfast.totals, planName: breakfast.sourceName, completed: true, on: day, in: context)
+        DataStore.setMeal(.breakfast, values: top[1].values, planName: "otra", completed: true, on: day, in: context)
+        let records = try context.fetch(FetchDescriptor<MealRecord>())
+        XCTAssertEqual(records.count, 1)
+        XCTAssertEqual(records[0].kcal, top[1].values.kcal, accuracy: 0.001)
+
+        // Volver al menú quita la elección.
+        DataStore.clearChoice(.breakfast, on: day, in: context)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<DayMealChoice>()).isEmpty)
+    }
+
+    func testSequentialChoicesFitDailyTargets() throws {
+        let plans = try seedCatalog()
+        let daily = NutritionValues(kcal: 2550, protein: 170, carbs: 308, fat: 71)
+        var fixed: [MealType: NutritionValues] = [:]
+        for type in MealType.allCases {
+            let target = MealPlanner.target(for: type, daily: daily, fixed: fixed)
+            let best = MealPlanner.rank(DataStore.candidates(for: type, plans: plans).map(\.plannerCandidate), target: target)[0]
+            fixed[type] = best.values
+        }
+        let total = NutritionMath.sum(Array(fixed.values))
+        XCTAssertEqual(total.kcal, daily.kcal, accuracy: daily.kcal * 0.08)
+        XCTAssertGreaterThan(MealPlanner.fit(total, to: daily), 0.85)
+    }
 }
 #endif

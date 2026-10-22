@@ -256,6 +256,84 @@ enum DataStore {
         try? context.save()
     }
 
+    // MARK: Comidas a elegir
+
+    /// Las cuatro comidas del día: la elegida por el usuario o, si no hay, la del menú del día.
+    @MainActor
+    static func resolvedMeals(for date: Date, plans: [MenuPlan], selections: [DayPlanSelection],
+                              choices: [DayMealChoice], settings: UserSettings?) -> [ResolvedMeal] {
+        let key = DateUtils.dayKey(date)
+        let dayPlan = plan(for: date, plans: plans, selections: selections, settings: settings)
+        return MealType.allCases.compactMap { type in
+            if let choice = choices.first(where: { $0.dayKey == key && $0.mealTypeRaw == type.rawValue }),
+               let p = plans.first(where: { $0.id == choice.planID }), let t = p.meal(type) {
+                return ResolvedMeal(type: type, template: t, plan: p, factor: choice.factor, isChoice: true)
+            }
+            guard let p = dayPlan, let t = p.meal(type) else { return nil }
+            return ResolvedMeal(type: type, template: t, plan: p, factor: 1, isChoice: false)
+        }
+    }
+
+    /// Todas las comidas de un tipo en los menús, como opciones (sin repetir comidas idénticas).
+    @MainActor
+    static func candidates(for type: MealType, plans: [MenuPlan]) -> [ResolvedMeal] {
+        var seen = Set<String>()
+        return plans.sorted { $0.number < $1.number }.compactMap { p in
+            guard let t = p.meal(type) else { return nil }
+            let signature = t.sortedItems.map { "\($0.food?.id.uuidString ?? "")-\($0.grams)" }.joined(separator: ",")
+            guard seen.insert(signature).inserted else { return nil }
+            return ResolvedMeal(type: type, template: t, plan: p, factor: 1, isChoice: false)
+        }
+    }
+
+    /// Guarda la comida elegida para un día. Si ya estaba marcada como hecha, actualiza su registro.
+    @MainActor
+    static func choose(_ type: MealType, planID: UUID, factor: Double, on date: Date, in context: ModelContext) {
+        let key = DayMealChoice.makeKey(dayKey: DateUtils.dayKey(date), mealType: type)
+        var descriptor = FetchDescriptor<DayMealChoice>(predicate: #Predicate { $0.key == key })
+        descriptor.fetchLimit = 1
+        if let existing = try? context.fetch(descriptor).first {
+            existing.planID = planID
+            existing.factor = factor
+        } else {
+            context.insert(DayMealChoice(dayKey: DateUtils.dayKey(date), mealType: type, planID: planID, factor: factor))
+        }
+        try? context.save()
+    }
+
+    /// Quita la elección: vuelve la comida del menú del día.
+    @MainActor
+    static func clearChoice(_ type: MealType, on date: Date, in context: ModelContext) {
+        let key = DayMealChoice.makeKey(dayKey: DateUtils.dayKey(date), mealType: type)
+        let descriptor = FetchDescriptor<DayMealChoice>(predicate: #Predicate { $0.key == key })
+        ((try? context.fetch(descriptor)) ?? []).forEach { context.delete($0) }
+        try? context.save()
+    }
+
+    /// Marca o desmarca una comida del día con sus valores reales (ración incluida).
+    @MainActor
+    static func setMeal(_ type: MealType, values: NutritionValues, planName: String, completed: Bool,
+                        on date: Date, in context: ModelContext) {
+        let key = DateUtils.dayKey(date)
+        let typeRaw = type.rawValue
+        let descriptor = FetchDescriptor<MealRecord>(predicate: #Predicate { $0.dayKey == key && $0.mealTypeRaw == typeRaw })
+        let existing = (try? context.fetch(descriptor)) ?? []
+        if completed {
+            if let record = existing.first {
+                record.planName = planName
+                record.kcal = values.kcal
+                record.protein = values.protein
+                record.carbs = values.carbs
+                record.fat = values.fat
+            } else {
+                context.insert(MealRecord(date: date, mealType: type, planName: planName, values: values))
+            }
+        } else {
+            existing.forEach { context.delete($0) }
+        }
+        try? context.save()
+    }
+
     /// Marca o desmarca una comida del día. Al marcar se guarda una copia de sus valores.
     @MainActor
     static func setMeal(_ meal: MealTemplate, planName: String, completed: Bool, on date: Date, in context: ModelContext) {

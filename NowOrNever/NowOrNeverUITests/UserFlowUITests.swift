@@ -130,4 +130,29 @@ final class UserFlowUITests: XCTestCase {
         app.swipeDown(); app.swipeDown(); app.swipeDown()
         XCTAssertTrue(element(containing: "1 de 4 comidas completadas").waitForExistence(timeout: 5))
     }
+
+    func test4_BuildDayStepByStepAndSwap() {
+        tab("Nutrición")
+        let builder = app.buttons["Elegir mis comidas paso a paso"]
+        XCTAssertTrue(builder.waitForExistence(timeout: 10))
+        builder.tap()
+
+        // Cuatro pasos: desayuno, comida, merienda y cena; en cada uno se elige la primera opción.
+        for meal in ["desayuno", "comida", "merienda", "cena"] {
+            assertAppears(element(containing: "Objetivo para tu \(meal)"), "Paso de \(meal)")
+            let options = app.buttons.matching(identifier: "Elegir esta opción")
+            XCTAssertGreaterThanOrEqual(options.count, 4, "Al menos 4 opciones de \(meal)")
+            options.firstMatch.tap()
+        }
+        assertAppears(element(containing: "Resumen del día"), "Resumen")
+        app.buttons["Guardar mi día"].tap()
+
+        // Las comidas del día ahora son las elegidas y se pueden volver a cambiar.
+        let swap = app.buttons["Cambiar comida"]
+        XCTAssertTrue(scrollTo(swap).exists)
+        swap.tap()
+        assertAppears(element(containing: "Objetivo para tu comida"), "Selector de comida")
+        app.buttons.matching(identifier: "Elegir esta opción").element(boundBy: 1).tap()
+        XCTAssertTrue(scrollTo(app.buttons["Volver al menú"].firstMatch).exists)
+    }
 }

@@ -6,18 +6,28 @@ struct NutritionView: View {
 
     @Query(sort: \MenuPlan.number) private var plans: [MenuPlan]
     @Query private var selections: [DayPlanSelection]
+    @Query private var choices: [DayMealChoice]
     @Query private var settingsList: [UserSettings]
     @Query private var allRecords: [MealRecord]
 
     @State private var day = Date()
     @State private var editingItem: MealItem?
     @State private var addingTo: MealTemplate?
+    @State private var swapping: MealType?
+    @State private var showBuilder = false
 
     private var settings: UserSettings? { settingsList.first }
     private var dayKey: String { DateUtils.dayKey(day) }
     private var records: [MealRecord] { allRecords.filter { $0.dayKey == dayKey } }
     private var plan: MenuPlan? { DataStore.plan(for: day, plans: plans, selections: selections, settings: settings) }
     private var consumed: NutritionValues { NutritionMath.sum(records.map(\.values)) }
+    private var meals: [ResolvedMeal] {
+        DataStore.resolvedMeals(for: day, plans: plans, selections: selections, choices: choices, settings: settings)
+    }
+    private var dailyTargets: NutritionValues {
+        NutritionValues(kcal: settings?.kcalTarget ?? 0, protein: settings?.proteinTarget ?? 0,
+                        carbs: settings?.carbsTarget ?? 0, fat: settings?.fatTarget ?? 0)
+    }
 
     var body: some View {
         NavigationStack {
@@ -26,15 +36,25 @@ struct NutritionView: View {
                     dayPicker
                     if let plan {
                         planPicker(plan)
+                        Button {
+                            showBuilder = true
+                        } label: {
+                            Label("Elegir mis comidas paso a paso", systemImage: "square.stack.3d.up.fill")
+                        }
+                        .buttonStyle(LimeButtonStyle())
                         consumedCard
-                        planTotalsCard(plan)
-                        ForEach(plan.sortedMeals) { meal in
+                        dayTotalsCard
+                        ForEach(meals, id: \.type) { meal in
                             MealCard(
-                                meal: meal,
-                                isCompleted: records.contains { $0.mealTypeRaw == meal.mealTypeRaw },
-                                onToggle: { toggle(meal, plan: plan) },
+                                meal: meal.template,
+                                isCompleted: records.contains { $0.mealTypeRaw == meal.type.rawValue },
+                                factor: meal.factor,
+                                sourceLabel: meal.isChoice || meal.plan.id != plan.id ? meal.sourceName : nil,
+                                onToggle: { toggle(meal) },
                                 onEditItem: { editingItem = $0 },
-                                onAddItem: { addingTo = meal }
+                                onAddItem: { addingTo = meal.template },
+                                onSwap: { swapping = meal.type },
+                                onReset: resetAction(for: meal)
                             )
                         }
                         InfoBanner(text: "Menús y valores de EJEMPLO: cifras aproximadas por 100 g, no un plan calculado clínicamente. Revisa cada alimento con su etiqueta en el Catálogo.")
@@ -60,13 +80,71 @@ struct NutritionView: View {
                 }
             }
             .sheet(item: $editingItem) { item in
-                MealItemEditor(item: item) { refreshRecord(for: item.meal) }
+                MealItemEditor(item: item) { refreshRecords() }
             }
             .sheet(item: $addingTo) { meal in
-                AddFoodSheet(meal: meal) { refreshRecord(for: meal) }
+                AddFoodSheet(meal: meal) { refreshRecords() }
             }
+            .sheet(item: $swapping) { type in
+                MealChooserSheet(
+                    type: type,
+                    target: MealPlanner.target(for: type, daily: dailyTargets, fixed: fixedValues(except: type)),
+                    dayTotalsWithoutThis: NutritionMath.sum(meals.filter { $0.type != type }.map(\.totals)),
+                    daily: dailyTargets,
+                    candidates: DataStore.candidates(for: type, plans: plans),
+                    subtitle: "Opciones que encajan con tus otras tres comidas de hoy"
+                ) { option in
+                    apply(option, type: type)
+                }
+            }
+            .sheet(isPresented: $showBuilder) {
+                DayBuilderSheet(daily: dailyTargets, plans: plans) { picks in
+                    for (type, option) in picks { apply(option, type: type) }
+                }
+            }
+            #if DEBUG
+            .task {
+                if ProcessInfo.processInfo.arguments.contains("-NNMealBuilder") { showBuilder = true }
+            }
+            #endif
         }
     }
+
+    // MARK: Elección de comidas
+
+    private func fixedValues(except type: MealType) -> [MealType: NutritionValues] {
+        Dictionary(uniqueKeysWithValues: meals.filter { $0.type != type }.map { ($0.type, $0.totals) })
+    }
+
+    private func apply(_ option: MealPlanner.Option, type: MealType) {
+        guard let id = UUID(uuidString: option.id) else { return }
+        DataStore.choose(type, planID: id, factor: option.factor, on: day, in: context)
+        refreshRecords()
+    }
+
+    private func resetAction(for meal: ResolvedMeal) -> (() -> Void)? {
+        guard meal.isChoice else { return nil }
+        return { reset(meal.type) }
+    }
+
+    private func reset(_ type: MealType) {
+        DataStore.clearChoice(type, on: day, in: context)
+        refreshRecords()
+    }
+
+    private func toggle(_ meal: ResolvedMeal) {
+        let done = records.contains { $0.mealTypeRaw == meal.type.rawValue }
+        DataStore.setMeal(meal.type, values: meal.totals, planName: meal.sourceName, completed: !done, on: day, in: context)
+    }
+
+    /// Las comidas ya marcadas del día visible se actualizan con su composición actual.
+    private func refreshRecords() {
+        for meal in meals where records.contains(where: { $0.mealTypeRaw == meal.type.rawValue }) {
+            DataStore.setMeal(meal.type, values: meal.totals, planName: meal.sourceName, completed: true, on: day, in: context)
+        }
+    }
+
+    // MARK: Tarjetas
 
     private var dayPicker: some View {
         HStack {
@@ -91,6 +169,7 @@ struct NutritionView: View {
             ForEach(plans) { p in
                 Button {
                     DataStore.select(plan: p, for: day, in: context)
+                    refreshRecords()
                 } label: {
                     if p.id == current.id { Label("Menú \(p.number) · \(p.name)", systemImage: "checkmark") }
                     else { Text("Menú \(p.number) · \(p.name)") }
@@ -99,8 +178,11 @@ struct NutritionView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("MENÚ DEL DÍA").font(.caption2.weight(.bold)).foregroundStyle(Theme.lime)
+                    Text("MENÚ BASE DEL DÍA").font(.caption2.weight(.bold)).foregroundStyle(Theme.lime)
                     Text("Menú \(current.number) · \(current.name)").font(.headline).foregroundStyle(Theme.textPrimary)
+                    if choices.contains(where: { $0.dayKey == dayKey }) {
+                        Text("Con comidas cambiadas por ti").font(.caption2).foregroundStyle(Theme.textSecondary)
+                    }
                 }
                 Spacer()
                 Image(systemName: "chevron.up.chevron.down").foregroundStyle(Theme.textSecondary)
@@ -131,17 +213,19 @@ struct NutritionView: View {
         .card()
     }
 
-    private func planTotalsCard(_ plan: MenuPlan) -> some View {
-        let t = plan.totals
+    private var dayTotalsCard: some View {
+        let t = NutritionMath.sum(meals.map(\.totals))
         return VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Total del menú (calculado)", subtitle: "Suma automática de todos los ingredientes")
+            SectionHeader(title: "Total del día planificado", subtitle: "Suma automática de las 4 comidas · objetivo debajo")
             HStack {
-                totalStat("kcal", NumberFormat.integer(t.kcal))
-                totalStat("Prot.", NumberFormat.integer(t.protein) + " g")
-                totalStat("Carb.", NumberFormat.integer(t.carbs) + " g")
-                totalStat("Grasa", NumberFormat.integer(t.fat) + " g")
+                totalStat("kcal", NumberFormat.integer(t.kcal), target: dailyTargets.kcal)
+                totalStat("Prot.", NumberFormat.integer(t.protein) + " g", target: dailyTargets.protein)
+                totalStat("Carb.", NumberFormat.integer(t.carbs) + " g", target: dailyTargets.carbs)
+                totalStat("Grasa", NumberFormat.integer(t.fat) + " g", target: dailyTargets.fat)
             }
-            if plan.hasProvisionalValues {
+            Text("Ajuste con tus objetivos: \(NumberFormat.percent(MealPlanner.fit(t, to: dailyTargets)))")
+                .font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+            if meals.contains(where: { $0.template.hasProvisionalValues }) {
                 Text("Incluye valores provisionales (marcados con ⚠︎).")
                     .font(.caption2).foregroundStyle(Theme.warning)
             }
@@ -149,30 +233,13 @@ struct NutritionView: View {
         .card()
     }
 
-    private func totalStat(_ label: String, _ value: String) -> some View {
+    private func totalStat(_ label: String, _ value: String, target: Double) -> some View {
         VStack(spacing: 2) {
             Text("≈ " + value).font(.subheadline.weight(.bold).monospacedDigit())
             Text(label).font(.caption2).foregroundStyle(Theme.textSecondary)
+            Text("/ \(NumberFormat.integer(target))").font(.caption2.monospacedDigit()).foregroundStyle(Theme.textTertiary)
         }
         .frame(maxWidth: .infinity)
-    }
-
-    private func toggle(_ meal: MealTemplate, plan: MenuPlan) {
-        let done = records.contains { $0.mealTypeRaw == meal.mealTypeRaw }
-        DataStore.setMeal(meal, planName: "Menú \(plan.number) · \(plan.name)", completed: !done, on: day, in: context)
-    }
-
-    /// Si la comida ya estaba marcada en el día visible, actualiza su registro con los nuevos gramos.
-    private func refreshRecord(for meal: MealTemplate?) {
-        guard let meal else { return }
-        if let record = records.first(where: { $0.mealTypeRaw == meal.mealTypeRaw }) {
-            let v = meal.totals
-            record.kcal = v.kcal
-            record.protein = v.protein
-            record.carbs = v.carbs
-            record.fat = v.fat
-        }
-        try? context.save()
     }
 }
 
@@ -180,35 +247,67 @@ struct MealCard: View {
     let meal: MealTemplate
     let isCompleted: Bool
     var showsCompletion = true
+    /// Ración: 1 = gramos del menú; otro valor = ración ajustada (solo lectura en el día).
+    var factor: Double = 1
+    /// Menú de origen cuando la comida no es la del menú base del día.
+    var sourceLabel: String?
     let onToggle: () -> Void
     let onEditItem: (MealItem) -> Void
     let onAddItem: () -> Void
+    var onSwap: (() -> Void)?
+    var onReset: (() -> Void)?
+
+    private var isScaled: Bool { abs(factor - 1) > 0.001 }
+
+    private var lines: [(item: MealItem, grams: Double, values: NutritionValues)] {
+        meal.sortedItems.map { item in
+            let g = MealPlanner.grams(item.grams, factor: factor)
+            let v = item.food.map { NutritionMath.values(per100: $0.per100, grams: g) } ?? .zero
+            return (item, g, v)
+        }
+    }
 
     var body: some View {
-        let totals = meal.totals
+        let rows = lines
+        let totals = NutritionMath.sum(rows.map(\.values))
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: meal.mealType.symbol).foregroundStyle(Theme.lime)
-                Text(meal.mealType.label).font(.headline)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(meal.mealType.label).font(.headline)
+                    if let sourceLabel {
+                        Text(sourceLabel + (isScaled ? " · ración al \(Int((factor * 100).rounded())) %" : ""))
+                            .font(.caption2).foregroundStyle(Theme.textSecondary)
+                    }
+                }
                 Spacer()
                 if showsCompletion {
-                Button(action: onToggle) {
-                    HStack(spacing: 6) {
-                        Text(isCompleted ? "Hecha" : "Marcar").font(.caption.weight(.bold))
-                        CheckCircle(isOn: isCompleted, size: 24)
+                    Button(action: onToggle) {
+                        HStack(spacing: 6) {
+                            Text(isCompleted ? "Hecha" : "Marcar").font(.caption.weight(.bold))
+                            CheckCircle(isOn: isCompleted, size: 24)
+                        }
+                        .foregroundStyle(isCompleted ? Theme.lime : Theme.textSecondary)
                     }
-                    .foregroundStyle(isCompleted ? Theme.lime : Theme.textSecondary)
-                }
-                .buttonStyle(.plain)
-                }
-            }
-            ForEach(meal.sortedItems) { item in
-                Button { onEditItem(item) } label: { IngredientRow(item: item) }
                     .buttonStyle(.plain)
+                }
             }
-            Button(action: onAddItem) {
-                Label("Añadir ingrediente", systemImage: "plus")
-                    .font(.caption.weight(.semibold))
+            ForEach(rows, id: \.item.persistentModelID) { row in
+                if isScaled {
+                    IngredientRow(item: row.item, grams: row.grams, values: row.values)
+                } else {
+                    Button { onEditItem(row.item) } label: { IngredientRow(item: row.item, grams: row.grams, values: row.values) }
+                        .buttonStyle(.plain)
+                }
+            }
+            if isScaled {
+                Text("Ración ajustada a tus macros. Para editar los ingredientes base ve a Nutrición › ⋯ › Los 9 menús.")
+                    .font(.caption2).foregroundStyle(Theme.textTertiary)
+            } else {
+                Button(action: onAddItem) {
+                    Label("Añadir ingrediente", systemImage: "plus")
+                        .font(.caption.weight(.semibold))
+                }
             }
             Divider().overlay(Color.white.opacity(0.08))
             HStack {
@@ -221,6 +320,20 @@ struct MealCard: View {
             Text("P \(NumberFormat.oneDecimal(totals.protein)) g · C \(NumberFormat.oneDecimal(totals.carbs)) g · G \(NumberFormat.oneDecimal(totals.fat)) g")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(Theme.textSecondary)
+            if onSwap != nil || onReset != nil {
+                HStack(spacing: 10) {
+                    if let onSwap {
+                        Button(action: onSwap) {
+                            Label("Cambiar \(meal.mealType.label.lowercased())", systemImage: "arrow.triangle.2.circlepath")
+                        }
+                        .buttonStyle(LimeButtonStyle(filled: false))
+                    }
+                    if let onReset {
+                        Button("Volver al menú", action: onReset)
+                            .font(.caption.weight(.semibold))
+                    }
+                }
+            }
         }
         .card()
     }
@@ -228,9 +341,12 @@ struct MealCard: View {
 
 struct IngredientRow: View {
     let item: MealItem
+    var grams: Double? = nil
+    var values: NutritionValues? = nil
 
     var body: some View {
-        let v = item.values
+        let g = grams ?? item.grams
+        let v = values ?? item.values
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
@@ -242,7 +358,7 @@ struct IngredientRow: View {
                             .accessibilityLabel("Valor provisional")
                     }
                 }
-                Text("\(NumberFormat.oneDecimal(item.grams)) g · \(item.food?.basis.label.lowercased() ?? "")")
+                Text("\(NumberFormat.oneDecimal(g)) g · \(item.food?.basis.label.lowercased() ?? "")")
                     .font(.caption)
                     .foregroundStyle(Theme.textSecondary)
                 if item.food?.macrosKnown ?? false {
