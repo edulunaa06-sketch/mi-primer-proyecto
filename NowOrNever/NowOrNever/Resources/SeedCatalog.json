@@ -1,0 +1,1263 @@
+{
+ "version": 1,
+ "disclaimer": "Catálogo y menús de EJEMPLO con valores aproximados por 100 g. No son un plan nutricional calculado clínicamente. Revisa y edita cada alimento con la etiqueta de tu producto o una base de datos fiable.",
+ "foods": [
+  {
+   "key": "chicken_breast",
+   "name": "Pechuga de pollo",
+   "kcal": 120,
+   "protein": 22.5,
+   "carbs": 0,
+   "fat": 2.6,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "turkey_breast",
+   "name": "Pechuga de pavo",
+   "kcal": 114,
+   "protein": 23.7,
+   "carbs": 0,
+   "fat": 1.5,
+   "basis": "raw",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "lean_beef",
+   "name": "Ternera picada magra (5 % grasa)",
+   "kcal": 137,
+   "protein": 21.4,
+   "carbs": 0,
+   "fat": 5.0,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "salmon",
+   "name": "Salmón",
+   "kcal": 208,
+   "protein": 20.4,
+   "carbs": 0,
+   "fat": 13.4,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "cod",
+   "name": "Bacalao fresco",
+   "kcal": 82,
+   "protein": 17.8,
+   "carbs": 0,
+   "fat": 0.7,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "tuna_drained",
+   "name": "Atún al natural",
+   "kcal": 116,
+   "protein": 25.5,
+   "carbs": 0,
+   "fat": 0.8,
+   "basis": "drained",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "egg",
+   "name": "Huevo entero (sin cáscara)",
+   "kcal": 143,
+   "protein": 12.6,
+   "carbs": 0.7,
+   "fat": 9.5,
+   "basis": "edible",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "egg_white",
+   "name": "Clara de huevo",
+   "kcal": 52,
+   "protein": 10.9,
+   "carbs": 0.7,
+   "fat": 0.2,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "rice",
+   "name": "Arroz blanco",
+   "kcal": 360,
+   "protein": 6.5,
+   "carbs": 79.3,
+   "fat": 0.6,
+   "basis": "dry",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "pasta",
+   "name": "Pasta de trigo",
+   "kcal": 371,
+   "protein": 13.0,
+   "carbs": 74.7,
+   "fat": 1.5,
+   "basis": "dry",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "oats",
+   "name": "Copos de avena",
+   "kcal": 389,
+   "protein": 16.9,
+   "carbs": 66.3,
+   "fat": 6.9,
+   "basis": "dry",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "quinoa",
+   "name": "Quinoa",
+   "kcal": 368,
+   "protein": 14.1,
+   "carbs": 64.2,
+   "fat": 6.1,
+   "basis": "dry",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "bread_ww",
+   "name": "Pan integral",
+   "kcal": 252,
+   "protein": 12.4,
+   "carbs": 42.7,
+   "fat": 3.5,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "rice_cakes",
+   "name": "Tortitas de arroz",
+   "kcal": 387,
+   "protein": 8.2,
+   "carbs": 81.5,
+   "fat": 2.8,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "potato",
+   "name": "Patata (pelada)",
+   "kcal": 77,
+   "protein": 2.0,
+   "carbs": 17.5,
+   "fat": 0.1,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "sweet_potato",
+   "name": "Boniato (pelado)",
+   "kcal": 86,
+   "protein": 1.6,
+   "carbs": 20.1,
+   "fat": 0.1,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "chickpeas",
+   "name": "Garbanzos",
+   "kcal": 164,
+   "protein": 8.9,
+   "carbs": 27.4,
+   "fat": 2.6,
+   "basis": "cookedDrained",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto. Si son de bote, usa la etiqueta."
+  },
+  {
+   "key": "lentils",
+   "name": "Lentejas",
+   "kcal": 116,
+   "protein": 9.0,
+   "carbs": 20.1,
+   "fat": 0.4,
+   "basis": "cookedDrained",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto. Si son de bote, usa la etiqueta."
+  },
+  {
+   "key": "greek_yogurt",
+   "name": "Yogur griego natural 0 %",
+   "kcal": 59,
+   "protein": 10.2,
+   "carbs": 3.6,
+   "fat": 0.4,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "skyr",
+   "name": "Skyr natural",
+   "kcal": 63,
+   "protein": 11.0,
+   "carbs": 4.0,
+   "fat": 0.2,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "milk_semi",
+   "name": "Leche semidesnatada",
+   "kcal": 46,
+   "protein": 3.4,
+   "carbs": 4.8,
+   "fat": 1.6,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "whey",
+   "name": "Proteína whey (en polvo)",
+   "kcal": 400,
+   "protein": 80.0,
+   "carbs": 8.0,
+   "fat": 6.0,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "banana",
+   "name": "Plátano",
+   "kcal": 89,
+   "protein": 1.1,
+   "carbs": 22.8,
+   "fat": 0.3,
+   "basis": "edible",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "apple",
+   "name": "Manzana",
+   "kcal": 52,
+   "protein": 0.3,
+   "carbs": 13.8,
+   "fat": 0.2,
+   "basis": "edible",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "blueberries",
+   "name": "Arándanos",
+   "kcal": 57,
+   "protein": 0.7,
+   "carbs": 14.5,
+   "fat": 0.3,
+   "basis": "edible",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "olive_oil",
+   "name": "Aceite de oliva",
+   "kcal": 884,
+   "protein": 0,
+   "carbs": 0,
+   "fat": 100,
+   "basis": "asWeighed",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "avocado",
+   "name": "Aguacate",
+   "kcal": 160,
+   "protein": 2.0,
+   "carbs": 8.5,
+   "fat": 14.7,
+   "basis": "edible",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "walnuts",
+   "name": "Nueces (peladas)",
+   "kcal": 654,
+   "protein": 15.2,
+   "carbs": 13.7,
+   "fat": 65.2,
+   "basis": "edible",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "peanut_butter",
+   "name": "Crema de cacahuete 100 %",
+   "kcal": 588,
+   "protein": 25.0,
+   "carbs": 20.0,
+   "fat": 50.0,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
+  },
+  {
+   "key": "broccoli",
+   "name": "Brócoli",
+   "kcal": 34,
+   "protein": 2.8,
+   "carbs": 6.6,
+   "fat": 0.4,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "mixed_veg",
+   "name": "Verduras variadas (genérico)",
+   "kcal": 30,
+   "protein": 1.5,
+   "carbs": 5.0,
+   "fat": 0.3,
+   "basis": "raw",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Valor genérico orientativo: las calorías reales dependen de las verduras concretas. Sustitúyelo por alimentos específicos."
+  },
+  {
+   "key": "tomato",
+   "name": "Tomate",
+   "kcal": 18,
+   "protein": 0.9,
+   "carbs": 3.9,
+   "fat": 0.2,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "lettuce",
+   "name": "Lechuga",
+   "kcal": 15,
+   "protein": 1.4,
+   "carbs": 2.9,
+   "fat": 0.2,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "zucchini",
+   "name": "Calabacín",
+   "kcal": 17,
+   "protein": 1.2,
+   "carbs": 3.1,
+   "fat": 0.3,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "red_pepper",
+   "name": "Pimiento rojo",
+   "kcal": 31,
+   "protein": 1.0,
+   "carbs": 6.0,
+   "fat": 0.3,
+   "basis": "raw",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "honey",
+   "name": "Miel",
+   "kcal": 304,
+   "protein": 0.3,
+   "carbs": 82.4,
+   "fat": 0,
+   "basis": "asWeighed",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  }
+ ],
+ "menus": [
+  {
+   "number": 1,
+   "name": "Clásico pollo y salmón",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "oats",
+       "grams": 70
+      },
+      {
+       "food": "milk_semi",
+       "grams": 250
+      },
+      {
+       "food": "whey",
+       "grams": 30
+      },
+      {
+       "food": "banana",
+       "grams": 120
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "chicken_breast",
+       "grams": 180
+      },
+      {
+       "food": "rice",
+       "grams": 90
+      },
+      {
+       "food": "mixed_veg",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "greek_yogurt",
+       "grams": 250
+      },
+      {
+       "food": "walnuts",
+       "grams": 15
+      },
+      {
+       "food": "blueberries",
+       "grams": 100
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "salmon",
+       "grams": 150
+      },
+      {
+       "food": "potato",
+       "grams": 300
+      },
+      {
+       "food": "broccoli",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 2,
+   "name": "Pasta y bacalao",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "bread_ww",
+       "grams": 100
+      },
+      {
+       "food": "egg",
+       "grams": 120
+      },
+      {
+       "food": "egg_white",
+       "grams": 150
+      },
+      {
+       "food": "tomato",
+       "grams": 100
+      },
+      {
+       "food": "olive_oil",
+       "grams": 5
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "lean_beef",
+       "grams": 170
+      },
+      {
+       "food": "pasta",
+       "grams": 90
+      },
+      {
+       "food": "tomato",
+       "grams": 150
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "skyr",
+       "grams": 200
+      },
+      {
+       "food": "whey",
+       "grams": 20
+      },
+      {
+       "food": "banana",
+       "grams": 120
+      },
+      {
+       "food": "walnuts",
+       "grams": 15
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "cod",
+       "grams": 250
+      },
+      {
+       "food": "sweet_potato",
+       "grams": 300
+      },
+      {
+       "food": "zucchini",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 3,
+   "name": "Legumbres",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "oats",
+       "grams": 80
+      },
+      {
+       "food": "milk_semi",
+       "grams": 250
+      },
+      {
+       "food": "whey",
+       "grams": 30
+      },
+      {
+       "food": "blueberries",
+       "grams": 100
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "chicken_breast",
+       "grams": 150
+      },
+      {
+       "food": "chickpeas",
+       "grams": 200
+      },
+      {
+       "food": "red_pepper",
+       "grams": 100
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "rice_cakes",
+       "grams": 30
+      },
+      {
+       "food": "tuna_drained",
+       "grams": 120
+      },
+      {
+       "food": "apple",
+       "grams": 150
+      },
+      {
+       "food": "walnuts",
+       "grams": 15
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "turkey_breast",
+       "grams": 160
+      },
+      {
+       "food": "lentils",
+       "grams": 200
+      },
+      {
+       "food": "mixed_veg",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 4,
+   "name": "Arroz y ternera",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "greek_yogurt",
+       "grams": 250
+      },
+      {
+       "food": "oats",
+       "grams": 60
+      },
+      {
+       "food": "whey",
+       "grams": 25
+      },
+      {
+       "food": "banana",
+       "grams": 120
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "lean_beef",
+       "grams": 180
+      },
+      {
+       "food": "rice",
+       "grams": 90
+      },
+      {
+       "food": "broccoli",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "bread_ww",
+       "grams": 60
+      },
+      {
+       "food": "tuna_drained",
+       "grams": 100
+      },
+      {
+       "food": "tomato",
+       "grams": 100
+      },
+      {
+       "food": "avocado",
+       "grams": 60
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "chicken_breast",
+       "grams": 200
+      },
+      {
+       "food": "potato",
+       "grams": 300
+      },
+      {
+       "food": "lettuce",
+       "grams": 100
+      },
+      {
+       "food": "olive_oil",
+       "grams": 15
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 5,
+   "name": "Quinoa y pavo",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "bread_ww",
+       "grams": 90
+      },
+      {
+       "food": "egg",
+       "grams": 120
+      },
+      {
+       "food": "egg_white",
+       "grams": 100
+      },
+      {
+       "food": "avocado",
+       "grams": 50
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "turkey_breast",
+       "grams": 200
+      },
+      {
+       "food": "quinoa",
+       "grams": 90
+      },
+      {
+       "food": "mixed_veg",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 5
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "skyr",
+       "grams": 250
+      },
+      {
+       "food": "whey",
+       "grams": 20
+      },
+      {
+       "food": "banana",
+       "grams": 120
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "salmon",
+       "grams": 150
+      },
+      {
+       "food": "rice",
+       "grams": 80
+      },
+      {
+       "food": "zucchini",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 5
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 6,
+   "name": "Pescado blanco",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "oats",
+       "grams": 80
+      },
+      {
+       "food": "milk_semi",
+       "grams": 250
+      },
+      {
+       "food": "whey",
+       "grams": 30
+      },
+      {
+       "food": "banana",
+       "grams": 120
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "cod",
+       "grams": 250
+      },
+      {
+       "food": "rice",
+       "grams": 90
+      },
+      {
+       "food": "red_pepper",
+       "grams": 150
+      },
+      {
+       "food": "avocado",
+       "grams": 50
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "greek_yogurt",
+       "grams": 250
+      },
+      {
+       "food": "honey",
+       "grams": 15
+      },
+      {
+       "food": "walnuts",
+       "grams": 20
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "chicken_breast",
+       "grams": 180
+      },
+      {
+       "food": "sweet_potato",
+       "grams": 250
+      },
+      {
+       "food": "broccoli",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 7,
+   "name": "Batido y pasta",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "milk_semi",
+       "grams": 300
+      },
+      {
+       "food": "whey",
+       "grams": 35
+      },
+      {
+       "food": "oats",
+       "grams": 70
+      },
+      {
+       "food": "peanut_butter",
+       "grams": 20
+      },
+      {
+       "food": "banana",
+       "grams": 100
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "chicken_breast",
+       "grams": 180
+      },
+      {
+       "food": "pasta",
+       "grams": 90
+      },
+      {
+       "food": "tomato",
+       "grams": 150
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "rice_cakes",
+       "grams": 30
+      },
+      {
+       "food": "skyr",
+       "grams": 150
+      },
+      {
+       "food": "blueberries",
+       "grams": 100
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "tuna_drained",
+       "grams": 150
+      },
+      {
+       "food": "potato",
+       "grams": 300
+      },
+      {
+       "food": "egg",
+       "grams": 60
+      },
+      {
+       "food": "lettuce",
+       "grams": 100
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 8,
+   "name": "Huevos y ternera",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "egg",
+       "grams": 120
+      },
+      {
+       "food": "egg_white",
+       "grams": 200
+      },
+      {
+       "food": "bread_ww",
+       "grams": 90
+      },
+      {
+       "food": "tomato",
+       "grams": 100
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "lean_beef",
+       "grams": 180
+      },
+      {
+       "food": "potato",
+       "grams": 350
+      },
+      {
+       "food": "mixed_veg",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "greek_yogurt",
+       "grams": 250
+      },
+      {
+       "food": "oats",
+       "grams": 40
+      },
+      {
+       "food": "whey",
+       "grams": 20
+      },
+      {
+       "food": "apple",
+       "grams": 150
+      },
+      {
+       "food": "walnuts",
+       "grams": 15
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "cod",
+       "grams": 250
+      },
+      {
+       "food": "rice",
+       "grams": 70
+      },
+      {
+       "food": "zucchini",
+       "grams": 200
+      },
+      {
+       "food": "olive_oil",
+       "grams": 10
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": 9,
+   "name": "Día de carrera (más carbohidrato)",
+   "note": "Menú de ejemplo. Ajusta gramos y alimentos a tus necesidades.",
+   "meals": [
+    {
+     "type": "breakfast",
+     "items": [
+      {
+       "food": "oats",
+       "grams": 90
+      },
+      {
+       "food": "milk_semi",
+       "grams": 250
+      },
+      {
+       "food": "whey",
+       "grams": 30
+      },
+      {
+       "food": "banana",
+       "grams": 120
+      },
+      {
+       "food": "honey",
+       "grams": 10
+      }
+     ]
+    },
+    {
+     "type": "lunch",
+     "items": [
+      {
+       "food": "chicken_breast",
+       "grams": 180
+      },
+      {
+       "food": "rice",
+       "grams": 100
+      },
+      {
+       "food": "mixed_veg",
+       "grams": 150
+      },
+      {
+       "food": "olive_oil",
+       "grams": 5
+      }
+     ]
+    },
+    {
+     "type": "snack",
+     "items": [
+      {
+       "food": "rice_cakes",
+       "grams": 40
+      },
+      {
+       "food": "skyr",
+       "grams": 200
+      },
+      {
+       "food": "blueberries",
+       "grams": 100
+      }
+     ]
+    },
+    {
+     "type": "dinner",
+     "items": [
+      {
+       "food": "salmon",
+       "grams": 150
+      },
+      {
+       "food": "pasta",
+       "grams": 70
+      },
+      {
+       "food": "broccoli",
+       "grams": 150
+      },
+      {
+       "food": "olive_oil",
+       "grams": 5
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,38 @@
+name: iOS build (Now or Never)
+
+on:
+  push:
+    paths:
+      - "NowOrNever/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: NowOrNever
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build for iOS device (sin firma)
+        run: |
+          set -o pipefail
+          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
+            -destination 'generic/platform=iOS' -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build | tee build-device.log | grep -E "error:|warning:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build-device.log
+
+      - name: Run unit tests on simulator
+        run: |
+          set -o pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "Simulator: $UDID"
+          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
+            -destination "id=$UDID" CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST" || true
+          grep -q "TEST SUCCEEDED" test.log
