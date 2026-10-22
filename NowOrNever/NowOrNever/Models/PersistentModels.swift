@@ -421,6 +421,7 @@ final class CustomMealItem {
     }
 
     var source: CustomItemSource { CustomItemSource(rawValue: sourceRaw) ?? .manual }
+    var mealType: MealType { MealType(rawValue: mealTypeRaw) ?? .breakfast }
     var per100: NutritionValues { NutritionValues(kcal: kcalPer100, protein: proteinPer100, carbs: carbsPer100, fat: fatPer100) }
     var values: NutritionValues { per100.scaled(toGrams: grams) }
 }
