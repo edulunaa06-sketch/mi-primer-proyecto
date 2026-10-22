@@ -82,9 +82,8 @@ enum DataStore {
         insertIdeas(catalog, foodsByKey: foodsByKey, into: context)
     }
 
-    /// Actualización del catálogo para quien ya tenía la app: añade alimentos e ideas nuevos.
-    @MainActor
     /// Cambia el nombre visible de una sesión. Un nombre vacío vuelve al original.
+    @MainActor
     static func renameSession(_ sessionID: String, to title: String, in context: ModelContext) {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         var descriptor = FetchDescriptor<SessionTitle>(predicate: #Predicate { $0.sessionID == sessionID })
@@ -100,6 +99,8 @@ enum DataStore {
         try? context.save()
     }
 
+    /// Actualización del catálogo para quien ya tenía la app: añade alimentos e ideas nuevos.
+    @MainActor
     static func addMissingFoodsAndIdeas(_ catalog: SeedCatalog, into context: ModelContext) {
         let existing = (try? context.fetch(FetchDescriptor<FoodItem>())) ?? []
         var foodsByKey = Dictionary(existing.filter { !$0.seedKey.isEmpty }.map { ($0.seedKey, $0) }, uniquingKeysWith: { a, _ in a })
