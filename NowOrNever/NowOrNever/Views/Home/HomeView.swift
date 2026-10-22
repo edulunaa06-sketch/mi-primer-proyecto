@@ -72,7 +72,7 @@ struct HomeView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(today.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "es_ES"))).capitalized)
+            Text(sentenceCase(today.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "es_ES")))))
                 .font(.subheadline)
                 .foregroundStyle(Theme.textSecondary)
             Text("Hoy cuenta.")
@@ -211,6 +211,11 @@ struct HomeView: View {
             .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+
+    /// "jueves, 22 de octubre" → "Jueves, 22 de octubre"
+    private func sentenceCase(_ text: String) -> String {
+        text.prefix(1).uppercased() + text.dropFirst()
     }
 
     private func icon(for kind: SessionKind) -> String {

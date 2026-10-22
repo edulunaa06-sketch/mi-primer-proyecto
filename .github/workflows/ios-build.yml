@@ -56,6 +56,11 @@ jobs:
             xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
             xcrun simctl terminate "$UDID" "$BID" || true
           done
+          for session in tue-push-a sat-run; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab training -NNSession "$session"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
 
       - uses: actions/upload-artifact@v4
         with:

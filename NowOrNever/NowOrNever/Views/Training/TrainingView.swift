@@ -5,6 +5,7 @@ import SwiftUI
 /// al empezar una semana nueva las casillas aparecen vacías y el historial anterior se conserva.
 struct TrainingView: View {
     @Query private var weekLogs: [WorkoutSessionLog]
+    @State private var path: [String] = []
 
     private let weekStart: Date
     private let todayWeekday: Int
@@ -25,7 +26,7 @@ struct TrainingView: View {
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: 16) {
                     weeklySummary
@@ -48,6 +49,15 @@ struct TrainingView: View {
                     SessionDestination(session: session, weekStart: weekStart)
                 }
             }
+            #if DEBUG
+            .onAppear {
+                // Solo en Debug: el CI abre una sesión concreta para capturas de pantalla.
+                let args = ProcessInfo.processInfo.arguments
+                if path.isEmpty, let i = args.firstIndex(of: "-NNSession"), i + 1 < args.count {
+                    path = [args[i + 1]]
+                }
+            }
+            #endif
         }
     }
 
