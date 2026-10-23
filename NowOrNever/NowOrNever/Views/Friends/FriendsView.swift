@@ -14,6 +14,8 @@ struct FriendsView: View {
     @State private var searchName = ""
     @State private var results: [SocialAPI.Profile] = []
     @State private var searching = false
+    @State private var contacts: [SocialAPI.Profile]?
+    @State private var phone = ""
 
     var body: some View {
         NavigationStack {
@@ -106,6 +108,52 @@ struct FriendsView: View {
             }
             if !searching && results.isEmpty && searchName.trimmingCharacters(in: .whitespaces).count >= 2 {
                 Text("No hay nadie con ese nombre todavía.").font(.caption).foregroundStyle(Theme.textSecondary)
+            }
+            Button {
+                Task {
+                    do { contacts = try await social.contactsOnApp() } catch { message = error.localizedDescription; isError = true }
+                }
+            } label: {
+                Label("Buscar en mis contactos", systemImage: "person.crop.circle.badge.checkmark").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(LimeButtonStyle(filled: false))
+            .disabled(social.isWorking)
+            if let contacts {
+                if contacts.isEmpty {
+                    Text("Ninguno de tus contactos usa la app todavía (o no ha puesto su teléfono).")
+                        .font(.caption).foregroundStyle(Theme.textSecondary)
+                }
+                ForEach(contacts) { person in
+                    HStack {
+                        Avatar(profile: person, size: 40)
+                        VStack(alignment: .leading) {
+                            Text(person.shownName).font(.subheadline.weight(.semibold))
+                            Text("@\(person.username) · en tus contactos").font(.caption).foregroundStyle(Theme.textSecondary)
+                        }
+                        Spacer()
+                        followButton(person)
+                    }
+                }
+            }
+            if social.savedPhone == nil {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Pon tu teléfono para que tus contactos te encuentren").font(.caption.weight(.semibold))
+                    HStack {
+                        TextField("600 11 22 33", text: $phone)
+                            .keyboardType(.phonePad)
+                            .textContentType(.telephoneNumber)
+                            .padding(10)
+                            .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        Button("Guardar") {
+                            Task { await run("Teléfono guardado. Tus contactos ya pueden encontrarte.") { try await social.setPhone(phone) } }
+                        }
+                        .buttonStyle(LimeButtonStyle())
+                        .fixedSize()
+                        .disabled(phone.filter(\.isNumber).count < 8 || social.isWorking)
+                    }
+                    Text("En el servidor solo se guarda un código sacado del número, no el número.")
+                        .font(.caption2).foregroundStyle(Theme.textTertiary)
+                }
             }
             if !social.outgoing.isEmpty {
                 Text("Pendientes de aceptar: " + social.outgoing.map { "@\($0.username)" }.joined(separator: ", "))
@@ -322,6 +370,7 @@ private struct StartCard: View {
     @State private var name = ""
     @State private var error: String?
     @State private var withEmail = false
+    @State private var phone = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -340,9 +389,18 @@ private struct StartCard: View {
                     .accessibilityIdentifier("friends.username")
             }
             .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            TextField("Tu teléfono (opcional: así te encuentran tus contactos)", text: $phone)
+                .keyboardType(.phonePad)
+                .textContentType(.telephoneNumber)
+                .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
             Button {
                 Task {
-                    do { try await social.start(username: username, displayName: name); error = nil } catch { self.error = error.localizedDescription }
+                    do {
+                        if !phone.isEmpty && SocialAPI.normalizePhone(phone) == nil { throw SocialAPI.SocialError.invalidPhone }
+                        try await social.start(username: username, displayName: name)
+                        if !phone.isEmpty { try await social.setPhone(phone) }
+                        error = nil
+                    } catch { self.error = error.localizedDescription }
                 }
             } label: {
                 if social.isWorking { ProgressView().tint(.black) } else { Text("Empezar") }

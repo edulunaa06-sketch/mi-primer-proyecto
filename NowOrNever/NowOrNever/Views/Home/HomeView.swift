@@ -129,13 +129,16 @@ struct HomeView: View {
 
     /// Lo que te queda por comer hoy (objetivo − lo comido), sin anillos. Tocar abre Comidas.
     private var caloriesCard: some View {
-        Button { router.tab = .nutrition } label: {
+        VStack(spacing: 8) {
             CaloriesLeftCard(consumed: consumed,
                              target: NutritionValues(kcal: settings?.kcalTarget ?? 0, protein: settings?.proteinTarget ?? 0,
                                                      carbs: settings?.carbsTarget ?? 0, fat: settings?.fatTarget ?? 0),
                              title: "Calorías de hoy")
+            Button { router.tab = .nutrition } label: {
+                Label("Apuntar lo que como", systemImage: "camera.fill").frame(maxWidth: .infinity)
+            }
+            .buttonStyle(LimeButtonStyle(filled: false))
         }
-        .buttonStyle(.plain)
     }
 
     private var stepsCard: some View {

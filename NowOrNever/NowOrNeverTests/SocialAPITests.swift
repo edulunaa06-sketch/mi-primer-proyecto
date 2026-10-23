@@ -79,6 +79,24 @@ final class SocialAPITests: XCTestCase {
         XCTAssertNil(SocialAPI.searchProfiles(config, session: session, query: "@a"), "Hace falta escribir al menos 2 letras")
     }
 
+    func testPhoneNumbers() throws {
+        XCTAssertEqual(SocialAPI.normalizePhone("600 11 12 22"), "34600111222", "Sin prefijo: España")
+        XCTAssertEqual(SocialAPI.normalizePhone("+34 600-11-12-22"), "34600111222")
+        XCTAssertEqual(SocialAPI.normalizePhone("0034600111222"), "34600111222")
+        XCTAssertEqual(SocialAPI.normalizePhone("+52 1 55 1234 5678"), "5215512345678")
+        XCTAssertNil(SocialAPI.normalizePhone("112"))
+        XCTAssertNil(SocialAPI.normalizePhone("abc"))
+        XCTAssertEqual(String(decoding: SocialAPI.phoneHashInput("34600111222"), as: UTF8.self), "nowornever:34600111222")
+
+        let set = SocialAPI.setMyPhone(config, session: session, hash: String(repeating: "a", count: 64))
+        XCTAssertTrue(set.url!.absoluteString.hasSuffix("/rest/v1/rpc/set_my_phone"))
+        XCTAssertEqual((try JSONSerialization.jsonObject(with: set.httpBody!) as? [String: Any])?["hash"] as? String, String(repeating: "a", count: 64))
+        let clear = SocialAPI.setMyPhone(config, session: session, hash: nil)
+        XCTAssertTrue((try JSONSerialization.jsonObject(with: clear.httpBody!) as? [String: Any])?["hash"] is NSNull)
+        let find = SocialAPI.findByPhones(config, session: session, hashes: Array(repeating: "h", count: 2500))
+        XCTAssertEqual(((try JSONSerialization.jsonObject(with: find.httpBody!) as? [String: Any])?["hashes"] as? [String])?.count, 2000)
+    }
+
     func testDuplicateUsernameError() {
         let body = Data(#"{"code":"23505","message":"duplicate key value violates unique constraint"}"#.utf8)
         XCTAssertThrowsError(try SocialAPI.check(status: 409, data: body)) { XCTAssertEqual($0 as? SocialAPI.SocialError, .usernameTaken) }

@@ -122,6 +122,9 @@ enum SocialAPI {
         case invalidUsername
         case userNotFound
         case anonymousDisabled
+        case invalidPhone
+        case phoneTaken
+        case contactsDenied
         case badResponse
         case server(String)
         case http(Int)
@@ -139,6 +142,9 @@ enum SocialAPI {
             case .invalidUsername: return "El usuario debe tener de 3 a 20 caracteres: letras minúsculas, números, punto o guion bajo."
             case .userNotFound: return "No hay nadie con ese usuario."
             case .anonymousDisabled: return "El servidor no deja entrar solo con nombre: en Supabase activa Authentication › Sign In / Providers › «Allow anonymous sign-ins»."
+            case .invalidPhone: return "Ese número no parece válido. Escríbelo con prefijo si no es de España (p. ej. +52…)."
+            case .phoneTaken: return "Ese número ya está en otra cuenta."
+            case .contactsDenied: return "Sin permiso para ver tus contactos. Actívalo en Ajustes › Now or Never › Contactos."
             case .badResponse: return "No se pudo leer la respuesta del servidor."
             case .server(let message): return "Error del servidor: \(message)"
             case .http(let code): return "Error de red (HTTP \(code))."
@@ -153,6 +159,36 @@ enum SocialAPI {
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789_.")
         guard (3...20).contains(name.count), name.unicodeScalars.allSatisfy(allowed.contains) else { return nil }
         return name
+    }
+
+    // MARK: Teléfono
+
+    /// «+34 600 11 12 22», «0034600111222» y «600111222» → «34600111222». Sin prefijo se asume España.
+    /// nil si no queda un número de 8 a 15 cifras.
+    static func normalizePhone(_ raw: String, defaultCountryCode: String = "34") -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        var digits = String(trimmed.filter { $0.isASCII && $0.isNumber })
+        if trimmed.hasPrefix("+") {
+            // Ya trae el prefijo del país.
+        } else if digits.hasPrefix("00") {
+            digits.removeFirst(2)
+        } else if digits.count == 9 {
+            digits = defaultCountryCode + digits
+        }
+        return (8...15).contains(digits.count) ? digits : nil
+    }
+
+    /// Texto del que se calcula el resumen SHA-256 que se guarda en el servidor (nunca el número).
+    static func phoneHashInput(_ normalized: String) -> Data { Data("nowornever:\(normalized)".utf8) }
+
+    static func setMyPhone(_ config: Config, session: Session, hash: String?) -> URLRequest {
+        let body = try? JSONSerialization.data(withJSONObject: ["hash": hash as Any? ?? NSNull()])
+        return rest(config, accessToken: session.accessToken, method: "POST", table: "rpc/set_my_phone", body: body)
+    }
+
+    static func findByPhones(_ config: Config, session: Session, hashes: [String]) -> URLRequest {
+        let body = try? JSONSerialization.data(withJSONObject: ["hashes": Array(hashes.prefix(2000))])
+        return rest(config, accessToken: session.accessToken, method: "POST", table: "rpc/find_by_phones", body: body)
     }
 
     // MARK: Peticiones de cuenta (Supabase Auth)

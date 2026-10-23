@@ -162,11 +162,25 @@ struct CaloriesLeftCard: View {
     let consumed: NutritionValues
     let target: NutritionValues
     var title = "Hoy"
+    /// Muestra el botón «Cambiar» para poner tú las calorías que quieres comer.
+    var editable = true
+    @State private var editing = false
 
     var body: some View {
         let left = target.kcal - consumed.kcal
         return VStack(alignment: .leading, spacing: 12) {
-            Text(title.uppercased()).font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
+            HStack {
+                Text(title.uppercased()).font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
+                Spacer()
+                if editable {
+                    Button { editing = true } label: {
+                        Label("Cambiar", systemImage: "pencil").font(.caption.weight(.semibold))
+                    }
+                    .buttonStyle(.borderless)
+                    .tint(Theme.lime)
+                    .accessibilityIdentifier("kcal.edit")
+                }
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(left >= 0 ? "Te quedan" : "Te has pasado").font(.subheadline).foregroundStyle(Theme.textSecondary)
                 Text("\(NumberFormat.integer(abs(left))) kcal")
@@ -185,6 +199,7 @@ struct CaloriesLeftCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
+        .sheet(isPresented: $editing) { TargetsEditorSheet() }
     }
 
     private func macro(_ name: String, _ eaten: Double, _ goal: Double) -> some View {

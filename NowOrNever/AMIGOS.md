@@ -36,6 +36,9 @@ Si no, cada persona los pega una vez en *Amigos* y pulsa **Guardar**.
 ## 5. Usarlo
 1. Pestaña **Amigos** → escribe tu nombre (el @usuario se rellena solo; puedes cambiarlo) → **Empezar**.
 2. En **Buscar amigos**, escribe el nombre o el @usuario de tu pareja o de un amigo y pulsa **Seguir**.
+   O pulsa **Buscar en mis contactos**: salen los contactos de tu agenda que usan la app y han puesto su teléfono.
+   - Tu teléfono es opcional (al empezar o en *Buscar amigos*). En el servidor solo se guarda un código sacado del número, no el número, y nadie puede ver la lista.
+   - Los números no se comprueban por SMS: alguien podría poner un número que no es suyo. Por eso seguir siempre necesita que la otra persona acepte; fíjate en su @usuario.
 3. Al otro le aparece la solicitud: con **Aceptar y seguir** os seguís los dos.
 4. Toca su nombre en **Sigues a** para ver sus últimos 14 días: entrenos hechos (✓) o sin hacer (✗), mejores series, comidas, kcal y pasos. Arriba verás el resumen de la semana, con los días en que no ha entrenado.
 

@@ -167,3 +167,38 @@ create policy "nn_own_update" on storage.objects for update to authenticated
 drop policy if exists "nn_own_delete" on storage.objects;
 create policy "nn_own_delete" on storage.objects for delete to authenticated
   using (bucket_id in ('avatars', 'progress') and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Versión 3: encontrar a tus contactos por número de teléfono.
+-- Se guarda un resumen (hash SHA-256) del número, nunca el número. Nadie puede leer esta tabla directamente:
+-- solo se usa con las dos funciones de abajo, que devuelven perfiles cuyos números ya tienes en tu agenda.
+create table if not exists public.profile_phones (
+  user_id uuid primary key references public.profiles (id) on delete cascade,
+  phone_hash text not null unique check (phone_hash ~ '^[0-9a-f]{64}$')
+);
+alter table public.profile_phones enable row level security;
+revoke all on public.profile_phones from anon, authenticated;
+
+-- Guarda (o borra, con null) el resumen de TU número.
+create or replace function public.set_my_phone(hash text) returns void
+language plpgsql volatile security definer set search_path = public as $$
+begin
+  if auth.uid() is null then raise exception 'not signed in'; end if;
+  if hash is null then
+    delete from public.profile_phones where user_id = auth.uid();
+  else
+    insert into public.profile_phones (user_id, phone_hash) values (auth.uid(), hash)
+      on conflict (user_id) do update set phone_hash = excluded.phone_hash;
+  end if;
+end $$;
+
+-- Perfiles cuyos números están entre los de tu agenda (máximo 2000 por consulta). Tú no sales.
+create or replace function public.find_by_phones(hashes text[]) returns setof public.profiles
+language sql stable security definer set search_path = public as $$
+  select p.* from public.profiles p
+  join public.profile_phones ph on ph.user_id = p.id
+  where auth.uid() is not null and p.id <> auth.uid() and ph.phone_hash = any (hashes[1:2000])
+$$;
+revoke all on function public.set_my_phone(text) from public, anon;
+revoke all on function public.find_by_phones(text[]) from public, anon;
+grant execute on function public.set_my_phone(text) to authenticated;
+grant execute on function public.find_by_phones(text[]) to authenticated;

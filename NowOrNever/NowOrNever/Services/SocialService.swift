@@ -1,3 +1,5 @@
+import Contacts
+import CryptoKit
 import Foundation
 import Observation
 
@@ -102,6 +104,59 @@ final class SocialService {
         let (status, data) = try await perform(SocialAPI.requestFollow(try requireConfig(), session: session, userID: profile.id))
         try SocialAPI.check(status: status, data: data)
         try await refreshFriends()
+    }
+
+    // MARK: Teléfono y contactos
+
+    private static let phoneKey = "social.phone"
+    /// Tu número (solo en este iPhone). En el servidor solo hay un resumen SHA-256.
+    var savedPhone: String? { UserDefaults.standard.string(forKey: Self.phoneKey) }
+
+    private static func hash(_ normalized: String) -> String {
+        SHA256.hash(data: SocialAPI.phoneHashInput(normalized)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// Guarda tu número para que te encuentren tus contactos. Vacío = lo quita.
+    func setPhone(_ raw: String) async throws {
+        let session = try await validSession()
+        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+        let normalized = trimmed.isEmpty ? nil : SocialAPI.normalizePhone(trimmed)
+        if !trimmed.isEmpty && normalized == nil { throw SocialAPI.SocialError.invalidPhone }
+        let (status, data) = try await perform(SocialAPI.setMyPhone(try requireConfig(), session: session, hash: normalized.map(Self.hash)))
+        do {
+            try SocialAPI.check(status: status, data: data)
+        } catch SocialAPI.SocialError.usernameTaken {
+            throw SocialAPI.SocialError.phoneTaken
+        }
+        UserDefaults.standard.set(normalized, forKey: Self.phoneKey)
+    }
+
+    /// Personas de tu agenda que usan la app. Los números se convierten en resúmenes en el iPhone antes de enviarse.
+    func contactsOnApp() async throws -> [SocialAPI.Profile] {
+        let store = CNContactStore()
+        let granted = (try? await store.requestAccess(for: .contacts)) ?? false
+        guard granted else { throw SocialAPI.SocialError.contactsDenied }
+        let mine = savedPhone
+        let hashes: [String] = await Task.detached(priority: .userInitiated) {
+            var numbers = Set<String>()
+            let request = CNContactFetchRequest(keysToFetch: [CNContactPhoneNumbersKey as CNKeyDescriptor])
+            try? store.enumerateContacts(with: request) { contact, _ in
+                for phone in contact.phoneNumbers {
+                    if let n = SocialAPI.normalizePhone(phone.value.stringValue), n != mine { numbers.insert(n) }
+                }
+            }
+            return numbers.sorted().map(SocialService.hash)
+        }.value
+        guard !hashes.isEmpty else { return [] }
+        let session = try await validSession()
+        let config = try requireConfig()
+        var found: [SocialAPI.Profile] = []
+        for start in stride(from: 0, to: hashes.count, by: 2000) {
+            let chunk = Array(hashes[start..<min(start + 2000, hashes.count)])
+            let (status, data) = try await perform(SocialAPI.findByPhones(config, session: session, hashes: chunk))
+            found += try SocialAPI.decodeRows(SocialAPI.Profile.self, status: status, data: data)
+        }
+        return found.sorted { $0.shownName.localizedCaseInsensitiveCompare($1.shownName) == .orderedAscending }
     }
 
     func signIn(email: String, password: String) async throws {
