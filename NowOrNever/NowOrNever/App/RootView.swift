@@ -13,7 +13,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .nutrition: return "Nutrición"
         case .activity: return "Pasos"
         case .progress: return "Progreso"
-        case .friends: return "Amigos"
+        case .friends: return "Perfil"
         case .settings: return "Ajustes"
         }
     }
@@ -25,7 +25,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .nutrition: return "fork.knife"
         case .activity: return "figure.walk"
         case .progress: return "chart.line.uptrend.xyaxis"
-        case .friends: return "person.2.fill"
+        case .friends: return "person.crop.circle.fill"
         case .settings: return "gearshape.fill"
         }
     }
@@ -144,7 +144,7 @@ struct RootView: View {
         case .nutrition: NutritionRootView()
         case .activity: ActivityView()
         case .progress: ProgressHubView()
-        case .friends: FriendsView()
+        case .friends: ProfileTabView()
         case .settings: SettingsView()
         }
     }

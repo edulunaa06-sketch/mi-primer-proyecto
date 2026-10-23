@@ -16,9 +16,20 @@ struct FriendsView: View {
     @State private var searching = false
     @State private var contacts: [SocialAPI.Profile]?
     @State private var phone = ""
+    /// Dentro de la pestaña Perfil (que ya tiene su NavigationStack).
+    var embedded = false
+
+    init(embedded: Bool = false) { self.embedded = embedded }
 
     var body: some View {
-        NavigationStack {
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
+        }
+    }
+
+    private var content: some View {
             ScrollView {
                 VStack(spacing: 16) {
                     if !social.isConfigured {
@@ -45,7 +56,6 @@ struct FriendsView: View {
             .navigationTitle("Amigos")
             .refreshable { await sync() }
             .task { await sync() }
-        }
     }
 
     private var meCard: some View {
