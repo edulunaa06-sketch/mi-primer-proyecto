@@ -189,7 +189,11 @@ final class UserFlowUITests: XCTestCase {
         let rebalance = app.buttons["Reajustar el resto del día a mis macros"]
         XCTAssertTrue(scrollTo(rebalance).exists)
         rebalance.tap()
-        assertAppears(element(containing: "Reajustado:"), "Mensaje de reajuste")
+        // Lo apuntado a mano no se reajusta. Si las otras comidas ya las elegiste tú (pruebas anteriores),
+        // tampoco: entonces el mensaje dice que no queda nada que reajustar.
+        let message = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Reajustado:", "No quedan comidas que reajustar")).firstMatch
+        assertAppears(message, "Mensaje de reajuste")
     }
 
     func test6_MarkSessionDoneFromTheWeek() {
