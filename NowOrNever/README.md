@@ -67,7 +67,18 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Entrenamiento(s) programado(s) para hoy con su estado.
 - Comidas completadas (x/4).
 - **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso) y pasos (si hay datos). El desglose se muestra en pantalla.
-- **Pasos de hoy** con el sensor de movimiento del iPhone (no usa Apple Salud), en vivo mientras la app está abierta: total, lo que falta para tu objetivo (Ajustes › Objetivos diarios › Pasos diarios), km y kcal aproximados. La primera vez iOS pide el permiso de *Movimiento y forma física*. Cuentan en el cumplimiento diario.
+- **Pasos de hoy** con el sensor de movimiento del iPhone (no usa Apple Salud), en vivo mientras la app está abierta: total, lo que falta para tu objetivo, km y kcal aproximados. La primera vez iOS pide el permiso de *Movimiento y forma física*. Cuentan en el cumplimiento diario. La app guarda los pasos de cada día (el iPhone solo guarda 7 días) para el historial.
+- **Objetivo de pasos adaptativo y ajustable** (botón «cambiar» en la tarjeta de pasos o Ajustes › Pasos): en automático, cada día se pone en la media de los 7 días anteriores + 5 % (redondeado a 250, entre 3.000 y 20.000; necesita al menos 3 días con datos). Si cambias el número a mano pasa a manual; puedes volver a activar el automático cuando quieras.
+- **Racha** de días cumplidos y la marca de hoy (descanso, enfermo…). Tocarla abre el Calendario.
+
+### Calendario (pestaña propia)
+- Vista mensual tipo **mapa de calor**: cada día coloreado según lo cumplido (verde más intenso cuanto más cumplido, rojo si no se cumplió). Un día está **cumplido** con el 70 % o más del cumplimiento diario (comidas, entreno del día y pasos).
+- **Racha actual** y **mejor racha**. Los días antes de empezar a usar la app no cuentan.
+- Al tocar un día: detalle (comidas, entreno, pasos, %) y marca:
+  - **Descanso**: no cuenta como fallo ni rompe la racha. **Los viernes son descanso por defecto**; se puede cambiar a «Normal» o «Entrenado».
+  - **Entrenado**: entrenaste aunque no tocara (p. ej. adelantar al viernes la carrera o el push/espalda del sábado). Cuenta como día cumplido.
+  - **Malo / enfermo**: no rompe la racha; con «Hasta» se marcan varios días seguidos.
+  - **Trabajando**: no cuenta como fallo ni rompe la racha.
 
 ### Perfil personal y objetivos automáticos (Ajustes › Perfil personal)
 - Peso, altura, edad, sexo, nivel de actividad (5 niveles) y objetivo: **perder grasa, ganar músculo o recomposición**.
@@ -128,11 +139,17 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Si Strava no está instalada, ofrece abrir la App Store o strava.com.
 - **Importación de carreras por OAuth 2.0 (API oficial)**: implementada pero **pendiente de configuración** (ver sección 4). Sin configurar, la app lo indica y **no** muestra kilómetros importados.
 
-### Progreso físico
+### Progreso (pestaña con cuatro secciones: Peso · Semana · Medallas · Fotos)
+- **Gráfica de evolución del peso** con periodo 1M / 3M / 6M / 1A / Todo: cada pesaje (puntos), **tendencia de 7 días** (línea verde, quita el ruido del agua) y **media de cada mes** (línea discontinua), con el cambio de la tendencia en el periodo.
+- **Media mensual**: lista con la media de cada mes, número de pesajes y diferencia con el mes anterior.
+- **Semana**: resumen de lunes a domingo con flechas para ver semanas anteriores: **media de pasos**, **km corridos** (Strava o carreras apuntadas a mano), **cambio de peso** (último pesaje de la semana frente al anterior), **días cumplidos** (y descansos/fallos), el día a día en colores y las sesiones de entreno completadas.
+- **Medallas** (bronce, plata y oro) en vez de una lista de récords: carrera más larga (5 / 10 / 21,1 km), mejor ritmo en carreras de 5 km o más (7:00 / 6:00 / 5:00 por km), día con más pasos (10.000 / 15.000 / 20.000), racha más larga (7 / 30 / 100 días), km totales (50 / 200 / 500), sesiones de fuerza (10 / 50 / 150), pesajes (10 / 30 / 100) y meses con las tres fotos (1 / 3 / 6). Cada una muestra la mejor marca, la fecha y lo que falta para el siguiente nivel. Sin datos no se inventa nada. Apple Salud (HealthKit) no se usa porque iOS no deja leerla al instalar con una cuenta de Apple gratuita.
+- **Carreras sin Strava**: en una sesión de carrera, «Apuntar carrera a mano» (fecha, km y tiempo; calcula el ritmo). Cuentan para el resumen y las medallas.
 - Registro de peso con fecha/hora y **cintura opcional**; evita duplicar un registro idéntico el mismo día.
 - Primer peso, más reciente, diferencia total, diferencia con el **registro anterior** (también en cada fila del historial), variación **semanal** y **mensual** (solo si hay registros suficientemente antiguos), gráfica de evolución e historial (mantener pulsado para eliminar).
 - Aviso de que la fluctuación diaria no es pérdida/ganancia de grasa confirmada.
 - **Fotos mensuales** (frente, lateral, espalda): **cámara integrada** (delantera o trasera, temporizador de 3 o 10 s para hacerte la de espalda tú solo, y la foto del mismo ángulo del mes anterior superpuesta en transparencia para repetir la postura; revisas la foto antes de guardarla) o selector de fotos del sistema, indicador de vistas que faltan, guardado por mes/año, una foto por vista y mes (sin duplicados), reemplazo con confirmación, meses anteriores, **comparación de dos meses** (lado a lado o superpuesta con deslizador), eliminación de una foto o de todo el historial.
+- **Antes / después**: deslizador sobre la propia foto (arrastra: a la izquierda «Antes», a la derecha «Después») o lado a lado. Al hacer una foto nueva, la del mes anterior sale encima en transparencia como guía de pose, con la transparencia ajustable.
 
 ### Ajustes y recordatorios
 - Objetivos de kcal y macros.
@@ -140,6 +157,8 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - **Fotos**: recordatorio mensual el **día 22 a las 20:00** (o el día de tu fecha de inicio si la configuras; hora ajustable).
 - Estado del permiso de notificaciones y número de notificaciones programadas.
 - Configuración de Strava, fecha de inicio y peso inicial.
+- **Avisos inteligentes**: aviso de pasos (solo si vas por debajo de la mitad de tu objetivo) y recordatorio de pesarte (solo si ese día aún no te has pesado). Eliges la hora («desde» = «hasta») o un rango (avisa a una hora dentro del rango). iOS no deja a una app mirar los pasos a cualquier hora: se comprueba al abrir y cerrar la app y cuando iOS la deja actualizarse en segundo plano (eso lo decide iOS), y el aviso dice cuántos pasos llevabas en la última comprobación.
+- **Copia de seguridad**: «Exportar» guarda un archivo `.json` (en Archivos, iCloud Drive…) con todos los datos, fotos incluidas. «Importar» lo lee, enseña un resumen y, si confirmas, **reemplaza** todos los datos actuales. No incluye la clave de Claude ni la conexión con Strava.
 
 ---
 

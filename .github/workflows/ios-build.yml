@@ -72,9 +72,14 @@ jobs:
           xcrun simctl launch "$UDID" "$BID"; sleep 6
           xcrun simctl io "$UDID" screenshot screenshots/0-onboarding.png
           xcrun simctl terminate "$UDID" "$BID" || true
-          for tab in home training nutrition progress settings; do
+          for tab in home training nutrition progress calendar settings; do
             xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab "$tab"; sleep 5
             xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          for section in week medals; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab progress -NNProgress "$section"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/progress-$section.png"
             xcrun simctl terminate "$UDID" "$BID" || true
           done
           xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab settings -NNProfile; sleep 5

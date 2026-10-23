@@ -217,4 +217,32 @@ final class UserFlowUITests: XCTestCase {
         app.swipeDown(); app.swipeDown(); app.swipeDown()
         assertAppears(element(containing: "Sesión completada"), "Se completa sola al marcar todos los ejercicios")
     }
+
+    func test8_CalendarMarkTodayAsWork() {
+        tab("Calendario")
+        let today = Date().formatted(.dateTime.day().month(.abbreviated).year().locale(Locale(identifier: "es_ES")))
+        let cell = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", today + ":")).firstMatch
+        assertAppears(cell, "Casilla de hoy en el calendario")
+        cell.tap()
+        let work = app.buttons["Trabajando"].firstMatch
+        assertAppears(work, "Opción Trabajando")
+        work.tap()
+        app.buttons["Guardar"].firstMatch.tap()
+        assertAppears(app.buttons.matching(NSPredicate(format: "label == %@", today + ": trabajando")).firstMatch,
+                      "Hoy queda marcado como trabajando")
+        // Inicio lo refleja en la racha.
+        tab("Inicio")
+        XCTAssertTrue(scrollTo(element(containing: "Hoy: trabajando")).exists)
+    }
+
+    func test9_ProgressSections() {
+        tab("Progreso")
+        app.buttons["Semana"].firstMatch.tap()
+        assertAppears(element(containing: "Media de pasos"), "Resumen semanal")
+        XCTAssertTrue(element(containing: "Días cumplidos").exists)
+        app.buttons["Medallas"].firstMatch.tap()
+        assertAppears(element(containing: "Carrera más larga"), "Medallas")
+        app.buttons["Peso"].firstMatch.tap()
+        assertAppears(element(containing: "Línea verde"), "Gráfica de peso")
+    }
 }

@@ -11,6 +11,14 @@ struct HomeView: View {
     @Query private var todayMeals: [MealRecord]
     @Query private var weekLogs: [WorkoutSessionLog]
     @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
+    @Query private var allMeals: [MealRecord]
+    @Query private var allLogs: [WorkoutSessionLog]
+    @Query private var dailySteps: [DailySteps]
+    @Query private var marks: [DayMarkRecord]
+    @Environment(\.modelContext) private var context
+
+    @State private var showStepGoal = false
+    @State private var trackingStart = DateUtils.startOfDay(Date())
 
     private let today = Date()
 
@@ -50,6 +58,7 @@ struct HomeView: View {
                     header
                     caloriesCard
                     stepsCard
+                    streakCard
                     complianceCard
                     weightCard
                     todayTraining
@@ -60,6 +69,8 @@ struct HomeView: View {
             .screenBackground()
             .navigationTitle("Now or Never")
             .toolbarBackground(Theme.background, for: .navigationBar)
+            .sheet(isPresented: $showStepGoal) { StepGoalSheet() }
+            .onAppear { trackingStart = DataStore.trackingStart(context) }
         }
     }
 
@@ -143,6 +154,12 @@ struct HomeView: View {
                     Text(today.map { $0 >= goal ? "¡Objetivo de \(NumberFormat.integer(goal)) cumplido!" : "Te faltan \(NumberFormat.integer(goal - $0)) para \(NumberFormat.integer(goal))" }
                          ?? "Objetivo: \(NumberFormat.integer(goal)) pasos")
                         .font(.subheadline).foregroundStyle(Theme.textSecondary)
+                    Button { showStepGoal = true } label: {
+                        Label(settings?.stepGoalAdaptive ?? true ? "Objetivo automático · cambiar" : "Objetivo manual · cambiar",
+                              systemImage: "slider.horizontal.3")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(.top, 2)
                 }
                 Spacer(minLength: 0)
             }
@@ -165,6 +182,30 @@ struct HomeView: View {
         }
         .card()
         .onAppear { steps.start() }
+    }
+
+    /// Racha de días cumplidos y marca de hoy (descanso, enfermo…). Tocar abre el calendario.
+    private var streakCard: some View {
+        let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
+                                        stepGoal: settings?.stepGoal ?? 8000, trackingStart: trackingStart)
+        let streak = snapshot.streak
+        let mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
+        return Button { router.tab = .calendar } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "flame.fill").font(.title2).foregroundStyle(streak.current > 0 ? Theme.lime : Theme.textTertiary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Racha: \(Medals.days(Double(streak.current)))").font(.headline)
+                    Text(mark == .normal ? "Mejor racha: \(Medals.days(Double(streak.best)))"
+                         : mark == .trained ? "Hoy: entrenado (cuenta como cumplido)" : "Hoy: \(mark.label.lowercased()) (no rompe la racha)")
+                        .font(.caption).foregroundStyle(Theme.textSecondary)
+                }
+                Spacer()
+                Text("Calendario").font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
+            }
+            .card()
+        }
+        .buttonStyle(.plain)
     }
 
     private var todayTraining: some View {

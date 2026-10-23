@@ -30,6 +30,8 @@ struct NowOrNeverApp: App {
         CustomMealItem.self,
         ProgressPhoto.self,
         StravaActivityRecord.self,
+        DailySteps.self,
+        DayMarkRecord.self,
     ])
 
     init() {
@@ -61,6 +63,10 @@ struct NowOrNeverApp: App {
                 StorageErrorView(message: containerError ?? "Error desconocido")
                     .preferredColorScheme(.dark)
             }
+        }
+        .backgroundTask(.appRefresh(ReminderCoordinator.refreshTaskID)) {
+            guard let container else { return }
+            await ReminderCoordinator.backgroundRefresh(container: container)
         }
     }
 }

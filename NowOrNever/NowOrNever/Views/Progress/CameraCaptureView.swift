@@ -14,6 +14,7 @@ struct CameraCaptureView: View {
     @State private var timer = 10
     @State private var countdown: Int?
     @State private var showGuide = true
+    @State private var guideOpacity = 0.35
     @State private var captured: Data?
 
     var body: some View {
@@ -55,7 +56,7 @@ struct CameraCaptureView: View {
                 case .starting, .running:
                     CameraPreview(session: camera.session, mirrored: camera.isFront)
                     if showGuide, let guide {
-                        Image(uiImage: guide).resizable().scaledToFit().opacity(0.3).allowsHitTesting(false)
+                        Image(uiImage: guide).resizable().scaledToFit().opacity(guideOpacity).allowsHitTesting(false)
                     }
                     if let countdown {
                         Text("\(countdown)")
@@ -69,6 +70,16 @@ struct CameraCaptureView: View {
             .clipped()
 
             VStack(spacing: 14) {
+                if guide != nil && showGuide {
+                    HStack(spacing: 10) {
+                        Image(systemName: "circle.lefthalf.filled").foregroundStyle(.white)
+                        Slider(value: $guideOpacity, in: 0.1...0.7).tint(Theme.lime)
+                            .accessibilityLabel("Transparencia de la foto anterior")
+                        Text(NumberFormat.percent(guideOpacity)).font(.caption.monospacedDigit()).foregroundStyle(.white)
+                            .frame(width: 40)
+                    }
+                    .padding(.horizontal, 24)
+                }
                 HStack(spacing: 8) {
                     ForEach([0, 3, 10], id: \.self) { s in
                         Button(s == 0 ? "Sin temporizador" : "\(s) s") { timer = s }

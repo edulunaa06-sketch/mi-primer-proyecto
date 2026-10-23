@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ProgressHubView: View {
     enum ProgressSection: String, CaseIterable, Identifiable {
-        case weight = "Peso", photos = "Fotos"
+        case weight = "Peso", week = "Semana", medals = "Medallas", photos = "Fotos"
         var id: String { rawValue }
     }
 
@@ -21,11 +21,22 @@ struct ProgressHubView: View {
                 .padding(.vertical, 8)
                 switch section {
                 case .weight: WeightProgressView()
+                case .week: WeeklySummaryView()
+                case .medals: MedalsView()
                 case .photos: PhotosProgressView()
                 }
             }
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("Progreso")
+            #if DEBUG
+            .onAppear {
+                let args = ProcessInfo.processInfo.arguments
+                if let i = args.firstIndex(of: "-NNProgress"), i + 1 < args.count,
+                   let s = ProgressSection.allCases.first(where: { "\($0)" == args[i + 1] }) {
+                    section = s
+                }
+            }
+            #endif
         }
     }
 }
@@ -35,6 +46,7 @@ struct WeightProgressView: View {
     @Query(sort: \WeightEntry.date, order: .reverse) private var entries: [WeightEntry]
     @State private var showSheet = false
     @State private var pendingDelete: WeightEntry?
+    @State private var range: ChartRange = .threeMonths
 
     private var points: [WeightStats.Point] { entries.map { .init(date: $0.date, kg: $0.weightKg) } }
 
@@ -48,8 +60,9 @@ struct WeightProgressView: View {
                     EmptyStateView(symbol: "scalemass", title: "Sin pesajes", message: "Registra tu primer peso para ver la evolución. Si configuraste un peso inicial en el onboarding aparecerá aquí.")
                         .card()
                 } else {
-                    stats
                     chart
+                    monthlyCard
+                    stats
                     waistCard
                     history
                 }
@@ -90,24 +103,124 @@ struct WeightProgressView: View {
         }
     }
 
+    enum ChartRange: String, CaseIterable, Identifiable {
+        case month = "1M", threeMonths = "3M", sixMonths = "6M", year = "1A", all = "Todo"
+        var id: String { rawValue }
+        var months: Int? {
+            switch self {
+            case .month: return 1
+            case .threeMonths: return 3
+            case .sixMonths: return 6
+            case .year: return 12
+            case .all: return nil
+            }
+        }
+    }
+
+    private struct IndexedPoint: Identifiable {
+        let id: Int
+        let point: WeightStats.Point
+    }
+
+    /// Evolución: peso de cada día (puntos), tendencia de 7 días (línea gruesa) y media de cada mes (discontinua).
     private var chart: some View {
         let sorted = points.sorted { $0.date < $1.date }
-        let minKg = (sorted.map(\.kg).min() ?? 0) - 1
-        let maxKg = (sorted.map(\.kg).max() ?? 0) + 1
-        return VStack(alignment: .leading, spacing: 8) {
-            SectionHeader(title: "Evolución")
-            Chart(sorted, id: \.date) { p in
-                LineMark(x: .value("Fecha", p.date), y: .value("Kg", p.kg))
-                    .foregroundStyle(Theme.lime)
-                    .interpolationMethod(.monotone)
-                PointMark(x: .value("Fecha", p.date), y: .value("Kg", p.kg))
-                    .foregroundStyle(Theme.lime)
-                    .symbolSize(24)
+        let cutoff = range.months.flatMap { DateUtils.calendar.date(byAdding: .month, value: -$0, to: Date()) } ?? .distantPast
+        let shown = sorted.filter { $0.date >= cutoff }
+        let trend = WeightStats.movingAverage(sorted).filter { $0.date >= cutoff }
+        let lastDate = sorted.last?.date ?? Date()
+        let monthly = WeightStats.monthlyAverages(sorted).filter { $0.end >= cutoff }
+        let values = shown.map(\.kg) + monthly.map(\.averageKg)
+        let minKg = ((values.min() ?? 0) - 0.8).rounded(.down)
+        let maxKg = ((values.max() ?? 0) + 0.8).rounded(.up)
+        let change: Double? = {
+            guard let first = trend.first, let last = trend.last, trend.count > 1 else { return nil }
+            return last.kg - first.kg
+        }()
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionHeader(title: "Evolución del peso")
+            Picker("Periodo", selection: $range) {
+                ForEach(ChartRange.allCases) { Text($0.rawValue).tag($0) }
             }
-            .chartYScale(domain: minKg...maxKg)
-            .frame(height: 200)
+            .pickerStyle(.segmented)
+            if let change, let first = trend.first {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(NumberFormat.signedKg(change))
+                        .font(.system(.title, design: .rounded).weight(.heavy))
+                        .foregroundStyle(change < 0 ? Theme.lime : Theme.textPrimary)
+                    Text("tendencia desde el \(DateUtils.dayMonth(first.date))")
+                        .font(.footnote).foregroundStyle(Theme.textSecondary)
+                }
+            }
+            if shown.isEmpty {
+                Text("No hay pesajes en este periodo.").font(.footnote).foregroundStyle(Theme.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: 120)
+            } else {
+                Chart {
+                    ForEach(shown.enumerated().map { IndexedPoint(id: $0.offset, point: $0.element) }) { item in
+                        PointMark(x: .value("Fecha", item.point.date), y: .value("Kg", item.point.kg))
+                            .foregroundStyle(by: .value("Serie", "Peso diario"))
+                            .symbolSize(22)
+                    }
+                    ForEach(trend.enumerated().map { IndexedPoint(id: $0.offset, point: $0.element) }) { item in
+                        LineMark(x: .value("Fecha", item.point.date), y: .value("Kg", item.point.kg),
+                                 series: .value("Línea", "Tendencia"))
+                            .foregroundStyle(by: .value("Serie", "Tendencia 7 días"))
+                            .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round))
+                            .interpolationMethod(.monotone)
+                    }
+                    ForEach(monthly) { m in
+                        RuleMark(xStart: .value("Inicio", max(m.start, shown.first?.date ?? m.start)),
+                                 xEnd: .value("Fin", min(m.end, max(lastDate, Date()))),
+                                 y: .value("Media", m.averageKg))
+                            .foregroundStyle(by: .value("Serie", "Media del mes"))
+                            .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 4]))
+                    }
+                }
+                .chartForegroundStyleScale([
+                    "Peso diario": Theme.textSecondary,
+                    "Tendencia 7 días": Theme.lime,
+                    "Media del mes": Color.white,
+                ])
+                .chartLegend(position: .bottom, alignment: .leading)
+                .chartYScale(domain: minKg...maxKg)
+                .chartYAxis { AxisMarks(position: .leading) }
+                .frame(height: 240)
+            }
+            Text("Puntos: cada pesaje. Línea verde: media de los últimos 7 días (quita el ruido del agua). Discontinua: media de cada mes.")
+                .font(.caption).foregroundStyle(Theme.textTertiary)
         }
         .card()
+    }
+
+    /// Media de cada mes, con la diferencia respecto al mes anterior.
+    @ViewBuilder
+    private var monthlyCard: some View {
+        let months = WeightStats.monthlyAverages(points)
+        if !months.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                SectionHeader(title: "Media mensual")
+                ForEach(Array(months.enumerated().reversed()), id: \.element.id) { index, m in
+                    let previous = index > 0 ? months[index - 1] : nil
+                    HStack {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(DateUtils.monthTitle(year: m.year, month: m.month)).font(.subheadline)
+                            Text("\(m.count) \(m.count == 1 ? "pesaje" : "pesajes")").font(.caption).foregroundStyle(Theme.textTertiary)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("\(NumberFormat.kg(m.averageKg)) kg").font(.headline.monospacedDigit())
+                            Text(previous.map { NumberFormat.signedKg(m.averageKg - $0.averageKg) + " vs mes anterior" } ?? "Primer mes")
+                                .font(.caption2.monospacedDigit())
+                                .foregroundStyle(previous.map { m.averageKg < $0.averageKg ? Theme.lime : Theme.textSecondary } ?? Theme.textSecondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    Divider().overlay(Color.white.opacity(0.06))
+                }
+            }
+            .card()
+        }
     }
 
     @ViewBuilder

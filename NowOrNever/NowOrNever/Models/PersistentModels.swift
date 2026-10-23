@@ -39,6 +39,21 @@ final class UserSettings {
     /// false: objetivos manuales (los que el usuario escribe en Ajustes).
     var autoTargets: Bool = false
 
+    /// true: el objetivo de pasos se ajusta solo cada día con la media de la última semana.
+    /// Cambiarlo a mano lo desactiva (se puede volver a activar).
+    var stepGoalAdaptive: Bool = true
+    /// Día (yyyy-MM-dd) del último ajuste automático: se ajusta como mucho una vez al día.
+    var stepGoalAdjustedDayKey: String = ""
+
+    /// Aviso de pasos: solo si a esa hora vas por debajo de la mitad del objetivo.
+    var stepReminderEnabled: Bool = false
+    var stepReminderFromMinutes: Int = 18 * 60 + 30
+    var stepReminderToMinutes: Int = 19 * 60 + 30
+    /// Aviso de peso: solo si ese día aún no te has pesado.
+    var weightReminderEnabled: Bool = false
+    var weightReminderFromMinutes: Int = 10 * 60
+    var weightReminderToMinutes: Int = 11 * 60
+
     init() {}
 
     var sex: BiologicalSex? {
@@ -542,6 +557,47 @@ final class ProgressPhoto {
     var view: PhotoView { PhotoView(rawValue: viewRaw) ?? .front }
 }
 
+// MARK: - Pasos y calendario
+
+/// Pasos de un día (sensor del iPhone). El iPhone solo guarda 7 días, así que la app los va guardando
+/// para tener historial (resumen semanal, calendario, medallas).
+@Model
+final class DailySteps {
+    @Attribute(.unique) var dayKey: String = ""
+    var date: Date = Date()
+    var steps: Int = 0
+    /// Objetivo de ese día (para que el calendario no cambie si luego cambias el objetivo).
+    var goal: Int = 8000
+    var updatedAt: Date = Date()
+
+    init(date: Date, steps: Int, goal: Int) {
+        self.date = DateUtils.startOfDay(date)
+        self.dayKey = DateUtils.dayKey(date)
+        self.steps = steps
+        self.goal = goal
+        self.updatedAt = Date()
+    }
+}
+
+/// Marca manual de un día en el calendario (descanso, entrenado, enfermo, trabajando o normal).
+@Model
+final class DayMarkRecord {
+    @Attribute(.unique) var dayKey: String = ""
+    var date: Date = Date()
+    var markRaw: String = DayMark.normal.rawValue
+
+    init(date: Date, mark: DayMark) {
+        self.date = DateUtils.startOfDay(date)
+        self.dayKey = DateUtils.dayKey(date)
+        self.markRaw = mark.rawValue
+    }
+
+    var mark: DayMark {
+        get { DayMark(rawValue: markRaw) ?? .normal }
+        set { markRaw = newValue.rawValue }
+    }
+}
+
 // MARK: - Strava
 
 /// Carrera importada desde la API oficial de Strava (solo existe si hay conexión OAuth real).
@@ -572,4 +628,9 @@ final class StravaActivityRecord {
 
     /// Ritmo medio en segundos por km, calculado con el tiempo en movimiento.
     var paceSecondsPerKm: Double? { RunMath.paceSecondsPerKm(distanceMeters: distanceMeters, seconds: movingTimeSeconds) }
+
+    /// Carrera apuntada a mano en la app (id negativo; las de Strava son positivas).
+    var isManual: Bool { stravaID < 0 }
+
+    var sample: RunSample { RunSample(date: startDate, meters: distanceMeters, seconds: movingTimeSeconds) }
 }

@@ -61,4 +61,39 @@ final class StepCounter {
         pedometer.stopUpdates()
         liveStart = nil
     }
+
+    /// Pasos de cada uno de los últimos `days` días (el iPhone guarda 7), del más antiguo a hoy.
+    /// Los días sin datos no se devuelven.
+    func history(days: Int = 7, now: Date = Date()) async -> [(date: Date, steps: Int)] {
+        guard state != .unavailable else { return [] }
+        var result: [(date: Date, steps: Int)] = []
+        for offset in stride(from: days - 1, through: 0, by: -1) {
+            guard let day = DateUtils.calendar.date(byAdding: .day, value: -offset, to: DateUtils.startOfDay(now)) else { continue }
+            let end = offset == 0 ? now : (DateUtils.calendar.date(byAdding: .day, value: 1, to: day) ?? now)
+            if let steps = await Self.query(pedometer, from: day, to: end) {
+                result.append((date: day, steps: steps))
+            }
+        }
+        updateDenied()
+        return result
+    }
+
+    /// Consulta puntual (también funciona con la app en segundo plano, para los avisos).
+    static func stepsToday(now: Date = Date()) async -> Int? {
+        guard CMPedometer.isStepCountingAvailable() else { return nil }
+        return await query(CMPedometer(), from: DateUtils.startOfDay(now), to: now)
+    }
+
+    private static func query(_ pedometer: CMPedometer, from start: Date, to end: Date) async -> Int? {
+        let status = CMPedometer.authorizationStatus()
+        guard status != .denied, status != .restricted else { return nil }
+        return await withCheckedContinuation { continuation in
+            pedometer.queryPedometerData(from: start, to: end) { data, _ in
+                // Mantiene vivo el podómetro hasta que responde (en segundo plano se crea uno nuevo).
+                withExtendedLifetime(pedometer) {
+                    continuation.resume(returning: data.map { $0.numberOfSteps.intValue })
+                }
+            }
+        }
+    }
 }

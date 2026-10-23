@@ -3,7 +3,7 @@ import SwiftData
 import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
-    case home, training, nutrition, progress, settings
+    case home, training, nutrition, progress, calendar, settings
     var id: String { rawValue }
 
     var title: String {
@@ -12,6 +12,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .training: return "Entreno"
         case .nutrition: return "Nutrición"
         case .progress: return "Progreso"
+        case .calendar: return "Calendario"
         case .settings: return "Ajustes"
         }
     }
@@ -22,6 +23,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .training: return "dumbbell.fill"
         case .nutrition: return "fork.knife"
         case .progress: return "chart.line.uptrend.xyaxis"
+        case .calendar: return "calendar"
         case .settings: return "gearshape.fill"
         }
     }
@@ -33,7 +35,7 @@ final class AppRouter {
     var tab: AppTab = .home
 }
 
-/// Contenedor principal con barra de pestañas propia: Inicio, Entreno, Nutrición, Progreso y Ajustes.
+/// Contenedor principal con barra de pestañas propia: Inicio, Entreno, Nutrición, Progreso, Calendario y Ajustes.
 struct RootView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
@@ -48,6 +50,7 @@ struct RootView: View {
     @State private var splashQuote: Motivation.Quote? = RootView.nextQuote()
     @State private var splashAutoDismiss = true
     @State private var backgroundedAt: Date?
+    @State private var lastStepsSave: (steps: Int, at: Date)?
 
     /// Elige una frase distinta de la última mostrada.
     static func nextQuote() -> Motivation.Quote {
@@ -75,6 +78,7 @@ struct RootView: View {
                 #endif
                 await notifications.refreshStatus()
                 await refreshPhotoRemindersIfNeeded(settings)
+                await syncTracking()
             }
             .overlay {
                 if let quote = splashQuote {
@@ -86,7 +90,14 @@ struct RootView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .background { backgroundedAt = Date(); steps.stop() }
+                if phase == .background {
+                    backgroundedAt = Date()
+                    steps.stop()
+                    // Al salir de la app se rehacen los avisos con los últimos pasos y pesajes.
+                    if bootstrapped {
+                        Task { await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: steps.todaySteps) }
+                    }
+                }
                 if phase == .active { steps.restart() }
                 // Al volver a la app tras 10 minutos o más fuera, otra frase.
                 if phase == .active, let since = backgroundedAt, Date().timeIntervalSince(since) >= 600 {
@@ -94,8 +105,12 @@ struct RootView: View {
                 }
                 if phase == .active { backgroundedAt = nil }
                 guard phase == .active, bootstrapped else { return }
-                Task { await notifications.refreshStatus() }
+                Task {
+                    await notifications.refreshStatus()
+                    await syncTracking()
+                }
             }
+            .onChange(of: steps.todaySteps) { _, value in saveLiveSteps(value) }
             .onOpenURL { url in
                 if url.scheme == StravaAPI.callbackScheme {
                     Task { await strava.handleCallback(url) }
@@ -113,6 +128,7 @@ struct RootView: View {
         case .training: TrainingView()
         case .nutrition: NutritionRootView()
         case .progress: ProgressHubView()
+        case .calendar: CalendarView()
         case .settings: SettingsView()
         }
     }
@@ -162,6 +178,28 @@ struct RootView: View {
         }
     }
     #endif
+
+    /// Guarda los pasos de los últimos 7 días (el iPhone no guarda más), ajusta el objetivo
+    /// adaptativo una vez al día y rehace los avisos.
+    private func syncTracking() async {
+        let goal = DataStore.settings(context).stepGoal
+        let history = await steps.history()
+        for day in history {
+            DataStore.saveSteps(day.steps, for: day.date, goal: goal, in: context, save: false)
+        }
+        try? context.save()
+        DataStore.updateAdaptiveStepGoal(context)
+        let today = steps.todaySteps ?? history.last(where: { DateUtils.calendar.isDateInToday($0.date) })?.steps
+        await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: today)
+    }
+
+    /// Los pasos en vivo se guardan cada 200 pasos o cada 2 minutos, no en cada actualización del sensor.
+    private func saveLiveSteps(_ value: Int?) {
+        guard let value, bootstrapped else { return }
+        if let last = lastStepsSave, value - last.steps < 200, Date().timeIntervalSince(last.at) < 120 { return }
+        lastStepsSave = (value, Date())
+        DataStore.saveSteps(value, for: Date(), goal: DataStore.settings(context).stepGoal, in: context)
+    }
 
     /// Los recordatorios de fotos con día 29–31 se programan mes a mes: se renuevan al abrir la app.
     private func refreshPhotoRemindersIfNeeded(_ settings: UserSettings) async {

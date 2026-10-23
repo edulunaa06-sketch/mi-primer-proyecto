@@ -5,7 +5,7 @@
 	<key>CFBundleDisplayName</key>
 	<string>Now or Never</string>
 	<key>NSMotionUsageDescription</key>
-	<string>Now or Never cuenta tus pasos de hoy con el sensor de movimiento del iPhone para enseñártelos en Inicio. No se envían a ningún sitio.</string>
+	<string>Now or Never cuenta tus pasos de hoy con el sensor de movimiento del iPhone para enseñártelos en Inicio, guardar tu historial y avisarte si vas por debajo de la mitad de tu objetivo. No se envían a ningún sitio.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Now or Never usa la cámara para hacer tus fotos mensuales de progreso (frente, lateral y espalda). Se guardan solo en tu iPhone.</string>
 	<key>LSApplicationQueriesSchemes</key>
@@ -30,6 +30,14 @@
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>now-or-never.reminders.refresh</string>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

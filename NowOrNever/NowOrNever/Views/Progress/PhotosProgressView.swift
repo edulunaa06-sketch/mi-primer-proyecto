@@ -45,7 +45,7 @@ struct PhotosProgressView: View {
                     NavigationLink {
                         PhotoCompareView()
                     } label: {
-                        Label("Comparar dos meses", systemImage: "square.split.2x1")
+                        Label("Antes / después", systemImage: "square.split.2x1")
                     }
                     .buttonStyle(LimeButtonStyle(filled: false))
                 }
@@ -287,13 +287,13 @@ struct PhotoViewer: View {
     }
 }
 
-/// Comparación lado a lado de dos meses, por vista, con modo superpuesto deslizante.
+/// Antes / después de dos meses, por vista: deslizador sobre la foto (por defecto) o lado a lado.
 struct PhotoCompareView: View {
     @Query private var photos: [ProgressPhoto]
     @State private var view: PhotoView = .front
     @State private var leftKey = ""
     @State private var rightKey = ""
-    @State private var overlay = false
+    @State private var overlay = true
     @State private var split: CGFloat = 0.5
 
     private var months: [(key: String, year: Int, month: Int)] {
@@ -323,7 +323,11 @@ struct PhotoCompareView: View {
                     monthPicker("Después", selection: $rightKey)
                 }
 
-                Toggle("Superponer con deslizador", isOn: $overlay).tint(Theme.lime)
+                Picker("Modo", selection: $overlay) {
+                    Text("Deslizador").tag(true)
+                    Text("Lado a lado").tag(false)
+                }
+                .pickerStyle(.segmented)
 
                 if overlay {
                     overlayView
@@ -337,7 +341,7 @@ struct PhotoCompareView: View {
             .padding(16)
         }
         .screenBackground()
-        .navigationTitle("Comparar")
+        .navigationTitle("Antes / después")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             if leftKey.isEmpty { leftKey = months.last?.key ?? "" }
@@ -372,33 +376,50 @@ struct PhotoCompareView: View {
         }
     }
 
+    /// «Antes» a la izquierda del deslizador y «Después» a la derecha. Arrastra sobre la foto para mover la línea.
     @ViewBuilder
     private var overlayView: some View {
-        if let l = photo(for: leftKey).flatMap({ PhotoStorage.loadImage($0.fileName) }),
-           let r = photo(for: rightKey).flatMap({ PhotoStorage.loadImage($0.fileName) }) {
-            VStack {
+        if let before = photo(for: leftKey).flatMap({ PhotoStorage.loadImage($0.fileName) }),
+           let after = photo(for: rightKey).flatMap({ PhotoStorage.loadImage($0.fileName) }) {
+            VStack(spacing: 10) {
                 GeometryReader { geo in
+                    let width = geo.size.width
                     ZStack(alignment: .leading) {
-                        Image(uiImage: l).resizable().scaledToFit()
-                            .frame(width: geo.size.width, height: geo.size.height)
-                        Image(uiImage: r).resizable().scaledToFit()
-                            .frame(width: geo.size.width, height: geo.size.height)
-                            .mask(alignment: .leading) {
-                                Rectangle().frame(width: geo.size.width * split)
-                            }
-                        Rectangle().fill(Theme.lime).frame(width: 2)
-                            .offset(x: geo.size.width * split - 1)
+                        Image(uiImage: after).resizable().scaledToFit()
+                            .frame(width: width, height: geo.size.height)
+                        Image(uiImage: before).resizable().scaledToFit()
+                            .frame(width: width, height: geo.size.height)
+                            .mask(alignment: .leading) { Rectangle().frame(width: width * split) }
+                        Rectangle().fill(Theme.lime).frame(width: 3)
+                            .offset(x: width * split - 1.5)
+                        Circle().fill(Theme.lime).frame(width: 34, height: 34)
+                            .overlay(Image(systemName: "arrow.left.and.right").font(.caption.weight(.heavy)).foregroundStyle(.black))
+                            .offset(x: width * split - 17)
                     }
+                    .overlay(alignment: .topLeading) { tag("ANTES").padding(8) }
+                    .overlay(alignment: .topTrailing) { tag("DESPUÉS").padding(8) }
+                    .contentShape(Rectangle())
+                    .simultaneousGesture(DragGesture(minimumDistance: 4).onChanged { value in
+                        split = min(max(value.location.x / max(width, 1), 0), 1)
+                    })
                 }
-                .frame(height: 460)
+                .frame(height: 480)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 Slider(value: $split, in: 0...1).tint(Theme.lime)
-                Text("Izquierda del deslizador: “Después” · Derecha: “Antes”")
+                    .accessibilityLabel("Deslizador antes y después")
+                Text("Arrastra sobre la foto: a la izquierda, «Antes»; a la derecha, «Después».")
                     .font(.caption).foregroundStyle(Theme.textSecondary)
             }
         } else {
             Text("Elige dos meses que tengan foto de \(view.label.lowercased()).")
                 .font(.footnote).foregroundStyle(Theme.textSecondary)
         }
+    }
+
+    private func tag(_ text: String) -> some View {
+        Text(text).font(.caption2.weight(.heavy)).tracking(1)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .background(.black.opacity(0.6), in: Capsule())
+            .foregroundStyle(Theme.lime)
     }
 }
