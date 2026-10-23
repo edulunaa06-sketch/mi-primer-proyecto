@@ -56,7 +56,6 @@ private struct SettingsForm: View {
             notificationsStatusSection
             healthSection
             stravaSection
-            claudeSection
             trackingSection
             dataSection
         }

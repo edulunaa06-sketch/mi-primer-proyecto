@@ -173,7 +173,6 @@ final class UserFlowUITests: XCTestCase {
         XCTAssertTrue(scrollTo(custom).exists)
         custom.tap()
         assertAppears(element(containing: "Lo que como"), "Pantalla de comida libre")
-        assertAppears(element(containing: "Foto del plato"), "Modo foto por defecto")
         app.buttons["Manual"].tap()
         let name = app.textFields["Nombre (p. ej. bocadillo de lomo)"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
@@ -196,20 +195,27 @@ final class UserFlowUITests: XCTestCase {
         assertAppears(element(containing: "Reajustado:"), "Mensaje de reajuste")
     }
 
-    func test6_FoodLogShowsRemainingAndPhotoSheet() {
+    func test6_LogFoodsWithGramsAndSeeWhatIsLeft() {
         tab("Nutrición")
         assertAppears(element(containing: "Te quedan"), "Lo que queda del día")
-        let lunch = app.buttons["Almuerzo: añadir con foto"].firstMatch
+        let lunch = app.buttons["Almuerzo: añadir alimentos"].firstMatch
         XCTAssertTrue(scrollTo(lunch).exists)
         lunch.tap()
-        assertAppears(element(containing: "Ingredientes y gramos"), "Hoja de registro por foto")
-        app.buttons["Añadir ingrediente"].firstMatch.tap()
-        let name = app.textFields["Ingrediente"].firstMatch
-        XCTAssertTrue(name.waitForExistence(timeout: 5))
-        name.tap()
-        name.typeText("Pollo")
-        XCTAssertFalse(app.buttons["Calcular calorías"].firstMatch.isEnabled, "Sin gramos (ni clave de Claude) no se calcula")
-        app.buttons["Cancelar"].firstMatch.tap()
+        // Se abre directamente la lista de alimentos.
+        let searchField = app.searchFields.firstMatch
+        XCTAssertTrue(searchField.waitForExistence(timeout: 8), "Buscador de alimentos")
+        searchField.tap()
+        searchField.typeText("boniato")
+        let food = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Boniato cocido")).firstMatch
+        XCTAssertTrue(food.waitForExistence(timeout: 5), "Boniato cocido en la tabla")
+        food.tap()
+        let grams = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "g")).firstMatch
+        XCTAssertTrue(grams.waitForExistence(timeout: 5))
+        type("200", into: grams)
+        dismissKeyboard()
+        assertAppears(element(containing: "152 kcal"), "76 kcal/100 g × 200 g")
+        scrollTo(app.buttons["Añadir a almuerzo"].firstMatch).tap()
+        assertAppears(element(containing: "Boniato cocido"), "Apuntado en el almuerzo")
         tab("Inicio")
         assertAppears(element(containing: "Te quedan"), "Inicio muestra lo que queda")
     }

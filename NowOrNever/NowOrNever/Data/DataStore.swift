@@ -412,13 +412,13 @@ enum DataStore {
         try? context.save()
     }
 
-    /// Registra lo que has comido (foto + gramos): añade los alimentos a esa comida y la marca como comida
+    /// Registra lo que has comido (alimento + gramos): añade los alimentos a esa comida y la marca como comida
     /// con el total de todo lo apuntado, así Inicio resta esas kcal y macros de lo que te queda.
     @MainActor
     static func logFoods(_ items: [(name: String, grams: Double, per100: NutritionValues)], as type: MealType,
-                         on date: Date, in context: ModelContext) {
+                         source: CustomItemSource = .catalog, on date: Date, in context: ModelContext) {
         for item in items {
-            addCustomItem(type, name: item.name, grams: item.grams, per100: item.per100, source: .claude, on: date, in: context)
+            addCustomItem(type, name: item.name, grams: item.grams, per100: item.per100, source: source, on: date, in: context)
         }
         syncLoggedMeal(type, on: date, in: context)
     }
@@ -438,7 +438,7 @@ enum DataStore {
     static func syncLoggedMeal(_ type: MealType, on date: Date, in context: ModelContext) {
         let items = customItems(for: type, on: date, in: context)
         let total = NutritionMath.sum(items.map(\.values))
-        setMeal(type, values: total, planName: "Registrado por foto", completed: !items.isEmpty, on: date, in: context)
+        setMeal(type, values: total, planName: "Apuntado por ti", completed: !items.isEmpty, on: date, in: context)
     }
 
     /// Borra lo apuntado en esa comida: vuelve a mostrarse la comida del menú (o la elegida).

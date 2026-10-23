@@ -135,7 +135,7 @@ struct HomeView: View {
                                                      carbs: settings?.carbsTarget ?? 0, fat: settings?.fatTarget ?? 0),
                              title: "Calorías de hoy")
             Button { router.tab = .nutrition } label: {
-                Label("Apuntar lo que como", systemImage: "camera.fill").frame(maxWidth: .infinity)
+                Label("Apuntar lo que como", systemImage: "plus.circle.fill").frame(maxWidth: .infinity)
             }
             .buttonStyle(LimeButtonStyle(filled: false))
         }

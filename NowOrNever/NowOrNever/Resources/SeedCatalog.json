@@ -1,5 +1,5 @@
 {
- "version": 3,
+ "version": 4,
  "disclaimer": "Catálogo y menús de EJEMPLO con valores aproximados por 100 g. No son un plan nutricional calculado clínicamente. Revisa y edita cada alimento con la etiqueta de tu producto o una base de datos fiable.",
  "foods": [
   {
@@ -757,6 +757,126 @@
    "provisional": false,
    "macrosKnown": true,
    "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "rice_cooked",
+   "name": "Arroz blanco cocido",
+   "kcal": 130,
+   "protein": 2.7,
+   "carbs": 28.2,
+   "fat": 0.3,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "pasta_cooked",
+   "name": "Pasta cocida",
+   "kcal": 158,
+   "protein": 5.8,
+   "carbs": 30.9,
+   "fat": 0.9,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "potato_boiled",
+   "name": "Patata cocida",
+   "kcal": 86,
+   "protein": 1.7,
+   "carbs": 20.0,
+   "fat": 0.1,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "sweet_potato_boiled",
+   "name": "Boniato cocido",
+   "kcal": 76,
+   "protein": 1.4,
+   "carbs": 17.7,
+   "fat": 0.1,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "sweet_potato_baked",
+   "name": "Boniato asado",
+   "kcal": 90,
+   "protein": 2.0,
+   "carbs": 20.7,
+   "fat": 0.2,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "chicken_grilled",
+   "name": "Pechuga de pollo a la plancha",
+   "kcal": 165,
+   "protein": 31.0,
+   "carbs": 0,
+   "fat": 3.6,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "salmon_grilled",
+   "name": "Salmón a la plancha",
+   "kcal": 206,
+   "protein": 22.1,
+   "carbs": 0,
+   "fat": 12.4,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "quinoa_cooked",
+   "name": "Quinoa cocida",
+   "kcal": 120,
+   "protein": 4.4,
+   "carbs": 21.3,
+   "fat": 1.9,
+   "basis": "cooked",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "egg_boiled",
+   "name": "Huevo cocido",
+   "kcal": 155,
+   "protein": 12.6,
+   "carbs": 1.1,
+   "fat": 10.6,
+   "basis": "edible",
+   "provisional": false,
+   "macrosKnown": true,
+   "source": "Valor de referencia aproximado (tablas generales tipo USDA FoodData Central/BEDCA). Verifica con la etiqueta de tu producto."
+  },
+  {
+   "key": "cottage",
+   "name": "Queso cottage",
+   "kcal": 98,
+   "protein": 11.1,
+   "carbs": 3.4,
+   "fat": 4.3,
+   "basis": "asWeighed",
+   "provisional": true,
+   "macrosKnown": true,
+   "source": "Depende mucho de la marca: copia los valores de la etiqueta de tu producto."
   }
  ],
  "menus": [

@@ -355,7 +355,7 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(try context.fetchCount(FetchDescriptor<FoodItem>()), foodsBefore)
         XCTAssertEqual(try context.fetch(FetchDescriptor<MenuPlan>()).filter(\.isLibrary).count, 44)
         XCTAssertEqual(chicken.kcalPer100, 110, "No se sobrescriben los cambios del usuario")
-        XCTAssertEqual(defaults.integer(forKey: DataStore.seedVersionKey), 3)
+        XCTAssertEqual(defaults.integer(forKey: DataStore.seedVersionKey), 4)
 
         // Actualización con ideas ya instaladas: solo se añaden las que faltan, sin duplicar.
         let breadIdea = try XCTUnwrap(try context.fetch(FetchDescriptor<MenuPlan>()).first { $0.name == "Pan blanco con jamón serrano y tomate" })

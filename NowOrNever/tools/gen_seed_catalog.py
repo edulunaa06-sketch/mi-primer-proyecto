@@ -67,6 +67,17 @@ foods = [
  ("cucumber","Pepino",15,0.7,3.6,0.1,"raw",False,SRC),
  ("peas","Guisantes",81,5.4,14.5,0.4,"raw",False,SRC),
  ("green_beans","Judías verdes",31,1.8,7.0,0.2,"raw",False,SRC),
+ # --- Versión 4: ya cocinados, para pesar lo que hay en el plato ---
+ ("rice_cooked","Arroz blanco cocido",130,2.7,28.2,0.3,"cooked",False,SRC),
+ ("pasta_cooked","Pasta cocida",158,5.8,30.9,0.9,"cooked",False,SRC),
+ ("potato_boiled","Patata cocida",86,1.7,20.0,0.1,"cooked",False,SRC),
+ ("sweet_potato_boiled","Boniato cocido",76,1.4,17.7,0.1,"cooked",False,SRC),
+ ("sweet_potato_baked","Boniato asado",90,2.0,20.7,0.2,"cooked",False,SRC),
+ ("chicken_grilled","Pechuga de pollo a la plancha",165,31.0,0,3.6,"cooked",False,SRC),
+ ("salmon_grilled","Salmón a la plancha",206,22.1,0,12.4,"cooked",False,SRC),
+ ("quinoa_cooked","Quinoa cocida",120,4.4,21.3,1.9,"cooked",False,SRC),
+ ("egg_boiled","Huevo cocido",155,12.6,1.1,10.6,"edible",False,SRC),
+ ("cottage","Queso cottage",98,11.1,3.4,4.3,"asWeighed",True,LBL),
 ]
 B,L,S,D="breakfast","lunch","snack","dinner"
 menus = [
@@ -164,7 +175,7 @@ ideas = [
  (D,"Tofu con verduras y arroz",[("tofu",150),("broccoli",150),("carrot",80),("rice",50),("olive_oil",5)]),
 ]
 F={f[0]:f for f in foods}
-out={"version":3,
+out={"version":4,
  "disclaimer":"Catálogo y menús de EJEMPLO con valores aproximados por 100 g. No son un plan nutricional calculado clínicamente. Revisa y edita cada alimento con la etiqueta de tu producto o una base de datos fiable.",
  "foods":[{"key":k,"name":n,"kcal":kc,"protein":p,"carbs":c,"fat":f,"basis":b,"provisional":pr,"macrosKnown":True,"source":s} for (k,n,kc,p,c,f,b,pr,s) in foods],
  "menus":[]}

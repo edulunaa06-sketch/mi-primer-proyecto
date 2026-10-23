@@ -105,7 +105,7 @@ final class IdeasCatalogTests: XCTestCase {
 
     func testIdeasLibrary() throws {
         let catalog = try loadCatalog()
-        XCTAssertEqual(catalog.version, 3)
+        XCTAssertEqual(catalog.version, 4)
         XCTAssertEqual(catalog.validationErrors(), [])
         let counts = Dictionary(grouping: catalog.ideas, by: \.type).mapValues(\.count)
         XCTAssertEqual(counts["breakfast"], 12)

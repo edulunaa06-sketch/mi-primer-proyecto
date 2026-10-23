@@ -82,8 +82,9 @@ struct CustomMealSheet: View {
     let target: NutritionValues
     var onDone: () -> Void
 
+    /// Sin IA: de la tabla de alimentos o a mano.
     enum Mode: String, CaseIterable, Identifiable {
-        case photo = "Foto", claude = "Describir", catalog = "Catálogo", manual = "Manual"
+        case catalog = "Catálogo", manual = "Manual"
         var id: String { rawValue }
     }
 
@@ -93,7 +94,7 @@ struct CustomMealSheet: View {
     @Query(sort: \FoodItem.name) private var foods: [FoodItem]
     @Query(sort: \CustomMealItem.order) private var allItems: [CustomMealItem]
 
-    @State private var mode: Mode = .photo
+    @State private var mode: Mode = .catalog
     // Claude
     @State private var description = ""
     @State private var estimate: ClaudeAPI.Estimate?
@@ -136,12 +137,9 @@ struct CustomMealSheet: View {
                     }
                     .pickerStyle(.segmented)
                     switch mode {
-                    case .photo: PhotoMealCard(type: type, day: day)
-                    case .claude: claudeCard
                     case .catalog: catalogCard
                     case .manual: manualCard
                     }
-                    healthierCard
                 }
                 .padding(16)
             }
