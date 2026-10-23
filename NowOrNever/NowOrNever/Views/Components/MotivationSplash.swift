@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Pantalla de bienvenida. Al abrir la app: «NOW OR NEVER» entra de golpe (con vibración y una sacudida),
+/// Pantalla de bienvenida (sigue el modo claro u oscuro). Al abrir la app: «NOW OR NEVER» entra de golpe (con vibración y una sacudida),
 /// aguanta un momento y sale disparada hacia la pantalla con un destello; después, la frase motivadora.
 /// Al volver tras un rato fuera solo sale la frase.
 /// Se cierra sola o al tocarla (tocar durante el logo pasa directamente a la frase).
@@ -29,7 +29,7 @@ struct MotivationSplash: View {
     var body: some View {
         ZStack {
             if phase == .logo {
-                Color.black.ignoresSafeArea()
+                Theme.background.ignoresSafeArea()
                 logo
                 Theme.lime.opacity(flash).ignoresSafeArea().allowsHitTesting(false)
             } else {
@@ -60,7 +60,7 @@ struct MotivationSplash: View {
             Text("NOW")
                 .font(.system(size: 112, weight: .black).width(.compressed))
                 .italic()
-                .foregroundStyle(.white)
+                .foregroundStyle(Theme.textPrimary)
             HStack(spacing: 10) {
                 Rectangle().fill(Theme.lime).frame(width: slashWidth, height: 8)
                 Text("OR")

@@ -274,13 +274,13 @@ struct PhotoViewer: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Color.black.ignoresSafeArea()
+            Theme.background.ignoresSafeArea()
             if let image = PhotoStorage.loadImage(photo.fileName) {
                 Image(uiImage: image).resizable().scaledToFit()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             Button { dismiss() } label: {
-                Image(systemName: "xmark.circle.fill").font(.title).foregroundStyle(.white.opacity(0.8))
+                Image(systemName: "xmark.circle.fill").font(.title).foregroundStyle(Theme.textPrimary.opacity(0.8))
             }
             .padding()
         }

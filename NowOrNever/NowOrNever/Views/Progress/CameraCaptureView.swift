@@ -19,7 +19,7 @@ struct CameraCaptureView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Theme.background.ignoresSafeArea()
             if let captured, let image = UIImage(data: captured) {
                 review(image)
             } else {
@@ -27,8 +27,6 @@ struct CameraCaptureView: View {
             }
         }
         .statusBarHidden()
-        // La cámara se ve siempre en oscuro, también con la app en modo claro.
-        .environment(\.colorScheme, .dark)
         .task { await camera.start() }
         .onDisappear { camera.stop() }
     }
@@ -46,7 +44,7 @@ struct CameraCaptureView: View {
                 .accessibilityLabel("Cambiar de cámara")
                 .disabled(countdown != nil)
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(Theme.textPrimary)
             .padding()
 
             ZStack {
@@ -74,10 +72,10 @@ struct CameraCaptureView: View {
             VStack(spacing: 14) {
                 if guide != nil && showGuide {
                     HStack(spacing: 10) {
-                        Image(systemName: "circle.lefthalf.filled").foregroundStyle(.white)
+                        Image(systemName: "circle.lefthalf.filled").foregroundStyle(Theme.textPrimary)
                         Slider(value: $guideOpacity, in: 0.1...0.7).tint(Theme.lime)
                             .accessibilityLabel("Transparencia de la foto anterior")
-                        Text(NumberFormat.percent(guideOpacity)).font(.caption.monospacedDigit()).foregroundStyle(.white)
+                        Text(NumberFormat.percent(guideOpacity)).font(.caption.monospacedDigit()).foregroundStyle(Theme.textPrimary)
                             .frame(width: 40)
                     }
                     .padding(.horizontal, 24)
@@ -88,7 +86,7 @@ struct CameraCaptureView: View {
                             .font(.footnote.weight(.semibold))
                             .padding(.horizontal, 12).padding(.vertical, 7)
                             .background(timer == s ? Theme.lime : Theme.cardRaised, in: Capsule())
-                            .foregroundStyle(timer == s ? .black : .white)
+                            .foregroundStyle(timer == s ? Theme.onLime : Theme.textPrimary)
                     }
                     if guide != nil {
                         Button { showGuide.toggle() } label: {
@@ -96,7 +94,7 @@ struct CameraCaptureView: View {
                         }
                         .padding(8)
                         .background(showGuide ? Theme.lime : Theme.cardRaised, in: Circle())
-                        .foregroundStyle(showGuide ? .black : .white)
+                        .foregroundStyle(showGuide ? Theme.onLime : Theme.textPrimary)
                         .accessibilityLabel(showGuide ? "Ocultar la foto del mes anterior" : "Mostrar la foto del mes anterior")
                     }
                 }
@@ -104,7 +102,7 @@ struct CameraCaptureView: View {
 
                 Button(action: shoot) {
                     ZStack {
-                        Circle().stroke(.white, lineWidth: 4).frame(width: 74, height: 74)
+                        Circle().stroke(Theme.textPrimary, lineWidth: 4).frame(width: 74, height: 74)
                         Circle().fill(countdown == nil ? Theme.lime : Theme.danger).frame(width: 60, height: 60)
                     }
                 }
@@ -135,7 +133,7 @@ struct CameraCaptureView: View {
     }
 
     private func message(_ text: String) -> some View {
-        Text(text).multilineTextAlignment(.center).foregroundStyle(.white).padding(32)
+        Text(text).multilineTextAlignment(.center).foregroundStyle(Theme.textPrimary).padding(32)
     }
 
     private func shoot() {
