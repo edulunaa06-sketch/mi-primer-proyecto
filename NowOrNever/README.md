@@ -59,8 +59,8 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 ## 2. Funciones implementadas
 
 ### Al abrir la app
-- **Pantalla de carga** «NOW OR NEVER» con **música** (pista original de la app, generada con `tools/make_intro_music.py`: sin canciones de terceros), que desaparece y da paso a la **frase motivadora** (gimnasio y desarrollo personal; 40 frases, nunca la misma dos veces seguidas). Al cerrarse la frase (sola a los 4 s o al tocarla) la música se apaga con un fundido y aparece el menú. La música se puede quitar en Ajustes › Al abrir la app.
-- Si vuelves a la app tras 10 minutos o más fuera sale solo la frase, sin logo ni música.
+- **Pantalla de carga** «NOW OR NEVER» sobre negro: entra de golpe (con vibración y una sacudida), aguanta un momento y sale disparada hacia ti con un destello verde. Después aparece la **frase motivadora** (gimnasio y desarrollo personal; 40 frases, nunca la misma dos veces seguidas), que se cierra sola a los 4 s o al tocarla. Tocar durante el logo pasa directamente a la frase. Sin música.
+- Si vuelves a la app tras 10 minutos o más fuera sale solo la frase, sin el logo.
 
 ### Inicio
 - **Calorías de hoy** arriba del todo, sin anillos: «Te quedan X kcal» (objetivo − lo comido) y lo que te queda de proteínas, carbohidratos y grasas. Baja a medida que registras comidas; si te pasas, lo indica en naranja. El botón de debajo abre *Nutrición*.
@@ -227,11 +227,11 @@ NowOrNever/
 │   ├── Data/                    Catálogo de ejemplo y operaciones de datos
 │   ├── Services/                HealthKit, notificaciones, Strava, fotos, Llavero
 │   ├── Views/                   Inicio, Entreno, Nutrición, Progreso, Calendario, Ajustes
-│   ├── Resources/               SeedCatalog.json (alimentos y menús) e IntroMusic.m4a (música de la intro)
+│   ├── Resources/SeedCatalog.json  Alimentos y menús de ejemplo
 │   └── Assets.xcassets          Icono, color de acento, color de arranque
 ├── NowOrNeverTests/             Pruebas unitarias y de persistencia (XCTest + SwiftData en memoria)
 ├── NowOrNeverUITests/           Pruebas de interfaz que usan la app como un usuario (XCUITest)
-└── tools/                       Scripts que generan SeedCatalog.json, el .xcodeproj y la música de la intro
+└── tools/                       Scripts que generan SeedCatalog.json y el .xcodeproj
 ```
 
 Las 6 secciones usan una barra de pestañas propia, porque la `TabView` del sistema agrupa la sexta pestaña en «Más» en iPhone.

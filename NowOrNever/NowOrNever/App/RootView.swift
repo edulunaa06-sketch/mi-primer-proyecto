@@ -49,7 +49,7 @@ struct RootView: View {
     @State private var bootstrapped = false
     @State private var splashQuote: Motivation.Quote? = RootView.skipSplashForTests ? nil : RootView.nextQuote()
     @State private var splashAutoDismiss = !RootView.screenshotSplash
-    /// Solo al abrir la app: pantalla de carga con el logo y música antes de la frase.
+    /// Solo al abrir la app: pantalla de carga con el logo antes de la frase.
     @State private var splashIntro = true
     @State private var backgroundedAt: Date?
     @State private var lastStepsSave: (steps: Int, at: Date)?
@@ -63,7 +63,7 @@ struct RootView: View {
         #endif
     }
 
-    /// Solo en Debug: las pruebas de interfaz arrancan sin intro (ni música).
+    /// Solo en Debug: las pruebas de interfaz arrancan sin intro.
     static var skipSplashForTests: Bool {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
@@ -115,7 +115,6 @@ struct RootView: View {
                 if phase == .background {
                     backgroundedAt = Date()
                     steps.stop()
-                    IntroMusicPlayer.shared.stop()
                     // Al salir de la app se rehacen los avisos con los últimos pasos y pesajes.
                     if bootstrapped {
                         Task { await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: steps.todaySteps) }

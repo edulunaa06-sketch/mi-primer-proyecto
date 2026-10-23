@@ -57,7 +57,6 @@ private struct SettingsForm: View {
             notificationsStatusSection
             stravaSection
             trackingSection
-            introSection
             BackupSection()
             dataSection
         }
@@ -385,7 +384,6 @@ private struct SettingsForm: View {
         }
     }
 
-    @AppStorage(IntroMusicPlayer.enabledKey) private var introMusic = true
     @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system.rawValue
 
     private var appearanceSection: some View {
@@ -399,16 +397,6 @@ private struct SettingsForm: View {
             Text("Apariencia")
         } footer: {
             Text("Automático cambia solo entre claro y oscuro cuando lo hace tu iPhone (Ajustes del iPhone › Pantalla y brillo).")
-        }
-    }
-
-    private var introSection: some View {
-        Section {
-            Toggle("Música al abrir la app", isOn: $introMusic).tint(Theme.lime)
-        } header: {
-            Text("Al abrir la app")
-        } footer: {
-            Text("Pantalla de carga «Now or Never» con música (pista original de la app), luego la frase motivadora y el menú, ya sin música. Suena aunque el iPhone esté en silencio; desactívala aquí si no la quieres.")
         }
     }
 
