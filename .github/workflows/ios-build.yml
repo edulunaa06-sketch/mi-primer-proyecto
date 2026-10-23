@@ -54,9 +54,37 @@ jobs:
           UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
           echo "Simulator: $UDID"
           echo "UDID=$UDID" >> "$GITHUB_ENV"
+          # Perfil de rendimiento (Instruments · Time Profiler) de la prueba con 8 meses de datos:
+          # en cuanto arranca la app con -NNDemoData se engancha el perfilador 100 s.
+          (
+            for i in $(seq 1 1500); do
+              PID=$(pgrep -f "NowOrNever.app/NowOrNever.*NNDemoData" | head -1)
+              [ -n "$PID" ] && break
+              sleep 1
+            done
+            if [ -n "$PID" ]; then
+              echo "Perfilando PID $PID" > xctrace.log
+              xcrun xctrace record --template 'Time Profiler' --device "$UDID" --attach "$PID" --time-limit 100s --output perf.trace >> xctrace.log 2>&1 \
+                || xcrun xctrace record --template 'Time Profiler' --attach "$PID" --time-limit 100s --output perf.trace >> xctrace.log 2>&1
+            fi
+          ) &
+          PROFILER=$!
           xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
-            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST|XCTAssert" || true
+            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST|XCTAssert|PERF" || true
+          wait $PROFILER || true
           grep -q "TEST SUCCEEDED" test.log
+
+      - name: Perfil de rendimiento
+        if: always()
+        run: |
+          cat xctrace.log 2>/dev/null || echo "Sin perfil"
+          if [ -d perf.trace ]; then
+            xcrun xctrace export --input perf.trace --toc > perf-toc.xml || true
+            xcrun xctrace export --input perf.trace --xpath '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]' > time-profile.xml || true
+            ls -la time-profile.xml || true
+            python3 tools/perf_summary.py time-profile.xml > perf-summary.txt || true
+            head -200 perf-summary.txt || true
+          fi
 
       - name: Screenshots on simulator
         if: always()
@@ -134,4 +162,8 @@ jobs:
         if: always()
         with:
           name: test-log
-          path: NowOrNever/test.log
+          path: |
+            NowOrNever/test.log
+            NowOrNever/perf-summary.txt
+            NowOrNever/xctrace.log
+            NowOrNever/perf-toc.xml

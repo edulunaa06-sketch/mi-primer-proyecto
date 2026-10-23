@@ -393,6 +393,7 @@ private struct SettingsForm: View {
             }
             .pickerStyle(.inline)
             .labelsHidden()
+            .tint(Theme.lime)
         } header: {
             Text("Apariencia")
         } footer: {
