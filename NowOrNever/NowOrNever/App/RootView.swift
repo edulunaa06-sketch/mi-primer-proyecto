@@ -40,6 +40,7 @@ struct RootView: View {
     @Environment(NotificationManager.self) private var notifications
     @Environment(StravaService.self) private var strava
     @Environment(AppRouter.self) private var router
+    @Environment(StepCounter.self) private var steps
 
     @Query private var settingsList: [UserSettings]
     @State private var showOnboarding = false
@@ -85,7 +86,8 @@ struct RootView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .background { backgroundedAt = Date() }
+                if phase == .background { backgroundedAt = Date(); steps.stop() }
+                if phase == .active { steps.restart() }
                 // Al volver a la app tras 10 minutos o más fuera, otra frase.
                 if phase == .active, let since = backgroundedAt, Date().timeIntervalSince(since) >= 600 {
                     splashQuote = RootView.nextQuote()

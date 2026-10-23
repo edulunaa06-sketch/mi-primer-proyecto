@@ -20,8 +20,6 @@ struct StrengthSessionView: View {
             VStack(spacing: 14) {
                 if let log {
                     summary(log)
-                    // También arriba, para verlo nada más entrar.
-                    completeButton(log)
                     if current.exercises.isEmpty {
                         EmptyStateView(symbol: "dumbbell", title: "Sesión sin ejercicios",
                                        message: "Pulsa “Editar” para añadir ejercicios a esta sesión.")
@@ -46,16 +44,6 @@ struct StrengthSessionView: View {
             .padding(16)
         }
         .scrollDismissesKeyboard(.interactively)
-        // El botón de terminar va fijo abajo, siempre a mano, sin tener que bajar hasta el final.
-        .safeAreaInset(edge: .bottom) {
-            if let log {
-                completeButton(log)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(Theme.background.opacity(0.96))
-                    .overlay(alignment: .top) { Divider().overlay(Color.white.opacity(0.08)) }
-            }
-        }
         .screenBackground()
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -90,8 +78,11 @@ struct StrengthSessionView: View {
         .onDisappear { try? context.save() }
     }
 
+    /// Cada cambio guarda y, si ya están marcados todos los ejercicios, la sesión queda completada sola.
     private func touch() {
-        log?.lastModified = Date()
+        guard let log else { return }
+        withAnimation { log.syncStrengthCompletion(with: current) }
+        log.lastModified = Date()
         try? context.save()
     }
 
@@ -102,6 +93,14 @@ struct StrengthSessionView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(progress.completedExercises) de \(progress.totalExercises) ejercicios")
                     .font(.headline)
+                if log.isCompleted {
+                    Label("Sesión completada", systemImage: "checkmark.seal.fill")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.lime)
+                } else {
+                    Text("Marca todos los ejercicios y la sesión se completa sola.")
+                        .font(.caption).foregroundStyle(Theme.textSecondary)
+                }
                 Text(session.detail).font(.subheadline).foregroundStyle(Theme.textSecondary)
                 if let previous {
                     Text("Sesión anterior: semana del \(DateUtils.dayMonth(previous.weekStart))")
@@ -114,26 +113,6 @@ struct StrengthSessionView: View {
             Spacer()
         }
         .card()
-    }
-
-    private func completeButton(_ log: WorkoutSessionLog) -> some View {
-        VStack(spacing: 4) {
-            Button {
-                withAnimation {
-                    log.isCompleted.toggle()
-                    log.completedAt = log.isCompleted ? Date() : nil
-                }
-                touch()
-            } label: {
-                Label(log.isCompleted ? "Sesión completada · Deshacer" : "Marcar sesión completa",
-                      systemImage: log.isCompleted ? "checkmark.seal.fill" : "flag.checkered")
-            }
-            .buttonStyle(LimeButtonStyle(filled: !log.isCompleted))
-            if let date = log.completedAt {
-                Text("Completada el \(DateUtils.shortDate(date))")
-                    .font(.caption).foregroundStyle(Theme.textSecondary)
-            }
-        }
     }
 }
 
@@ -179,7 +158,7 @@ struct ExerciseCard: View {
             .foregroundStyle(Theme.textTertiary)
 
             ForEach(log.visibleSets) { set in
-                SetRow(set: set, onChange: onChange)
+                SetRow(set: set, onSetToggled: { log.syncCompletionWithSets(lastSetDone: set.isDone) }, onChange: onChange)
             }
 
             if let previous {
@@ -221,6 +200,7 @@ struct ExerciseCard: View {
 
 struct SetRow: View {
     @Bindable var set: SetLog
+    var onSetToggled: () -> Void = {}
     let onChange: () -> Void
 
     var body: some View {
@@ -234,6 +214,7 @@ struct SetRow: View {
                 .frame(maxWidth: .infinity)
             Button {
                 set.isDone.toggle()
+                onSetToggled()
                 onChange()
             } label: {
                 CheckCircle(isOn: set.isDone, size: 24)

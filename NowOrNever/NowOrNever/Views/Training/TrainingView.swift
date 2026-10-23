@@ -151,7 +151,7 @@ struct TrainingView: View {
                             renaming = session
                         } label: { Label("Cambiar nombre", systemImage: "pencil") }
                     }
-                    if session.kind != .rest { doneButton(session) }
+                    if session.kind == .run { doneButton(session) }
                 }
             }
         }
@@ -174,13 +174,18 @@ struct TrainingView: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
+            if session.kind == .strength, log?.isCompleted == true {
+                Image(systemName: "checkmark.seal.fill").foregroundStyle(Theme.lime)
+                    .accessibilityLabel("Sesión completada")
+            }
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
         }
         .padding(10)
         .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /// Marcar la sesión como hecha (o deshacerlo) directamente desde la semana, sin entrar.
+    /// Carreras: marcarla como hecha (o deshacerlo) directamente desde la semana, sin entrar.
+    /// La fuerza se completa sola al marcar todos los ejercicios.
     private func doneButton(_ base: SessionDefinition) -> some View {
         let session = base.resolved(with: routine, titles: titles)
         let done = log(for: session)?.isCompleted ?? false
@@ -228,6 +233,31 @@ struct SessionProgress {
 
     var fraction: Double {
         totalExercises > 0 ? Double(completedExercises) / Double(totalExercises) : 0
+    }
+
+    /// Todos los ejercicios marcados (una sesión sin ejercicios nunca cuenta como hecha sola).
+    var isComplete: Bool { totalExercises > 0 && completedExercises == totalExercises }
+}
+
+extension WorkoutSessionLog {
+    /// Fuerza: la sesión está completada exactamente cuando todos sus ejercicios están marcados.
+    func syncStrengthCompletion(with session: SessionDefinition) {
+        let done = SessionProgress(session: session, log: self).isComplete
+        guard done != isCompleted else { return }
+        isCompleted = done
+        completedAt = done ? Date() : nil
+    }
+}
+
+extension ExerciseLog {
+    /// Al terminar la última serie el ejercicio se marca solo; al desmarcar una serie, se desmarca.
+    func syncCompletionWithSets(lastSetDone: Bool) {
+        let sets = visibleSets
+        if !sets.isEmpty, sets.allSatisfy(\.isDone) {
+            isCompleted = true
+        } else if !lastSetDone {
+            isCompleted = false
+        }
     }
 }
 

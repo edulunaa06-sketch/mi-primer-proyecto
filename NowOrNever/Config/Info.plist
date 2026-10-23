@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Now or Never</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Now or Never cuenta tus pasos de hoy con el sensor de movimiento del iPhone para enseñártelos en Inicio. No se envían a ningún sitio.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Now or Never usa la cámara para hacer tus fotos mensuales de progreso (frente, lateral y espalda). Se guardan solo en tu iPhone.</string>
 	<key>LSApplicationQueriesSchemes</key>

@@ -200,4 +200,21 @@ final class UserFlowUITests: XCTestCase {
         app.swipeDown(); app.swipeDown(); app.swipeDown()
         assertAppears(element(containing: "1 de "), "Cuenta como hecha en el resumen semanal")
     }
+
+    func test7_StrengthSessionCompletesItself() {
+        tab("Entreno")
+        let push = element(containing: "Push A")
+        XCTAssertTrue(push.waitForExistence(timeout: 10))
+        scrollTo(push).tap()
+        XCTAssertFalse(app.buttons["Marcar sesión completa"].exists, "Ya no hay botón de completar en fuerza")
+        var taps = 0
+        while taps < 20 {
+            let next = app.buttons["Marcar ejercicio completado"].firstMatch
+            guard next.exists else { break }
+            scrollTo(next).tap()
+            taps += 1
+        }
+        app.swipeDown(); app.swipeDown(); app.swipeDown()
+        assertAppears(element(containing: "Sesión completada"), "Se completa sola al marcar todos los ejercicios")
+    }
 }

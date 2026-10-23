@@ -66,8 +66,8 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Peso más reciente y diferencia respecto al primer peso registrado.
 - Entrenamiento(s) programado(s) para hoy con su estado.
 - Comidas completadas (x/4).
-- **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso). El desglose se muestra en pantalla.
-- Accesos rápidos: registrar peso, ver progreso, iniciar carrera (abre Strava) y ver rutina.
+- **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso) y pasos (si hay datos). El desglose se muestra en pantalla.
+- **Pasos de hoy** con el sensor de movimiento del iPhone (no usa Apple Salud), en vivo mientras la app está abierta: total, lo que falta para tu objetivo (Ajustes › Objetivos diarios › Pasos diarios), km y kcal aproximados. La primera vez iOS pide el permiso de *Movimiento y forma física*. Cuentan en el cumplimiento diario.
 
 ### Perfil personal y objetivos automáticos (Ajustes › Perfil personal)
 - Peso, altura, edad, sexo, nivel de actividad (5 niveles) y objetivo: **perder grasa, ganar músculo o recomposición**.
@@ -84,11 +84,11 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - **Cambiar el nombre de cualquier sesión** (lápiz arriba a la derecha dentro de la sesión, o mantener pulsada en la lista). El historial se conserva y *Nombre original* lo deshace.
 - **Sábado con dos sesiones separadas** (Carrera y Pecho y espalda), cada una con su propio estado.
 - Viernes: descanso con indicaciones de recuperación, sin fuerza.
-- Por sesión de fuerza: marcar cada ejercicio, marcar cada serie, registrar kg y repeticiones, ver la **sesión anterior** con datos, % de ejercicios completados y botón de **sesión completa**.
+- Por sesión de fuerza: marcar cada ejercicio, marcar cada serie, registrar kg y repeticiones, ver la **sesión anterior** con datos, % de ejercicios completados. **La sesión se completa sola** al marcar todos los ejercicios (y un ejercicio se marca solo al terminar todas sus series); si desmarcas uno, deja de estar completada.
 - Nada se marca automáticamente al abrir un ejercicio.
 - **Cumplimiento semanal** (sesiones completadas / 7 sesiones entrenables).
 - Registros por semana (lunes–domingo): cada semana nueva empieza con casillas vacías y **el historial anterior se conserva** (pantalla *Historial de semanas anteriores*).
-- Sesiones de carrera: botón para abrir Strava, instrucciones y marcado de completada.
+- Sesiones de carrera: botón para abrir Strava, instrucciones y botón de completada (también en la lista de la semana, «Marcar»).
 - **Rutina editable** (botón *Editar* dentro de cada sesión de fuerza): añadir, eliminar, sustituir y reordenar ejercicios, y cambiar series y rango de repeticiones. Se guarda en el dispositivo y hay un botón para *Restaurar la rutina predeterminada*.
   - Sustituir un ejercicio crea uno nuevo en la misma posición: su progresión empieza de cero y el historial del anterior se conserva.
   - Cada registro semanal guarda una copia del nombre y la prescripción, así que el historial sigue siendo legible aunque cambies la rutina.

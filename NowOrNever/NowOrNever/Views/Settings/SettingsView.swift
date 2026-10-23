@@ -36,6 +36,7 @@ private struct SettingsForm: View {
     @State private var protein: Double?
     @State private var carbs: Double?
     @State private var fat: Double?
+    @State private var steps: Double?
     @State private var creatineTime = Date()
     @State private var feedback: String?
     @State private var feedbackIsError = false
@@ -121,8 +122,9 @@ private struct SettingsForm: View {
             numberRow("Proteínas (g)", $protein)
             numberRow("Carbohidratos (g)", $carbs)
             numberRow("Grasas (g)", $fat)
+            numberRow("Pasos diarios", $steps)
             Button("Guardar objetivos") { saveGoals() }
-                .disabled([kcal, protein, carbs, fat].contains { ($0 ?? 0) <= 0 })
+                .disabled([kcal, protein, carbs, fat, steps].contains { ($0 ?? 0) <= 0 })
         } header: {
             Text("Objetivos diarios")
         } footer: {
@@ -420,6 +422,7 @@ private struct SettingsForm: View {
         protein = settings.proteinTarget
         carbs = settings.carbsTarget
         fat = settings.fatTarget
+        steps = Double(settings.stepGoal)
         var comps = DateComponents()
         comps.hour = settings.creatineHour
         comps.minute = settings.creatineMinute
@@ -429,7 +432,8 @@ private struct SettingsForm: View {
     }
 
     private func saveGoals() {
-        guard let kcal, let protein, let carbs, let fat else { return }
+        guard let kcal, let protein, let carbs, let fat, let steps else { return }
+        settings.stepGoal = Int(steps.rounded())
         let targetsChanged = [kcal, protein, carbs, fat] != [settings.kcalTarget, settings.proteinTarget, settings.carbsTarget, settings.fatTarget]
         settings.kcalTarget = kcal
         settings.proteinTarget = protein

@@ -4,15 +4,13 @@ import SwiftUI
 struct HomeView: View {
     @Query private var sessionTitles: [SessionTitle]
     @Environment(AppRouter.self) private var router
+    @Environment(StepCounter.self) private var steps
 
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query private var settingsList: [UserSettings]
     @Query private var todayMeals: [MealRecord]
     @Query private var weekLogs: [WorkoutSessionLog]
     @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
-
-    @State private var showWeightSheet = false
-    @State private var showStravaMissing = false
 
     private let today = Date()
 
@@ -40,7 +38,7 @@ struct HomeView: View {
             mealsCompleted: Set(todayMeals.map(\.mealTypeRaw)).count,
             sessionsCompleted: trainableToday.filter(isCompleted).count,
             sessionsScheduled: trainableToday.count,
-            steps: nil,
+            steps: steps.todaySteps,
             stepGoal: settings?.stepGoal ?? 8000
         )
     }
@@ -51,22 +49,17 @@ struct HomeView: View {
                 VStack(spacing: 16) {
                     header
                     caloriesCard
+                    stepsCard
                     complianceCard
                     weightCard
                     todayTraining
-                    quickActions
                 }
                 .padding(16)
+                .padding(.bottom, 24)
             }
             .screenBackground()
             .navigationTitle("Now or Never")
             .toolbarBackground(Theme.background, for: .navigationBar)
-            .sheet(isPresented: $showWeightSheet) { WeightEntrySheet() }
-            .alert("Strava no está instalado", isPresented: $showStravaMissing) {
-                Button("Abrir App Store") { StravaLauncher.openAppStore() }
-                Button("Abrir strava.com") { StravaLauncher.openWebsite() }
-                Button("Cancelar", role: .cancel) {}
-            }
         }
     }
 
@@ -133,6 +126,47 @@ struct HomeView: View {
         }
     }
 
+    /// Pasos de hoy con el sensor del iPhone, en vivo mientras la app está abierta.
+    private var stepsCard: some View {
+        let goal = settings?.stepGoal ?? 8000
+        let today = steps.todaySteps
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                ProgressRing(fraction: today.map { StepEstimates.fraction($0, goal: goal) } ?? 0, size: 84,
+                             label: today == nil ? "—" : nil)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PASOS DE HOY").font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
+                    Text(today.map { NumberFormat.integer($0) } ?? "—")
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .accessibilityIdentifier("home.steps")
+                    Text(today.map { $0 >= goal ? "¡Objetivo de \(NumberFormat.integer(goal)) cumplido!" : "Te faltan \(NumberFormat.integer(goal - $0)) para \(NumberFormat.integer(goal))" }
+                         ?? "Objetivo: \(NumberFormat.integer(goal)) pasos")
+                        .font(.subheadline).foregroundStyle(Theme.textSecondary)
+                }
+                Spacer(minLength: 0)
+            }
+            if let today {
+                HStack {
+                    Label(String(format: "≈ %.1f km", StepEstimates.kilometers(today)).replacingOccurrences(of: ".", with: ","), systemImage: "map")
+                    Spacer()
+                    Label("≈ \(NumberFormat.integer(StepEstimates.kcal(today))) kcal", systemImage: "flame.fill")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+            } else {
+                Text(steps.state == .unavailable
+                     ? "Este dispositivo no tiene sensor de pasos."
+                     : steps.state == .denied
+                     ? "Sin permiso para contar pasos. Actívalo en Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never."
+                     : "Contando pasos… Si no aparecen, revisa Ajustes › Privacidad y seguridad › Movimiento y forma física.")
+                    .font(.caption).foregroundStyle(Theme.textTertiary)
+            }
+        }
+        .card()
+        .onAppear { steps.start() }
+    }
+
     private var todayTraining: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
@@ -164,37 +198,6 @@ struct HomeView: View {
             }
             .card()
         }
-    }
-
-    private var quickActions: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Accesos rápidos")
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
-                quickButton("Registrar peso", "scalemass.fill") { showWeightSheet = true }
-                quickButton("Ver progreso", "chart.line.uptrend.xyaxis") { router.tab = .progress }
-                quickButton("Iniciar carrera", "figure.run") {
-                    Task {
-                        let result = await StravaLauncher.openRecording()
-                        if result == .notInstalled { showStravaMissing = true }
-                    }
-                }
-                quickButton("Ver rutina", "dumbbell.fill") { router.tab = .training }
-            }
-        }
-    }
-
-    private func quickButton(_ title: String, _ symbol: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            VStack(spacing: 8) {
-                Image(systemName: symbol).font(.title3)
-                Text(title).font(.footnote.weight(.semibold))
-            }
-            .foregroundStyle(Theme.lime)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous))
-        }
-        .buttonStyle(.plain)
     }
 
     /// "jueves, 22 de octubre" → "Jueves, 22 de octubre"
