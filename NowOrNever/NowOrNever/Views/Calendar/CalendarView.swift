@@ -92,7 +92,9 @@ struct CalendarView: View {
                 ForEach(["L", "M", "X", "J", "V", "S", "D"], id: \.self) { d in
                     Text(d).font(.caption2.weight(.bold)).foregroundStyle(Theme.textTertiary)
                 }
-                ForEach(0..<leading, id: \.self) { _ in Color.clear.frame(height: 40) }
+                // Huecos antes del día 1 con ids negativos: si repitieran los de los días (0, 1, 2…),
+                // la cuadrícula se saltaría los primeros días del mes.
+                ForEach(Array(stride(from: -1, through: -leading, by: -1)), id: \.self) { _ in Color.clear.frame(height: 40) }
                 ForEach(days.indices, id: \.self) { i in
                     let day = days[i]
                     let outcome = outcomes[i]

@@ -47,12 +47,31 @@ struct RootView: View {
     @Query private var settingsList: [UserSettings]
     @State private var showOnboarding = false
     @State private var bootstrapped = false
-    @State private var splashQuote: Motivation.Quote? = RootView.nextQuote()
-    @State private var splashAutoDismiss = true
+    @State private var splashQuote: Motivation.Quote? = RootView.skipSplashForTests ? nil : RootView.nextQuote()
+    @State private var splashAutoDismiss = !RootView.screenshotSplash
     /// Solo al abrir la app: pantalla de carga con el logo y música antes de la frase.
     @State private var splashIntro = true
     @State private var backgroundedAt: Date?
     @State private var lastStepsSave: (steps: Int, at: Date)?
+
+    /// Solo en Debug (capturas del CI): la intro se queda fija. Se lee al crear la vista, antes de que empiece la intro.
+    static var screenshotSplash: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-NNSplash")
+        #else
+        false
+        #endif
+    }
+
+    /// Solo en Debug: las pruebas de interfaz arrancan sin intro (ni música).
+    static var skipSplashForTests: Bool {
+        #if DEBUG
+        let args = ProcessInfo.processInfo.arguments
+        return args.contains("-NNSkipOnboarding") && !args.contains("-NNSplash")
+        #else
+        false
+        #endif
+    }
 
     /// Elige una frase distinta de la última mostrada.
     static func nextQuote() -> Motivation.Quote {

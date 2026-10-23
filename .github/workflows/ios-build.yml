@@ -91,9 +91,22 @@ jobs:
           xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -NNMealBuilder; sleep 6
           xcrun simctl io "$UDID" screenshot screenshots/meal-builder.png
           xcrun simctl terminate "$UDID" "$BID" || true
-          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNSplash; sleep 4
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNSplash; sleep 1
+          xcrun simctl io "$UDID" screenshot screenshots/splash-logo.png
+          sleep 4
           xcrun simctl io "$UDID" screenshot screenshots/splash.png
           xcrun simctl terminate "$UDID" "$BID" || true
+          # Modo claro (la app sigue al simulador en «Automático»).
+          xcrun simctl ui "$UDID" appearance light || true
+          for tab in home calendar settings; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab "$tab"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/light-$tab.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab progress -NNProgress week; sleep 5
+          xcrun simctl io "$UDID" screenshot screenshots/light-progress-week.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl ui "$UDID" appearance dark || true
           xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -NNLogMeal; sleep 6
           xcrun simctl io "$UDID" screenshot screenshots/log-meal.png
           xcrun simctl terminate "$UDID" "$BID" || true

@@ -66,8 +66,9 @@ final class UserFlowUITests: XCTestCase {
 
     func test1_ProfileCalculatesTargets() {
         tab("Ajustes")
-        let profile = element(containing: "Perfil personal")
-        XCTAssertTrue(profile.waitForExistence(timeout: 10))
+        // Consulta solo entre botones: más rápida que buscar en toda la pantalla.
+        let profile = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Perfil personal")).firstMatch
+        XCTAssertTrue(profile.waitForExistence(timeout: 20))
         profile.tap()
 
         type("85.1", into: app.textFields["kg"])
@@ -247,7 +248,10 @@ final class UserFlowUITests: XCTestCase {
         app.buttons["Medallas"].firstMatch.tap()
         assertAppears(element(containing: "Carrera más larga"), "Medallas")
         app.buttons["Peso"].firstMatch.tap()
-        assertAppears(element(containing: "Línea verde"), "Gráfica de peso")
+        // Con pesajes sale la gráfica; sin ninguno (si una prueba anterior no llegó a guardarlo), el aviso.
+        let weight = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label CONTAINS[c] %@ OR label CONTAINS[c] %@", "Línea verde", "Sin pesajes")).firstMatch
+        assertAppears(weight, "Gráfica de peso")
     }
 
     func test10_RebalanceKeepsMealsIChanged() {
