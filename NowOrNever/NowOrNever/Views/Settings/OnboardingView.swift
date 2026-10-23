@@ -75,7 +75,7 @@ struct OnboardingView: View {
                     Button("Omitir por ahora") { finish(saveStart: false) }
                         .buttonStyle(LimeButtonStyle(filled: false))
 
-                    Text("Los objetivos de nutrición (2.300 kcal, 180 g P, 250 g C, 65 g G) y de pasos (8.000) son provisionales y editables en Ajustes.")
+                    Text("Los objetivos de nutrición (2.300 kcal, 180 g P, 250 g C, 65 g G) son provisionales y editables en Ajustes.")
                         .font(.caption).foregroundStyle(Theme.textTertiary)
                 }
                 .padding(20)

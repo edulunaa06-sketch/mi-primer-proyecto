@@ -6,12 +6,10 @@ struct NowOrNeverApp: App {
     private let container: ModelContainer?
     private let containerError: String?
 
-    @State private var health = HealthKitManager()
     @State private var notifications = NotificationManager()
     @State private var strava = StravaService()
     @State private var router = AppRouter()
     @State private var claude = ClaudeService()
-    @State private var social = SocialService()
 
     static let schema = Schema([
         UserSettings.self,
@@ -51,12 +49,10 @@ struct NowOrNeverApp: App {
             if let container {
                 RootView()
                     .modelContainer(container)
-                    .environment(health)
                     .environment(notifications)
                     .environment(strava)
                     .environment(router)
                     .environment(claude)
-                    .environment(social)
                     .preferredColorScheme(.dark)
                     .tint(Theme.lime)
             } else {

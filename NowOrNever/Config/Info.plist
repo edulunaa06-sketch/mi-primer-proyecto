@@ -4,14 +4,8 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Now or Never</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Now or Never lee tus pasos de Apple Salud para mostrarte el total diario, el porcentaje de tu objetivo y el historial. No escribe ni comparte datos de Salud.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Now or Never usa la cámara para hacer tus fotos mensuales de progreso (frente, lateral y espalda). Se guardan solo en tu iPhone.</string>
-	<key>NSContactsUsageDescription</key>
-	<string>Now or Never mira los números de tu agenda para decirte cuáles de tus contactos usan la app. Los números no se guardan ni se envían: solo un código sacado de cada uno.</string>
-	<key>NSMotionUsageDescription</key>
-	<string>Now or Never cuenta tus pasos con el sensor de movimiento del iPhone cuando Apple Salud no tiene datos.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>strava</string>

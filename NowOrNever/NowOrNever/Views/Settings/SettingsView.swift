@@ -29,7 +29,6 @@ private struct SettingsForm: View {
     @Environment(\.webAuthenticationSession) private var webAuthenticationSession
     @Environment(NotificationManager.self) private var notifications
     @Environment(StravaService.self) private var strava
-    @Environment(HealthKitManager.self) private var health
     @Environment(ClaudeService.self) private var claude
     @State private var claudeKey = ""
 
@@ -37,7 +36,6 @@ private struct SettingsForm: View {
     @State private var protein: Double?
     @State private var carbs: Double?
     @State private var fat: Double?
-    @State private var steps: Double?
     @State private var creatineTime = Date()
     @State private var feedback: String?
     @State private var feedbackIsError = false
@@ -123,15 +121,14 @@ private struct SettingsForm: View {
             numberRow("Proteínas (g)", $protein)
             numberRow("Carbohidratos (g)", $carbs)
             numberRow("Grasas (g)", $fat)
-            numberRow("Pasos diarios", $steps)
             Button("Guardar objetivos") { saveGoals() }
-                .disabled([kcal, protein, carbs, fat, steps].contains { ($0 ?? 0) <= 0 })
+                .disabled([kcal, protein, carbs, fat].contains { ($0 ?? 0) <= 0 })
         } header: {
             Text("Objetivos diarios")
         } footer: {
             Text((settings.autoTargets
                  ? "Calculados automáticamente desde tu perfil. Si los cambias y guardas aquí pasarán a ser manuales. No son una recomendación clínica."
-                 : "Valores manuales (iniciales provisionales: 2.300 kcal, 180 g P, 250 g C, 65 g G, 8.000 pasos). No son una recomendación clínica.")
+                 : "Valores manuales (iniciales provisionales: 2.300 kcal, 180 g P, 250 g C, 65 g G). No son una recomendación clínica.")
                 + " Al escribir las calorías, las proteínas, los carbohidratos y las grasas se calculan solos (proteína: 25–35 % de las kcal según tu objetivo, entre 1,6 y 2,4 g/kg; grasa 25 %; resto carbohidratos); luego puedes retocarlos.")
         }
     }
@@ -261,28 +258,6 @@ private struct SettingsForm: View {
         case .provisional: return "Provisional"
         case .ephemeral: return "Temporal"
         @unknown default: return "Desconocido"
-        }
-    }
-
-    // MARK: Salud
-
-    private var healthSection: some View {
-        Section {
-            switch health.state {
-            case .unavailable:
-                Text("Salud no disponible en este dispositivo.")
-            case .notDetermined:
-                Button("Permitir lectura de pasos") { Task { await health.requestAuthorization() } }
-            case .motionOnly:
-                Text("Esta instalación no puede leer Apple Salud. Los pasos se cuentan con el sensor de movimiento del iPhone.")
-                    .font(.footnote)
-            case .requested, .error:
-                Text("Solicitud de permiso ya mostrada. Para cambiarlo: Ajustes › Salud › Acceso a datos y dispositivos › Now or Never.")
-                    .font(.footnote)
-                Button("Abrir Ajustes de iOS") { openSystemSettings() }
-            }
-        } header: {
-            Text("Apple Salud")
         }
     }
 
@@ -445,7 +420,6 @@ private struct SettingsForm: View {
         protein = settings.proteinTarget
         carbs = settings.carbsTarget
         fat = settings.fatTarget
-        steps = Double(settings.stepGoal)
         var comps = DateComponents()
         comps.hour = settings.creatineHour
         comps.minute = settings.creatineMinute
@@ -455,8 +429,7 @@ private struct SettingsForm: View {
     }
 
     private func saveGoals() {
-        guard let kcal, let protein, let carbs, let fat, let steps else { return }
-        settings.stepGoal = Int(steps.rounded())
+        guard let kcal, let protein, let carbs, let fat else { return }
         let targetsChanged = [kcal, protein, carbs, fat] != [settings.kcalTarget, settings.proteinTarget, settings.carbsTarget, settings.fatTarget]
         settings.kcalTarget = kcal
         settings.proteinTarget = protein

@@ -2,7 +2,6 @@ import SwiftData
 import SwiftUI
 
 struct HomeView: View {
-    @Environment(HealthKitManager.self) private var health
     @Query private var sessionTitles: [SessionTitle]
     @Environment(AppRouter.self) private var router
 
@@ -41,7 +40,7 @@ struct HomeView: View {
             mealsCompleted: Set(todayMeals.map(\.mealTypeRaw)).count,
             sessionsCompleted: trainableToday.filter(isCompleted).count,
             sessionsScheduled: trainableToday.count,
-            steps: health.todaySteps,
+            steps: nil,
             stepGoal: settings?.stepGoal ?? 8000
         )
     }
@@ -52,10 +51,9 @@ struct HomeView: View {
                 VStack(spacing: 16) {
                     header
                     caloriesCard
-                    stepsCard
                     complianceCard
                     weightCard
-                    stepsAndTraining
+                    todayTraining
                     quickActions
                 }
                 .padding(16)
@@ -69,7 +67,6 @@ struct HomeView: View {
                 Button("Abrir strava.com") { StravaLauncher.openWebsite() }
                 Button("Cancelar", role: .cancel) {}
             }
-            .refreshable { await health.refresh() }
         }
     }
 
@@ -96,11 +93,6 @@ struct HomeView: View {
                         Text(NumberFormat.percent(comp.fraction)).monospacedDigit()
                     }
                     .font(.caption)
-                }
-                if health.todaySteps == nil {
-                    Text("Sin pasos registrados todavía: no cuentan en el cálculo.")
-                        .font(.caption2)
-                        .foregroundStyle(Theme.textTertiary)
                 }
             }
         }
@@ -141,54 +133,7 @@ struct HomeView: View {
         }
     }
 
-    private var stepsCard: some View {
-        let goal = settings?.stepGoal ?? 8000
-        let steps = health.todaySteps
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 16) {
-                ProgressRing(fraction: steps.map { StepEstimates.fraction($0, goal: goal) } ?? 0, size: 84,
-                             label: steps == nil ? "—" : nil)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("PASOS DE HOY").font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
-                    Text(steps.map { NumberFormat.integer($0) } ?? "—")
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
-                        .monospacedDigit()
-                        .accessibilityIdentifier("home.steps")
-                    Text(steps.map { $0 >= goal ? "¡Objetivo de \(NumberFormat.integer(goal)) cumplido!" : "Te faltan \(NumberFormat.integer(goal - $0)) para \(NumberFormat.integer(goal))" }
-                         ?? "Objetivo: \(NumberFormat.integer(goal)) pasos")
-                        .font(.subheadline).foregroundStyle(Theme.textSecondary)
-                }
-                Spacer(minLength: 0)
-            }
-            if let steps {
-                HStack {
-                    Label(String(format: "≈ %.1f km", StepEstimates.kilometers(steps)).replacingOccurrences(of: ".", with: ","), systemImage: "map")
-                    Spacer()
-                    Label("≈ \(NumberFormat.integer(StepEstimates.kcal(steps))) kcal", systemImage: "flame.fill")
-                    Spacer()
-                    Text(health.stepsSource ?? "").foregroundStyle(Theme.textTertiary)
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
-            } else if health.state == .notDetermined {
-                Button("Contar mis pasos") {
-                    Task { await health.requestAuthorization() }
-                }
-                .buttonStyle(LimeButtonStyle())
-            } else {
-                Text(health.state == .unavailable
-                     ? "Este dispositivo no tiene sensor de pasos."
-                     : health.state == .motionOnly
-                     ? "Sin pasos todavía. Si no aparecen, activa Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never."
-                     : "Sin pasos todavía. Si no aparecen, revisa Ajustes › Salud › Acceso a datos › Now or Never, o Ajustes › Privacidad › Movimiento y forma física.")
-                    .font(.caption).foregroundStyle(Theme.textTertiary)
-            }
-        }
-        .card()
-        .task { await health.refresh() }
-    }
-
-    private var stepsAndTraining: some View {
+    private var todayTraining: some View {
         VStack(spacing: 12) {
             HStack(spacing: 12) {
                 MetricTile(
@@ -226,7 +171,7 @@ struct HomeView: View {
             SectionHeader(title: "Accesos rápidos")
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                 quickButton("Registrar peso", "scalemass.fill") { showWeightSheet = true }
-                quickButton("Ver pasos", "figure.walk") { router.tab = .activity }
+                quickButton("Ver progreso", "chart.line.uptrend.xyaxis") { router.tab = .progress }
                 quickButton("Iniciar carrera", "figure.run") {
                     Task {
                         let result = await StravaLauncher.openRecording()

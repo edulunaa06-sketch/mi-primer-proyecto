@@ -3,7 +3,7 @@ import SwiftData
 import SwiftUI
 
 enum AppTab: String, CaseIterable, Identifiable {
-    case home, training, nutrition, activity, progress, friends, settings
+    case home, training, nutrition, progress, settings
     var id: String { rawValue }
 
     var title: String {
@@ -11,9 +11,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .home: return "Inicio"
         case .training: return "Entreno"
         case .nutrition: return "Nutrición"
-        case .activity: return "Pasos"
         case .progress: return "Progreso"
-        case .friends: return "Perfil"
         case .settings: return "Ajustes"
         }
     }
@@ -23,9 +21,7 @@ enum AppTab: String, CaseIterable, Identifiable {
         case .home: return "house.fill"
         case .training: return "dumbbell.fill"
         case .nutrition: return "fork.knife"
-        case .activity: return "figure.walk"
         case .progress: return "chart.line.uptrend.xyaxis"
-        case .friends: return "person.crop.circle.fill"
         case .settings: return "gearshape.fill"
         }
     }
@@ -37,20 +33,16 @@ final class AppRouter {
     var tab: AppTab = .home
 }
 
-/// Contenedor principal con barra de pestañas propia (7 secciones; la TabView del sistema
-/// agruparía las últimas en "Más").
+/// Contenedor principal con barra de pestañas propia: Inicio, Entreno, Nutrición, Progreso y Ajustes.
 struct RootView: View {
     @Environment(\.modelContext) private var context
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(HealthKitManager.self) private var health
     @Environment(NotificationManager.self) private var notifications
     @Environment(StravaService.self) private var strava
     @Environment(AppRouter.self) private var router
-    @Environment(SocialService.self) private var social
 
     @Query private var settingsList: [UserSettings]
     @State private var showOnboarding = false
-    @State private var showAccountSetup = false
     @State private var bootstrapped = false
     @State private var splashQuote: Motivation.Quote? = RootView.nextQuote()
     @State private var splashAutoDismiss = true
@@ -82,11 +74,6 @@ struct RootView: View {
                 #endif
                 await notifications.refreshStatus()
                 await refreshPhotoRemindersIfNeeded(settings)
-                await health.refreshAuthorizationState()
-                await health.refresh()
-                // Si al entrar dejaste nombre y teléfono y ya hay servidor, la cuenta se crea sola.
-                _ = try? await social.completePendingStart()
-                try? await SocialSync.publish(social: social, health: health, context: context)
             }
             .overlay {
                 if let quote = splashQuote {
@@ -98,42 +85,23 @@ struct RootView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
-                if phase == .background {
-                    backgroundedAt = Date()
-                    // Al salir de la app se comparte el día con lo último registrado.
-                    Task { try? await SocialSync.publish(social: social, health: health, context: context) }
-                }
+                if phase == .background { backgroundedAt = Date() }
                 // Al volver a la app tras 10 minutos o más fuera, otra frase.
                 if phase == .active, let since = backgroundedAt, Date().timeIntervalSince(since) >= 600 {
                     splashQuote = RootView.nextQuote()
                 }
                 if phase == .active { backgroundedAt = nil }
                 guard phase == .active, bootstrapped else { return }
-                Task {
-                    await notifications.refreshStatus()
-                    await health.refresh()
-                }
+                Task { await notifications.refreshStatus() }
             }
             .onOpenURL { url in
                 if url.scheme == StravaAPI.callbackScheme {
                     Task { await strava.handleCallback(url) }
                 }
             }
-            .fullScreenCover(isPresented: $showOnboarding, onDismiss: askForAccountIfNeeded) {
+            .fullScreenCover(isPresented: $showOnboarding) {
                 OnboardingView { showOnboarding = false }
             }
-            .onChange(of: splashQuote == nil) { _, gone in
-                if gone && bootstrapped && !showOnboarding { askForAccountIfNeeded() }
-            }
-            .sheet(isPresented: $showAccountSetup) {
-                AccountSetupView { showAccountSetup = false }
-            }
-    }
-
-    /// La primera vez (también si ya usabas la app): nombre y teléfono para Amigos.
-    private func askForAccountIfNeeded() {
-        guard social.needsAccountPrompt, !ProcessInfo.processInfo.arguments.contains("-NNSkipOnboarding") else { return }
-        showAccountSetup = true
     }
 
     @ViewBuilder
@@ -142,9 +110,7 @@ struct RootView: View {
         case .home: HomeView()
         case .training: TrainingView()
         case .nutrition: NutritionRootView()
-        case .activity: ActivityView()
         case .progress: ProgressHubView()
-        case .friends: ProfileTabView()
         case .settings: SettingsView()
         }
     }

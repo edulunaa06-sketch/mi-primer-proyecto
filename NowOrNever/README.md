@@ -1,6 +1,6 @@
 # Now or Never — app nativa para iPhone
 
-App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + SwiftUI**, con persistencia local en **SwiftData**, lectura de pasos con **HealthKit**, recordatorios con **UserNotifications** y apertura/integración de **Strava**.
+App de entrenamiento, nutrición y progreso físico escrita en **Swift + SwiftUI**, con persistencia local en **SwiftData**, recordatorios con **UserNotifications** y apertura/integración de **Strava**.
 
 - iOS **17.0** o posterior · solo iPhone · orientación vertical · tema oscuro (negro/carbón + verde lima).
 - Sin dependencias externas (ningún paquete SPM ni CocoaPods).
@@ -32,7 +32,6 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
    - Xcode › Settings › Accounts › `+` › añade tu Apple ID (si no lo has hecho ya).
    - Selecciona el proyecto azul **NowOrNever** › target **NowOrNever** › pestaña **Signing & Capabilities**.
    - Deja marcado *Automatically manage signing* y elige tu **Team**.
-   - En esa misma pestaña debe aparecer la capacidad **HealthKit** (ya está configurada en `Config/NowOrNever.entitlements`). Si Xcode muestra un aviso, pulsa *Try Again* / *Fix*.
    - Haz lo mismo (Team) en el target **NowOrNeverTests** si vas a ejecutar las pruebas.
 5. Conecta el iPhone y, en el iPhone, activa **Ajustes › Privacidad y seguridad › Modo desarrollador** (iOS lo pide la primera vez y reinicia el teléfono).
 6. Arriba en Xcode elige tu iPhone como destino y pulsa **▶︎ Run** (⌘R).
@@ -42,7 +41,7 @@ App de entrenamiento, nutrición, pasos y progreso físico escrita en **Swift + 
 > Pruebas: en Xcode, ⌘U con un simulador de iPhone seleccionado (pruebas unitarias + pruebas de interfaz).
 
 ### Que parezca una app normal (como WhatsApp o TikTok)
-Una vez instalada desde Xcode, Now or Never **ya es una app nativa**: tiene su icono en la pantalla de inicio, se abre a pantalla completa, aparece en la biblioteca de apps, en Spotlight, en Ajustes › Notificaciones y en Salud. No es una web ni un acceso directo. La única diferencia con una app de la App Store es **cómo se instala y cuánto dura la firma**:
+Una vez instalada desde Xcode, Now or Never **ya es una app nativa**: tiene su icono en la pantalla de inicio, se abre a pantalla completa, aparece en la biblioteca de apps, en Spotlight y en Ajustes › Notificaciones. No es una web ni un acceso directo. La única diferencia con una app de la App Store es **cómo se instala y cuánto dura la firma**:
 
 | Opción | Coste | Duración de la instalación | Qué necesitas |
 |---|---|---|---|
@@ -64,12 +63,11 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 
 ### Inicio
 - **Calorías de hoy** arriba del todo, sin anillos: «Te quedan X kcal» (objetivo − lo comido) y lo que te queda de proteínas, carbohidratos y grasas. Baja a medida que registras comidas; si te pasas, lo indica en naranja. Al tocarla se abre *Comidas*.
-- **Tarjeta de pasos de hoy** arriba del todo: número grande, anillo de % del objetivo, cuántos te faltan, ≈ km (zancada media de 0,76 m) y ≈ kcal (0,04 kcal/paso), y de dónde salen los datos. Si Apple Salud no da datos (por ejemplo, porque la instalación por SideStore no incluye el permiso de Salud), usa el **sensor de movimiento del iPhone** (Movimiento y forma física, últimos 7 días). Si aún no has dado permiso, muestra el botón *Conectar Apple Salud*.
 - Peso más reciente y diferencia respecto al primer peso registrado.
 - Entrenamiento(s) programado(s) para hoy con su estado.
 - Comidas completadas (x/4).
-- **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso) y pasos/objetivo (máx. 100 %; se omite si Salud no da datos). El desglose se muestra en pantalla.
-- Accesos rápidos: registrar peso, ver pasos, iniciar carrera (abre Strava) y ver rutina.
+- **Cumplimiento diario**: media de los componentes disponibles → comidas (x/4), sesiones del día completadas (se omite el viernes de descanso). El desglose se muestra en pantalla.
+- Accesos rápidos: registrar peso, ver progreso, iniciar carrera (abre Strava) y ver rutina.
 
 ### Perfil personal y objetivos automáticos (Ajustes › Perfil personal)
 - Peso, altura, edad, sexo, nivel de actividad (5 niveles) y objetivo: **perder grasa, ganar músculo o recomposición**.
@@ -131,12 +129,6 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 
 > Los valores del catálogo son **aproximados** (referencias generales tipo USDA FoodData Central/BEDCA) y los menús son **ejemplos**. No son un plan calculado clínicamente. Los alimentos que dependen mucho de la marca (whey, yogures, pan, legumbres de bote…) vienen marcados como provisionales. Revísalos con la etiqueta de tus productos en *Nutrición › ⋯ › Catálogo de alimentos*.
 
-### Actividad y pasos (Apple Salud)
-- Solicita permiso de **lectura** de pasos (no escribe nada en Salud).
-- Pasos de hoy (suma acumulada deduplicada por HealthKit entre iPhone y Apple Watch), objetivo editable (8.000 por defecto) y % de cumplimiento.
-- Historial de los últimos 30 días (gráfica + lista), media y días con objetivo.
-- Permisos: iOS **no indica** a las apps si se ha denegado la lectura de datos de Salud; en ese caso las consultas simplemente no devuelven datos. La app muestra «Sin datos» y explica cómo revisarlo: *Ajustes › Salud › Acceso a datos y dispositivos › Now or Never*.
-
 ### Strava
 - Botón **Abrir Strava** en las sesiones de carrera, en Actividad y en Inicio.
 - Comprueba si Strava está instalada (`LSApplicationQueriesSchemes` incluye `strava`).
@@ -150,16 +142,8 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Aviso de que la fluctuación diaria no es pérdida/ganancia de grasa confirmada.
 - **Fotos mensuales** (frente, lateral, espalda): **cámara integrada** (delantera o trasera, temporizador de 3 o 10 s para hacerte la de espalda tú solo, y la foto del mismo ángulo del mes anterior superpuesta en transparencia para repetir la postura; revisas la foto antes de guardarla) o selector de fotos del sistema, indicador de vistas que faltan, guardado por mes/año, una foto por vista y mes (sin duplicados), reemplazo con confirmación, meses anteriores, **comparación de dos meses** (lado a lado o superpuesta con deslizador), eliminación de una foto o de todo el historial.
 
-### Amigos (cuentas y seguir a otras personas)
-- Cada persona usa la app en **su iPhone con su cuenta** (correo + contraseña + @usuario). Los datos completos siguen en cada móvil.
-- **Seguir** a alguien por su @usuario. La otra persona recibe la solicitud y puede *Aceptar y seguir*, *Solo aceptar* o rechazarla.
-- En **Sigues a** ves los **últimos 14 días** de cada persona: sesiones programadas **hechas (✓) o sin hacer (✗)** con sus mejores series, sus comidas y kcal, la proteína y los pasos. Arriba aparece el resumen semanal, con los días en que **no ha entrenado**.
-- **Perfil**: foto de perfil, número y lista de seguidores y seguidos, altura y peso (opcional) y **fotos de progreso agrupadas por fecha** («Viernes, 23 de octubre» con las tres vistas), que se añaden cada vez que haces una (opcional; la primera vez te pregunta). En el perfil de otra persona: sus *Entrenos y comidas* y sus *Fotos*.
-- Lo que se comparte se sube al abrir la app, al salir de ella y al entrar en *Amigos*. Lo puedes desactivar en *Compartir* y quitar seguidores cuando quieras.
-- Necesita un servidor gratuito de **Supabase**, que se crea una vez (guía en `AMIGOS.md`; esquema y reglas de privacidad en `docs/supabase/schema.sql`).
-
 ### Ajustes y recordatorios
-- Objetivos de kcal, macros y pasos.
+- Objetivos de kcal y macros.
 - **Creatina**: activar/desactivar, elegir hora, notificación de prueba. Usa un identificador fijo, así que cambiar la hora **sustituye** el recordatorio (no lo duplica). La app solo dice «programada» cuando iOS acepta la solicitud sin error.
 - **Fotos**: recordatorio mensual el **día 22 a las 20:00** (o el día de tu fecha de inicio si la configuras; hora ajustable).
 - Estado del permiso de notificaciones y número de notificaciones programadas.
@@ -174,8 +158,6 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 | Pesos, cintura, entrenamientos (series, kg, reps, estados), menús, catálogo, comidas marcadas, ajustes, carreras importadas | Base de datos **SwiftData** local (`Application Support`), sin iCloud |
 | Fotos de progreso | Archivos JPEG en `Application Support/ProgressPhotos` con protección de datos completa de iOS |
 | Tokens OAuth de Strava | **Llavero** de iOS (solo este dispositivo) |
-| Sesión de Amigos | **Llavero** de iOS. La URL y la clave pública del servidor, en ajustes locales |
-| Resumen diario compartido (si usas Amigos) | Tu proyecto de Supabase. Solo lo leen las personas que aceptas (reglas por fila en `docs/supabase/schema.sql`) |
 | Client ID de Strava y URL del backend | Ajustes locales (no son secretos) |
 
 - La app **no tiene servidores ni cuentas propias** y no sube fotos a ningún sitio.
@@ -183,10 +165,9 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - No hay contraseñas, tokens ni claves privadas en el código fuente.
 
 Permisos que pide la app:
-- **Apple Salud** (lectura de pasos) — capacidad HealthKit + `NSHealthShareUsageDescription`.
 - **Notificaciones** (creatina, fotos, prueba).
 - **Fotos**: se usa `PhotosPicker`, que **no** necesita permiso de acceso a la fototeca (solo recibe las fotos que eliges).
-- **Cámara** (fotos de progreso) y **Movimiento y forma física** (pasos cuando Salud no da datos).
+- **Cámara** (fotos de progreso).
 
 ---
 
@@ -222,7 +203,7 @@ Detalles técnicos:
 `demo/NowOrNever-demo.html` es una versión web de la parte de comidas, rutina, peso y perfil, con el mismo catálogo y el mismo planificador. Guarda los datos en el navegador (y en tu cuenta de Claude si la abres como artefacto) y permite exportar/importar una copia en JSON. Se regenera con `python3 tools/build_demo.py`. No tiene Salud, notificaciones ni fotos.
 
 ### Nada más
-Salud, notificaciones, fotos y el botón de abrir Strava funcionan sin credenciales.
+Las notificaciones, las fotos y el botón de abrir Strava funcionan sin credenciales.
 
 ---
 
@@ -241,7 +222,7 @@ Salud, notificaciones, fotos y el botón de abrir Strava funcionan sin credencia
 NowOrNever/
 ├── NowOrNever.xcodeproj         Proyecto (formato Xcode 16, carpetas sincronizadas)
 ├── Config/
-│   ├── Info.plist               URL scheme nowornever, LSApplicationQueriesSchemes, texto de Salud
+│   ├── Info.plist               URL scheme nowornever, LSApplicationQueriesSchemes
 │   ├── NowOrNever.entitlements  com.apple.developer.healthkit
 │   └── Signing.xcconfig         BUNDLE_ID_PREFIX (identificador configurable)
 ├── NowOrNever/
