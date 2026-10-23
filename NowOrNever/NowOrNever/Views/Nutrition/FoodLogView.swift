@@ -1,3 +1,4 @@
+import PhotosUI
 import SwiftData
 import SwiftUI
 import UIKit
@@ -111,7 +112,7 @@ struct FoodLogView: View {
                     Image(systemName: icon(type)).font(.title3).foregroundStyle(Theme.lime).frame(width: 30)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(type.label).font(.headline).foregroundStyle(Theme.textPrimary)
-                        Text(record != nil ? "\(NumberFormat.integer(record!.kcal)) kcal · P \(NumberFormat.integer(record!.protein)) g" : "Toca para añadir alimentos")
+                        Text(record != nil ? "\(NumberFormat.integer(record!.kcal)) kcal · P \(NumberFormat.integer(record!.protein)) g" : "Toca para hacer la foto o añadir alimentos")
                             .font(.caption).foregroundStyle(Theme.textSecondary)
                     }
                     Spacer()
@@ -217,8 +218,9 @@ struct CaloriesLeftCard: View {
     }
 }
 
-/// Registrar una comida: «Añadir alimento» (de la tabla o uno tuyo) → pones los gramos → la app calcula
-/// kcal y macros de cada uno y el total, y lo resta de lo que te queda del día. Sin IA.
+/// Registrar una comida: foto del plato → el iPhone reconoce los alimentos (Vision, gratis y sin internet) →
+/// quitas lo que no sea, «Añadir alimento» para lo que falte, pones los gramos → la app calcula kcal y macros
+/// de cada uno y el total, y lo resta de lo que te queda del día.
 struct MealLogSheet: View {
     let type: MealType
     let day: Date
@@ -227,6 +229,7 @@ struct MealLogSheet: View {
         let id = UUID()
         let food: FoodItem
         var grams: Double?
+        var detected = false
         var values: NutritionValues { NutritionMath.values(per100: food.per100, grams: grams ?? 0) }
     }
 
@@ -235,6 +238,14 @@ struct MealLogSheet: View {
 
     @State private var rows: [Row] = []
     @State private var picking = false
+    @State private var showCamera = false
+    @State private var pickerItem: PhotosPickerItem?
+    @State private var photo: Data?
+    @State private var detecting = false
+    @State private var detectNote: String?
+    @Query private var foods: [FoodItem]
+
+    private var cameraAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
 
     private var ready: Bool { !rows.isEmpty && rows.allSatisfy { ($0.grams ?? 0) > 0 } }
     private var total: NutritionValues { NutritionMath.sum(rows.map(\.values)) }
@@ -243,6 +254,7 @@ struct MealLogSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
+                    photoCard
                     VStack(alignment: .leading, spacing: 10) {
                         SectionHeader(title: "Alimentos y gramos",
                                       subtitle: rows.isEmpty ? "Añade cada alimento del plato y pon cuánto pesa." : "Pon los gramos de cada uno tal como lo pesas.")
@@ -251,7 +263,8 @@ struct MealLogSheet: View {
                                 HStack(spacing: 8) {
                                     VStack(alignment: .leading, spacing: 1) {
                                         Text(row.food.name).font(.subheadline.weight(.semibold))
-                                        Text("Pesado: \(row.food.basis.label.lowercased())").font(.caption2).foregroundStyle(Theme.textTertiary)
+                                        Text((row.detected ? "Visto en la foto · " : "") + "pesado: \(row.food.basis.label.lowercased())")
+                                            .font(.caption2).foregroundStyle(row.detected ? Theme.lime : Theme.textTertiary)
                                     }
                                     Spacer()
                                     DecimalField(placeholder: "g", value: $row.grams, width: 72)
@@ -296,6 +309,16 @@ struct MealLogSheet: View {
             .sheet(isPresented: $picking) {
                 FoodPickerSheet { food in rows.append(Row(food: food, grams: nil)) }
             }
+            .fullScreenCover(isPresented: $showCamera) {
+                SystemCamera { data in Task { await analyze(data) } }.ignoresSafeArea()
+            }
+            .onChange(of: pickerItem) { _, item in
+                guard let item else { return }
+                Task {
+                    if let data = try? await item.loadTransferable(type: Data.self) { await analyze(data) }
+                    pickerItem = nil
+                }
+            }
             .onAppear {
                 guard rows.isEmpty else { return }
                 #if DEBUG
@@ -308,8 +331,57 @@ struct MealLogSheet: View {
                     return
                 }
                 #endif
-                picking = true
+                // Al tocar la comida se abre la cámara; si no hay (simulador), la lista de alimentos.
+                if cameraAvailable { showCamera = true } else { picking = true }
             }
+        }
+    }
+
+    private var photoCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                if let photo, let image = UIImage(data: photo) {
+                    Image(uiImage: image).resizable().scaledToFill()
+                        .frame(width: 84, height: 84)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                VStack(spacing: 8) {
+                    Button { showCamera = true } label: {
+                        Label(photo == nil ? "Hacer foto" : "Otra foto", systemImage: "camera.fill").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(LimeButtonStyle(filled: photo == nil && rows.isEmpty))
+                    .disabled(!cameraAvailable)
+                    PhotosPicker(selection: $pickerItem, matching: .images) {
+                        Label("Elegir de la galería", systemImage: "photo").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(LimeButtonStyle(filled: false))
+                }
+            }
+            if detecting {
+                HStack { ProgressView(); Text("Mirando qué hay en el plato…").font(.footnote) }
+            } else if let detectNote {
+                Text(detectNote).font(.caption).foregroundStyle(Theme.textSecondary)
+            }
+        }
+        .card()
+    }
+
+    /// Reconoce los alimentos con el iPhone y añade los que no estén ya en la lista (sin gramos).
+    private func analyze(_ data: Data) async {
+        guard let prepared = PhotoMealCard.preparedJPEG(data) else { detectNote = "No se pudo leer la imagen."; return }
+        photo = prepared
+        detecting = true
+        let labels = await FoodPhotoDetector.labels(in: prepared)
+        detecting = false
+        let keys = FoodVision.catalogKeys(for: labels)
+        let found = keys.compactMap { key in foods.first { $0.seedKey == key } }
+        let new = found.filter { food in !rows.contains { $0.food.id == food.id } }
+        rows.append(contentsOf: new.map { Row(food: $0, grams: nil, detected: true) })
+        if found.isEmpty {
+            detectNote = "No he reconocido alimentos en la foto. Añádelos con «Añadir alimento»."
+        } else {
+            detectNote = "He visto: " + found.map(\.name).joined(separator: ", ")
+                + ". Quita lo que no sea, cambia la versión si hace falta (p. ej. patata cocida o asada) y añade lo que falte."
         }
     }
 

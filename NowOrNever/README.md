@@ -97,11 +97,12 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - **Progresión de cargas** por ejercicio (*Ver progresión de cargas*): gráfica de la carga máxima por semana, mejor serie, volumen (kg × reps), repeticiones totales y 1RM estimado (Epley, orientativo).
 
 ### Nutrición › Comidas (lo que comes de verdad)
-- Cuatro comidas: **Desayuno, Almuerzo, Merienda y Cena**. Al tocar una se abre la lista de alimentos.
+- Cuatro comidas: **Desayuno, Almuerzo, Merienda y Cena**. Al tocar una se abre la **cámara** (o *Elegir de la galería*).
+- **Foto del plato**: el propio iPhone reconoce los alimentos (clasificador de imágenes de Apple: gratis, sin internet y sin enviar la foto a ningún sitio) y los añade a la lista, marcados «Visto en la foto». Reconoce categorías generales (arroz, pollo, patata, brócoli, ensalada, huevo…), no si algo está cocido o crudo ni la marca: revisa la lista, quita lo que no sea y añade lo que falte.
 - **Añadir alimento**: buscas en la tabla («boniato», «patata», «pollo»…) y lo eliges. Hay versiones ya cocinadas (boniato cocido o asado, patata cocida, arroz y pasta cocidos, pollo y salmón a la plancha, huevo cocido, quinoa cocida) y queso cottage. Si no está, *Crear un alimento nuevo* con los valores por 100 g de la etiqueta.
 - Pones los **gramos** de cada alimento y la app calcula **kcal, proteínas, carbohidratos y grasas** de cada uno y el **total**. *Añadir a …* lo suma a esa comida.
 - Cada alimento se puede quitar después (✕) y el total se actualiza. Las kcal y macros registrados se restan en **Inicio** (lo que te queda).
-- Sin IA y sin coste: todo se calcula en el iPhone con la tabla de alimentos.
+- Sin coste: todo se calcula en el iPhone con la tabla de alimentos.
 - **Tus calorías**: botón *Cambiar* en la tarjeta de calorías (Inicio y Comidas). Pones las kcal que quieres comer, los macros se rellenan solos (puedes retocarlos) y se quedan fijas aunque te peses o cambies el perfil. Hay un botón para volver al cálculo automático.
 
 ### Nutrición › Menús (ideas y planificación)
