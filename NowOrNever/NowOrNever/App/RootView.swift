@@ -49,6 +49,8 @@ struct RootView: View {
     @State private var bootstrapped = false
     @State private var splashQuote: Motivation.Quote? = RootView.nextQuote()
     @State private var splashAutoDismiss = true
+    /// Solo al abrir la app: pantalla de carga con el logo y música antes de la frase.
+    @State private var splashIntro = true
     @State private var backgroundedAt: Date?
     @State private var lastStepsSave: (steps: Int, at: Date)?
 
@@ -71,7 +73,7 @@ struct RootView: View {
                 bootstrapped = true
                 DataStore.bootstrap(context)
                 let settings = DataStore.settings(context)
-                strava.configure(clientID: settings.stravaClientID, backendURL: settings.stravaBackendURL)
+                strava.configure(clientID: settings.stravaClientID)
                 showOnboarding = !settings.onboardingCompleted
                 #if DEBUG
                 applyScreenshotArguments()
@@ -82,7 +84,7 @@ struct RootView: View {
             }
             .overlay {
                 if let quote = splashQuote {
-                    MotivationSplash(quote: quote, autoDismiss: splashAutoDismiss) {
+                    MotivationSplash(quote: quote, autoDismiss: splashAutoDismiss, showIntro: splashIntro) {
                         withAnimation(.easeInOut(duration: 0.35)) { splashQuote = nil }
                     }
                     .transition(.opacity)
@@ -93,6 +95,7 @@ struct RootView: View {
                 if phase == .background {
                     backgroundedAt = Date()
                     steps.stop()
+                    IntroMusicPlayer.shared.stop()
                     // Al salir de la app se rehacen los avisos con los últimos pasos y pesajes.
                     if bootstrapped {
                         Task { await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: steps.todaySteps) }
@@ -101,6 +104,7 @@ struct RootView: View {
                 if phase == .active { steps.restart() }
                 // Al volver a la app tras 10 minutos o más fuera, otra frase.
                 if phase == .active, let since = backgroundedAt, Date().timeIntervalSince(since) >= 600 {
+                    splashIntro = false
                     splashQuote = RootView.nextQuote()
                 }
                 if phase == .active { backgroundedAt = nil }
@@ -191,6 +195,7 @@ struct RootView: View {
         DataStore.updateAdaptiveStepGoal(context)
         let today = steps.todaySteps ?? history.last(where: { DateUtils.calendar.isDateInToday($0.date) })?.steps
         await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: today)
+        await strava.autoSyncIfNeeded(into: context)
     }
 
     /// Los pasos en vivo se guardan cada 200 pasos o cada 2 minutos, no en cada actualización del sensor.

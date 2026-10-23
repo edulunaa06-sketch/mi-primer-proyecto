@@ -40,11 +40,11 @@ enum StravaLauncher {
     }
 }
 
-/// Conexión OAuth 2.0 con la API oficial de Strava.
+/// Conexión OAuth 2.0 con la API oficial de Strava, directamente desde el iPhone (sin servidor).
 ///
-/// El intercambio del código por tokens requiere el `client_secret`, que NUNCA se incluye en la app.
-/// Lo realiza un backend propio (ver docs/strava-backend). Sin client_id y backend configurados,
-/// la integración queda en estado "pendiente de configuración" y no se importa nada.
+/// Necesita el ID y el secreto de cliente de una «aplicación de API» que el usuario crea una vez en
+/// strava.com/settings/api con su propia cuenta. El secreto se guarda en el Llavero de este iPhone
+/// (nunca en el código ni en la copia de seguridad). Es una app de uso personal: solo tú la usas.
 @MainActor
 @Observable
 final class StravaService {
@@ -55,6 +55,8 @@ final class StravaService {
     }
 
     private static let tokenAccount = "strava.token"
+    private static let secretAccount = "strava.clientSecret"
+    private static let lastAutoSyncKey = "strava.lastAutoSync"
 
     private(set) var status: Status = .notConfigured
     private(set) var isWorking = false
@@ -63,20 +65,35 @@ final class StravaService {
 
     private var pendingState: String?
     private var clientID = ""
-    private var backendURL: URL?
 
-    func configure(clientID: String, backendURL: String) {
+    func configure(clientID: String) {
         self.clientID = clientID.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmed = backendURL.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let url = URL(string: trimmed), url.scheme == "https", url.host != nil {
-            self.backendURL = url
-        } else {
-            self.backendURL = nil
-        }
         updateStatus()
     }
 
-    var isConfigured: Bool { !clientID.isEmpty && backendURL != nil }
+    /// Guarda el ID (en los ajustes) y el secreto (en el Llavero). Devuelve un error legible si no son válidos.
+    func saveCredentials(clientID: String, clientSecret: String) -> String? {
+        guard StravaAPI.isValidClientID(clientID) else { return "El ID de cliente son solo números (por ejemplo, 123456)." }
+        let secret = clientSecret.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !secret.isEmpty {
+            guard StravaAPI.isValidClientSecret(secret) else {
+                return "El secreto de cliente no parece correcto: son unos 40 caracteres de números y letras de la a a la f. Pulsa «mostrar» en Strava y cópialo entero."
+            }
+            do { try KeychainStore.save(Data(secret.utf8), account: Self.secretAccount) } catch { return error.localizedDescription }
+        } else if storedSecret() == nil {
+            return "Falta el secreto de cliente."
+        }
+        configure(clientID: clientID)
+        return nil
+    }
+
+    var hasSecret: Bool { storedSecret() != nil }
+
+    private func storedSecret() -> String? {
+        KeychainStore.load(account: Self.secretAccount).flatMap { String(data: $0, encoding: .utf8) }
+    }
+
+    var isConfigured: Bool { StravaAPI.isValidClientID(clientID) && storedSecret() != nil }
 
     private func updateStatus() {
         guard isConfigured else { status = .notConfigured; return }
@@ -85,6 +102,15 @@ final class StravaService {
         } else {
             status = .disconnected
         }
+    }
+
+    /// Importa sola las carreras al abrir la app (como mucho cada 30 minutos) si Strava está conectado.
+    func autoSyncIfNeeded(into context: ModelContext) async {
+        guard case .connected = status, !isWorking else { return }
+        let last = UserDefaults.standard.object(forKey: Self.lastAutoSyncKey) as? Date ?? .distantPast
+        guard Date().timeIntervalSince(last) > 30 * 60 else { return }
+        UserDefaults.standard.set(Date(), forKey: Self.lastAutoSyncKey)
+        await syncRuns(into: context, pages: 1)
     }
 
     // MARK: OAuth
@@ -107,7 +133,7 @@ final class StravaService {
             let code = try StravaAPI.parseCallback(url, expectedState: expected)
             isWorking = true
             defer { isWorking = false }
-            let token = try await exchange(path: "strava/token", body: ["code": code])
+            let token = try await exchange(code: code)
             try store(token)
             lastError = nil
             updateStatus()
@@ -128,13 +154,20 @@ final class StravaService {
         updateStatus()
     }
 
+    /// Borra también el ID y el secreto de este iPhone.
+    func forgetCredentials() async {
+        await disconnect()
+        KeychainStore.delete(account: Self.secretAccount)
+        configure(clientID: "")
+    }
+
     // MARK: Importación de carreras
 
     /// Descarga las últimas actividades y guarda solo las carreras. Devuelve cuántas se importaron.
     @discardableResult
     func syncRuns(into context: ModelContext, pages: Int = 2) async -> Int {
         guard isConfigured else {
-            lastError = "Strava no está configurado. Añade el Client ID y la URL de tu backend en Ajustes."
+            lastError = "Strava no está configurado. Pon el ID y el secreto de cliente en Ajustes › Strava."
             return 0
         }
         isWorking = true
@@ -198,18 +231,23 @@ final class StravaService {
     private func validToken() async throws -> StravaAPI.TokenResponse {
         guard let token = storedToken() else { throw StravaError.notConnected }
         if token.expirationDate.timeIntervalSinceNow > 120 { return token }
-        let refreshed = try await exchange(path: "strava/refresh", body: ["refresh_token": token.refreshToken])
+        let refreshed = try await exchange(refreshToken: token.refreshToken)
         try store(refreshed)
         return refreshed
     }
 
-    private func exchange(path: String, body: [String: String]) async throws -> StravaAPI.TokenResponse {
-        guard let base = backendURL else { throw StravaError.notConfigured }
-        var request = URLRequest(url: base.appendingPathComponent(path))
+    /// Pide los tokens directamente a Strava con el ID y el secreto guardados en el iPhone.
+    private func exchange(code: String? = nil, refreshToken: String? = nil) async throws -> StravaAPI.TokenResponse {
+        guard let secret = storedSecret(), StravaAPI.isValidClientID(clientID) else { throw StravaError.notConfigured }
+        var request = URLRequest(url: StravaAPI.tokenURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(body)
+        request.httpBody = try JSONEncoder().encode(
+            StravaAPI.tokenRequestBody(clientID: clientID, clientSecret: secret, code: code, refreshToken: refreshToken))
         let (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, http.statusCode == 400 || http.statusCode == 401 {
+            throw StravaError.badCredentials
+        }
         try Self.check(response, data: data)
         do {
             return try JSONDecoder().decode(StravaAPI.TokenResponse.self, from: data)
@@ -238,16 +276,17 @@ final class StravaService {
     }
 
     enum StravaError: LocalizedError {
-        case notConfigured, notConnected, unauthorized, rateLimited, badBackendResponse
+        case notConfigured, notConnected, unauthorized, rateLimited, badBackendResponse, badCredentials
         case http(Int)
 
         var errorDescription: String? {
             switch self {
-            case .notConfigured: return "Strava no está configurado (falta Client ID o backend)."
+            case .notConfigured: return "Strava no está configurado (falta el ID o el secreto de cliente)."
             case .notConnected: return "No hay ninguna cuenta de Strava conectada."
             case .unauthorized: return "Strava rechazó la autorización. Vuelve a conectar tu cuenta."
             case .rateLimited: return "Se ha superado el límite de peticiones de Strava. Inténtalo más tarde."
-            case .badBackendResponse: return "El backend no devolvió un token válido de Strava."
+            case .badBackendResponse: return "Strava no devolvió un token válido. Inténtalo de nuevo."
+            case .badCredentials: return "Strava no acepta el ID o el secreto de cliente. Revisa que los has copiado bien (Ajustes › Strava)."
             case .http(let code): return "Error de red (HTTP \(code))."
             }
         }

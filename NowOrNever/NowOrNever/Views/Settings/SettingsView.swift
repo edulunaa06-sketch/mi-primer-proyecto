@@ -41,7 +41,7 @@ private struct SettingsForm: View {
     @State private var feedbackIsError = false
     @State private var showOnboarding = false
     @State private var stravaClientID = ""
-    @State private var stravaBackend = ""
+    @State private var stravaSecret = ""
     @State private var showProfile = false
     @Query(sort: \WeightEntry.date, order: .reverse) private var weights: [WeightEntry]
 
@@ -56,6 +56,7 @@ private struct SettingsForm: View {
             notificationsStatusSection
             stravaSection
             trackingSection
+            introSection
             BackupSection()
             dataSection
         }
@@ -270,34 +271,19 @@ private struct SettingsForm: View {
         Section {
             switch strava.status {
             case .notConfigured:
-                Label("Pendiente de configuración", systemImage: "exclamationmark.triangle.fill")
+                Label("Sin configurar", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(Theme.warning)
             case .disconnected:
-                Label("Configurado · no conectado", systemImage: "link")
-            case .connected(let expires):
-                Label("Conectado", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.lime)
-                Text("Token válido hasta \(expires.formatted(date: .abbreviated, time: .shortened)) (se renueva solo)")
-                    .font(.caption).foregroundStyle(Theme.textSecondary)
-            }
-            TextField("Client ID de tu app de Strava", text: $stravaClientID)
-                .keyboardType(.numberPad)
-            TextField("URL del backend (https://…)", text: $stravaBackend)
-                .keyboardType(.URL)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-            Button("Guardar configuración") {
-                settings.stravaClientID = stravaClientID.trimmingCharacters(in: .whitespaces)
-                settings.stravaBackendURL = stravaBackend.trimmingCharacters(in: .whitespaces)
-                try? context.save()
-                strava.configure(clientID: settings.stravaClientID, backendURL: settings.stravaBackendURL)
-                if !strava.isConfigured {
-                    show("Configuración incompleta: el Client ID debe ser numérico y el backend una URL https válida.", error: true)
-                }
-            }
-            switch strava.status {
-            case .disconnected:
-                Button("Conectar con Strava") { Task { await connectStrava() } }
+                Label("Configurado · falta conectar tu cuenta", systemImage: "link")
             case .connected:
+                Label("Conectado · las carreras se importan solas", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.lime)
+            }
+            NavigationLink {
+                StravaSetupGuide()
+            } label: {
+                Label("Cómo configurarlo (una vez, 3 minutos)", systemImage: "list.number")
+            }
+            if case .connected = strava.status {
                 Button("Importar carreras ahora") {
                     Task {
                         let count = await strava.syncRuns(into: context)
@@ -306,8 +292,23 @@ private struct SettingsForm: View {
                     }
                 }
                 Button("Desconectar Strava", role: .destructive) { Task { await strava.disconnect() } }
-            case .notConfigured:
-                EmptyView()
+            } else {
+                TextField("ID de cliente (número)", text: $stravaClientID)
+                    .keyboardType(.numberPad)
+                SecureField(strava.hasSecret ? "Secreto de cliente (ya guardado)" : "Secreto de cliente", text: $stravaSecret)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                Button("Guardar y conectar con Strava") {
+                    if let problem = strava.saveCredentials(clientID: stravaClientID, clientSecret: stravaSecret) {
+                        show(problem, error: true)
+                        return
+                    }
+                    settings.stravaClientID = stravaClientID.trimmingCharacters(in: .whitespacesAndNewlines)
+                    try? context.save()
+                    stravaSecret = ""
+                    Task { await connectStrava() }
+                }
+                .disabled(stravaClientID.trimmingCharacters(in: .whitespaces).isEmpty || (stravaSecret.isEmpty && !strava.hasSecret))
             }
             if strava.isWorking { ProgressView() }
             if let error = strava.lastError {
@@ -316,13 +317,13 @@ private struct SettingsForm: View {
         } header: {
             Text("Strava")
         } footer: {
-            Text("El botón “Abrir Strava” funciona siempre. Importar carreras requiere crear una app en strava.com/settings/api y un backend propio que guarde el client_secret (ver README). El secreto nunca se guarda en la app; los tokens se guardan en el Llavero.")
+            Text("El botón «Abrir Strava» funciona siempre. Para importar tus carreras (distancia, tiempo y ritmo) sigue la guía de arriba: no hace falta ningún servidor. El secreto se guarda solo en el Llavero de este iPhone. Una vez conectado, las carreras se importan solas al abrir la app.")
         }
     }
 
     private func connectStrava() async {
         guard let url = strava.makeAuthorizationURL() else {
-            show("Configura primero el Client ID y el backend.", error: true)
+            show("Pon primero el ID y el secreto de cliente.", error: true)
             return
         }
         do {
@@ -331,7 +332,8 @@ private struct SettingsForm: View {
             if let error = strava.lastError {
                 show(error, error: true)
             } else if case .connected = strava.status {
-                show("Cuenta de Strava conectada.")
+                let count = await strava.syncRuns(into: context)
+                show(strava.lastError ?? "Cuenta de Strava conectada. \(count) carreras importadas.", error: strava.lastError != nil)
             }
         } catch {
             show("Conexión cancelada o fallida: \(error.localizedDescription)", error: true)
@@ -382,6 +384,18 @@ private struct SettingsForm: View {
         }
     }
 
+    @AppStorage(IntroMusicPlayer.enabledKey) private var introMusic = true
+
+    private var introSection: some View {
+        Section {
+            Toggle("Música al abrir la app", isOn: $introMusic).tint(Theme.lime)
+        } header: {
+            Text("Al abrir la app")
+        } footer: {
+            Text("Pantalla de carga «Now or Never» con música (pista original de la app), luego la frase motivadora y el menú, ya sin música. Suena aunque el iPhone esté en silencio; desactívala aquí si no la quieres.")
+        }
+    }
+
     private var dataSection: some View {
         Section {
             Text("Todos los datos (pesos, entrenamientos, comidas, ajustes y fotos) se guardan solo en este iPhone. No hay cuentas ni servidores propios.")
@@ -428,7 +442,6 @@ private struct SettingsForm: View {
         comps.minute = settings.creatineMinute
         creatineTime = DateUtils.calendar.date(from: comps) ?? Date()
         stravaClientID = settings.stravaClientID
-        stravaBackend = settings.stravaBackendURL
     }
 
     private func saveGoals() {

@@ -59,7 +59,8 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 ## 2. Funciones implementadas
 
 ### Al abrir la app
-- **Frase motivadora** (gimnasio y desarrollo personal; 40 frases, nunca la misma dos veces seguidas). Se cierra sola a los 3 s o al tocarla y aparece la interfaz. Vuelve a salir si regresas a la app tras 10 minutos o más fuera.
+- **Pantalla de carga** «NOW OR NEVER» con **música** (pista original de la app, generada con `tools/make_intro_music.py`: sin canciones de terceros), que desaparece y da paso a la **frase motivadora** (gimnasio y desarrollo personal; 40 frases, nunca la misma dos veces seguidas). Al cerrarse la frase (sola a los 4 s o al tocarla) la música se apaga con un fundido y aparece el menú. La música se puede quitar en Ajustes › Al abrir la app.
+- Si vuelves a la app tras 10 minutos o más fuera sale solo la frase, sin logo ni música.
 
 ### Inicio
 - **Calorías de hoy** arriba del todo, sin anillos: «Te quedan X kcal» (objetivo − lo comido) y lo que te queda de proteínas, carbohidratos y grasas. Baja a medida que registras comidas; si te pasas, lo indica en naranja. El botón de debajo abre *Nutrición*.
@@ -137,7 +138,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - Comprueba si Strava está instalada (`LSApplicationQueriesSchemes` incluye `strava`).
 - **Importante**: Strava **no publica** ningún enlace profundo documentado para iniciar una grabación. La app intenta `strava://record` (no documentado) y, si iOS no puede abrirlo, abre la app con `strava://`. En la práctica se abrirá Strava y deberás pulsar **Grabar** tú mismo; la app lo explica en pantalla.
 - Si Strava no está instalada, ofrece abrir la App Store o strava.com.
-- **Importación de carreras por OAuth 2.0 (API oficial)**: implementada pero **pendiente de configuración** (ver sección 4). Sin configurar, la app lo indica y **no** muestra kilómetros importados.
+- **Importación de carreras por OAuth 2.0 (API oficial), sin servidor**: se configura una vez en Ajustes › Strava con la guía de la app (ver sección 4). Después se importan solas al abrir la app. Sin configurar, la app lo indica y **no** inventa kilómetros (puedes apuntar carreras a mano).
 
 ### Progreso (pestaña con cuatro secciones: Peso · Semana · Medallas · Fotos)
 - **Gráfica de evolución del peso** con periodo 1M / 3M / 6M / 1A / Todo: cada pesaje (puntos), **tendencia de 7 días** (línea verde, quita el ruido del agua) y **media de cada mes** (línea discontinua), con el cambio de la tendencia en el periodo.
@@ -169,7 +170,8 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 | Pesos, cintura, entrenamientos (series, kg, reps, estados), menús, catálogo, comidas marcadas, ajustes, carreras importadas | Base de datos **SwiftData** local (`Application Support`), sin iCloud |
 | Fotos de progreso | Archivos JPEG en `Application Support/ProgressPhotos` con protección de datos completa de iOS |
 | Tokens OAuth de Strava | **Llavero** de iOS (solo este dispositivo) |
-| Client ID de Strava y URL del backend | Ajustes locales (no son secretos) |
+| ID de cliente de Strava | Ajustes locales (no es secreto) |
+| Secreto de cliente de Strava | **Llavero** de iOS (solo este dispositivo) |
 
 - La app **no tiene servidores ni cuentas propias** y no sube fotos a ningún sitio.
 - Las copias de seguridad del iPhone (iCloud/Finder) incluyen los datos de las apps, como en cualquier app.
@@ -184,31 +186,13 @@ Permisos que pide la app:
 
 ## 4. Funciones que necesitan configuración externa
 
-### Importar carreras desde Strava (opcional)
-El intercambio del código OAuth por tokens requiere el **client_secret**, que no debe estar nunca dentro de una app. Por eso hace falta un pequeño backend.
+### Importar carreras desde Strava (opcional, una sola vez, sin servidor)
+La app habla directamente con Strava desde el iPhone; no hace falta ningún servidor ni programar. En la app: **Ajustes › Strava › «Cómo configurarlo»** (guía paso a paso):
+1. Entra en <https://www.strava.com/settings/api> con tu cuenta y crea una aplicación (nombre: Now or Never; sitio web: `http://localhost`; **dominio de devolución de llamada: `localhost`**).
+2. Copia el **ID de cliente** y el **secreto de cliente**, pégalos en Ajustes › Strava y pulsa **«Guardar y conectar con Strava»** → Autorizar.
+3. Las carreras se importan al momento y luego solas cada vez que abres la app (como mucho cada 30 min). También hay «Importar carreras ahora».
 
-1. Entra en <https://www.strava.com/settings/api> y crea una aplicación.
-   - **Authorization Callback Domain**: `localhost`
-   - Anota el **Client ID** y el **Client Secret**.
-2. Despliega el backend de ejemplo `docs/strava-backend/worker.js` (Cloudflare Workers, plan gratuito):
-   ```bash
-   npm install -g wrangler
-   cd docs/strava-backend
-   wrangler init --yes   # o crea wrangler.toml con main = "worker.js"
-   wrangler secret put STRAVA_CLIENT_ID
-   wrangler secret put STRAVA_CLIENT_SECRET
-   wrangler deploy
-   ```
-   Obtendrás una URL `https://…workers.dev`. Puedes usar cualquier otro servidor que implemente `POST /strava/token` y `POST /strava/refresh` igual que el ejemplo.
-3. En la app: **Ajustes › Strava** → escribe el Client ID y la URL del backend → *Guardar configuración* → *Conectar con Strava* → autoriza (marca la casilla de ver actividades) → *Importar carreras ahora*.
-
-Detalles técnicos:
-- Flujo: `ASWebAuthenticationSession` (vía `webAuthenticationSession` de SwiftUI) con `https://www.strava.com/oauth/mobile/authorize`, `redirect_uri = nowornever://localhost/strava`, `scope = read,activity:read_all`, `state` aleatorio validado.
-- Se importan las actividades `Run`, `TrailRun` y `VirtualRun`: distancia, tiempo transcurrido, tiempo en movimiento, ritmo medio (calculado con el tiempo en movimiento), fecha y desnivel si existe.
-- El token se renueva automáticamente vía backend cuando caduca (Strava los emite con 6 h de validez).
-- Errores gestionados: cancelación/denegación, `state` distinto, permisos insuficientes, 401, límite de peticiones (429) y respuestas inválidas del backend.
-- *Desconectar* revoca el token en Strava y lo borra del Llavero.
-- Strava limita a las apps nuevas a 1 atleta (tú) hasta que solicitas más capacidad; suficiente para uso personal.
+El secreto se guarda solo en el **Llavero** de ese iPhone (no en el código ni en la copia de seguridad). Es una app de uso personal: la aplicación de Strava es tuya y solo la usas tú.
 
 ### Demo web (sin instalar nada)
 `demo/NowOrNever-demo.html` es una versión web de la parte de comidas, rutina, peso y perfil, con el mismo catálogo y el mismo planificador. Guarda los datos en el navegador (y en tu cuenta de Claude si la abres como artefacto) y permite exportar/importar una copia en JSON. Se regenera con `python3 tools/build_demo.py`. No tiene Salud, notificaciones ni fotos.
@@ -241,13 +225,12 @@ NowOrNever/
 │   ├── Models/                  Rutina, cálculos nutricionales, cumplimiento, modelos SwiftData, Strava API
 │   ├── Data/                    Catálogo de ejemplo y operaciones de datos
 │   ├── Services/                HealthKit, notificaciones, Strava, fotos, Llavero
-│   ├── Views/                   Inicio, Entreno, Nutrición, Actividad, Progreso, Ajustes
-│   ├── Resources/SeedCatalog.json  Alimentos y 9 menús de ejemplo
+│   ├── Views/                   Inicio, Entreno, Nutrición, Progreso, Calendario, Ajustes
+│   ├── Resources/               SeedCatalog.json (alimentos y menús) e IntroMusic.m4a (música de la intro)
 │   └── Assets.xcassets          Icono, color de acento, color de arranque
 ├── NowOrNeverTests/             Pruebas unitarias y de persistencia (XCTest + SwiftData en memoria)
 ├── NowOrNeverUITests/           Pruebas de interfaz que usan la app como un usuario (XCUITest)
-├── docs/strava-backend/         Backend de ejemplo para OAuth
-└── tools/                       Scripts que generan SeedCatalog.json y el .xcodeproj
+└── tools/                       Scripts que generan SeedCatalog.json, el .xcodeproj y la música de la intro
 ```
 
 Las 6 secciones usan una barra de pestañas propia, porque la `TabView` del sistema agrupa la sexta pestaña en «Más» en iPhone.

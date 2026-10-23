@@ -238,7 +238,7 @@ struct BackupSection: View {
         do {
             try BackupService.restore(file, into: context)
             let s = DataStore.settings(context)
-            strava.configure(clientID: s.stravaClientID, backendURL: s.stravaBackendURL)
+            strava.configure(clientID: s.stravaClientID)
             if s.creatineReminderEnabled { try? await notifications.scheduleCreatine(hour: s.creatineHour, minute: s.creatineMinute) }
             if s.photoReminderEnabled {
                 let day = s.trackingStartDate.map { DateUtils.calendar.component(.day, from: $0) } ?? 22

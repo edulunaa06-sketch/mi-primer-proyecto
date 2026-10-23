@@ -2,6 +2,27 @@ import XCTest
 @testable import NowOrNever
 
 final class StravaAPITests: XCTestCase {
+    func testTokenRequestBodyGoesDirectlyToStrava() {
+        let exchange = StravaAPI.tokenRequestBody(clientID: " 12345 ", clientSecret: "abcdef0123456789abcdef0123456789abcdef01", code: "c0de")
+        XCTAssertEqual(exchange["client_id"], "12345")
+        XCTAssertEqual(exchange["grant_type"], "authorization_code")
+        XCTAssertEqual(exchange["code"], "c0de")
+        XCTAssertNil(exchange["refresh_token"])
+        let refresh = StravaAPI.tokenRequestBody(clientID: "12345", clientSecret: "abcdef0123456789abcdef0123456789abcdef01", refreshToken: "r")
+        XCTAssertEqual(refresh["grant_type"], "refresh_token")
+        XCTAssertEqual(refresh["refresh_token"], "r")
+        XCTAssertEqual(StravaAPI.tokenURL.host, "www.strava.com")
+    }
+
+    func testCredentialValidation() {
+        XCTAssertTrue(StravaAPI.isValidClientID("123456"))
+        XCTAssertFalse(StravaAPI.isValidClientID("12a"))
+        XCTAssertFalse(StravaAPI.isValidClientID(""))
+        XCTAssertTrue(StravaAPI.isValidClientSecret("abcdef0123456789abcdef0123456789abcdef01"))
+        XCTAssertFalse(StravaAPI.isValidClientSecret("secreto"))
+        XCTAssertFalse(StravaAPI.isValidClientSecret("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"))
+    }
+
     func testAuthorizeURLRequiresNumericClientID() {
         XCTAssertNil(StravaAPI.authorizeURL(clientID: "", state: "x"))
         XCTAssertNil(StravaAPI.authorizeURL(clientID: "abc", state: "x"))

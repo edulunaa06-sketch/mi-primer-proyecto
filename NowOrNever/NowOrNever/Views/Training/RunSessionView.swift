@@ -97,7 +97,7 @@ struct RunSessionView: View {
             .buttonStyle(LimeButtonStyle(filled: false))
             switch strava.status {
             case .notConfigured:
-                InfoBanner(text: "Importar de Strava está pendiente de configuración (requiere una app de Strava y un backend; ver README). Mientras, puedes apuntar tus carreras a mano.")
+                InfoBanner(text: "Para importar tus carreras de Strava, configúralo una vez en Ajustes › Strava (hay una guía paso a paso). Mientras, puedes apuntarlas a mano.")
             case .disconnected:
                 InfoBanner(text: "Strava no está conectado. Conéctalo en Ajustes para importar distancia, tiempo y ritmo, o apunta la carrera a mano.", symbol: "link")
             case .connected:

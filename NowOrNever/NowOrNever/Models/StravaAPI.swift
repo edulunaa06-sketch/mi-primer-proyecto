@@ -11,6 +11,34 @@ enum StravaAPI {
     static let websiteURL = URL(string: "https://www.strava.com")!
     static let activitiesURL = URL(string: "https://www.strava.com/api/v3/athlete/activities")!
     static let deauthorizeURL = URL(string: "https://www.strava.com/oauth/deauthorize")!
+    static let tokenURL = URL(string: "https://www.strava.com/oauth/token")!
+    static let apiSettingsURL = URL(string: "https://www.strava.com/settings/api")!
+
+    /// Cuerpo de la petición de tokens a Strava (sin servidor intermedio): cambiar el código
+    /// de autorización por tokens, o renovar el token con el refresh token.
+    static func tokenRequestBody(clientID: String, clientSecret: String, code: String? = nil, refreshToken: String? = nil) -> [String: String] {
+        var body = ["client_id": clientID.trimmingCharacters(in: .whitespacesAndNewlines),
+                    "client_secret": clientSecret.trimmingCharacters(in: .whitespacesAndNewlines)]
+        if let code {
+            body["code"] = code
+            body["grant_type"] = "authorization_code"
+        } else if let refreshToken {
+            body["refresh_token"] = refreshToken
+            body["grant_type"] = "refresh_token"
+        }
+        return body
+    }
+
+    /// El ID de cliente de Strava es un número; el secreto, 40 caracteres hexadecimales.
+    static func isValidClientID(_ text: String) -> Bool {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !t.isEmpty && t.allSatisfy(\.isNumber)
+    }
+
+    static func isValidClientSecret(_ text: String) -> Bool {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.count >= 20 && t.allSatisfy(\.isHexDigit)
+    }
 
     /// Tipos de actividad que se consideran carrera.
     static let runSportTypes: Set<String> = ["Run", "TrailRun", "VirtualRun"]
@@ -64,7 +92,7 @@ enum StravaAPI {
         return code
     }
 
-    /// Respuesta de token (la devuelve tu backend tal cual la recibe de Strava).
+    /// Respuesta de token de Strava.
     struct TokenResponse: Codable, Equatable {
         let accessToken: String
         let refreshToken: String
