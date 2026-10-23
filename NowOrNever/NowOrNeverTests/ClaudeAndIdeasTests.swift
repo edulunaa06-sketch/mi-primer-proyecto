@@ -274,30 +274,3 @@ final class MealLogTests: XCTestCase {
         XCTAssertNil(DateUtils.date(fromDayKey: "hoy"))
     }
 }
-
-/// Foto → alimentos de la tabla (con lo que reconoce el clasificador del iPhone).
-final class FoodVisionTests: XCTestCase {
-    private func keys(_ pairs: [(String, Double)]) -> [String] {
-        FoodVision.catalogKeys(for: pairs.map { FoodVision.Label(identifier: $0.0, confidence: $0.1) })
-    }
-
-    func testPlateLabelsBecomeCatalogFoods() {
-        XCTAssertEqual(keys([("food", 0.9), ("rice", 0.6), ("chicken", 0.4), ("broccoli", 0.3), ("vegetable", 0.5)]),
-                       ["rice_cooked", "chicken_grilled", "broccoli"], "Lo genérico («food», «vegetable») no añade nada")
-        XCTAssertEqual(keys([("sweet_potato", 0.5), ("potato", 0.4)]), ["sweet_potato_baked", "potato_boiled"])
-        XCTAssertEqual(keys([("fried_rice", 0.5), ("peas", 0.3)]), ["rice_cooked", "peas"])
-        XCTAssertEqual(keys([("peanut_butter", 0.5), ("hamburger", 0.4), ("eggplant", 0.4)]), ["peanut_butter", "lean_beef"])
-        XCTAssertEqual(keys([("salad", 0.05)]), [], "Poca confianza: no se sugiere")
-        XCTAssertEqual(keys([("salad", 0.5), ("lettuce", 0.4)]), ["lettuce"], "Sin repetir")
-    }
-
-    func testEveryKeywordPointsToARealFood() throws {
-        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-            .appendingPathComponent("NowOrNever/Resources/SeedCatalog.json")
-        let catalog = try (try? SeedCatalog.loadFromBundle(.main)) ?? SeedCatalog.decode(from: Data(contentsOf: url))
-        let foods = Set(catalog.foods.map(\.key))
-        for (word, food) in FoodVision.keywords {
-            XCTAssertTrue(foods.contains(food), "\(word) → \(food) no está en la tabla")
-        }
-    }
-}

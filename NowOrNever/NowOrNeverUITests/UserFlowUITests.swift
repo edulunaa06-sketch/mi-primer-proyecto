@@ -130,7 +130,6 @@ final class UserFlowUITests: XCTestCase {
 
     func test3_MarkMealCompleted() {
         tab("Nutrición")
-        app.buttons["Menús"].firstMatch.tap()
         let mark = app.buttons.matching(NSPredicate(format: "label CONTAINS 'Marcar'")).firstMatch
         XCTAssertTrue(scrollTo(mark).exists)
         mark.tap()
@@ -140,7 +139,6 @@ final class UserFlowUITests: XCTestCase {
 
     func test4_BuildDayStepByStepAndSwap() {
         tab("Nutrición")
-        app.buttons["Menús"].firstMatch.tap()
         let builder = app.buttons["Elegir mis comidas paso a paso"]
         XCTAssertTrue(builder.waitForExistence(timeout: 10))
         builder.tap()
@@ -168,7 +166,6 @@ final class UserFlowUITests: XCTestCase {
 
     func test5_LogWhatIEatAndRebalance() {
         tab("Nutrición")
-        app.buttons["Menús"].firstMatch.tap()
         let custom = app.buttons["Como otra cosa: apuntarla"].firstMatch
         XCTAssertTrue(scrollTo(custom).exists)
         custom.tap()
@@ -195,28 +192,12 @@ final class UserFlowUITests: XCTestCase {
         assertAppears(element(containing: "Reajustado:"), "Mensaje de reajuste")
     }
 
-    func test6_LogFoodsWithGramsAndSeeWhatIsLeft() {
-        tab("Nutrición")
-        assertAppears(element(containing: "Te quedan"), "Lo que queda del día")
-        let lunch = app.buttons["Almuerzo: añadir alimentos"].firstMatch
-        XCTAssertTrue(scrollTo(lunch).exists)
-        lunch.tap()
-        // Se abre directamente la lista de alimentos.
-        let searchField = app.searchFields.firstMatch
-        XCTAssertTrue(searchField.waitForExistence(timeout: 8), "Buscador de alimentos")
-        searchField.tap()
-        searchField.typeText("boniato")
-        let food = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Boniato cocido")).firstMatch
-        XCTAssertTrue(food.waitForExistence(timeout: 5), "Boniato cocido en la tabla")
-        food.tap()
-        let grams = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "g")).firstMatch
-        XCTAssertTrue(grams.waitForExistence(timeout: 5))
-        type("200", into: grams)
-        dismissKeyboard()
-        assertAppears(element(containing: "152 kcal"), "76 kcal/100 g × 200 g")
-        scrollTo(app.buttons["Añadir a almuerzo"].firstMatch).tap()
-        assertAppears(element(containing: "Boniato cocido"), "Apuntado en el almuerzo")
-        tab("Inicio")
-        assertAppears(element(containing: "Te quedan"), "Inicio muestra lo que queda")
+    func test6_MarkSessionDoneFromTheWeek() {
+        tab("Entreno")
+        let mark = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "como hecha")).firstMatch
+        XCTAssertTrue(scrollTo(mark).exists, "Botón de marcar en la semana")
+        mark.tap()
+        app.swipeDown(); app.swipeDown(); app.swipeDown()
+        assertAppears(element(containing: "1 de "), "Cuenta como hecha en el resumen semanal")
     }
 }

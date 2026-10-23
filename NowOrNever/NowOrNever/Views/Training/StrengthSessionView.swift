@@ -20,6 +20,8 @@ struct StrengthSessionView: View {
             VStack(spacing: 14) {
                 if let log {
                     summary(log)
+                    // También arriba, para verlo nada más entrar.
+                    completeButton(log)
                     if current.exercises.isEmpty {
                         EmptyStateView(symbol: "dumbbell", title: "Sesión sin ejercicios",
                                        message: "Pulsa “Editar” para añadir ejercicios a esta sesión.")

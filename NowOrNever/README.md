@@ -62,7 +62,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - **Frase motivadora** (gimnasio y desarrollo personal; 40 frases, nunca la misma dos veces seguidas). Se cierra sola a los 3 s o al tocarla y aparece la interfaz. Vuelve a salir si regresas a la app tras 10 minutos o más fuera.
 
 ### Inicio
-- **Calorías de hoy** arriba del todo, sin anillos: «Te quedan X kcal» (objetivo − lo comido) y lo que te queda de proteínas, carbohidratos y grasas. Baja a medida que registras comidas; si te pasas, lo indica en naranja. Al tocarla se abre *Comidas*.
+- **Calorías de hoy** arriba del todo, sin anillos: «Te quedan X kcal» (objetivo − lo comido) y lo que te queda de proteínas, carbohidratos y grasas. Baja a medida que registras comidas; si te pasas, lo indica en naranja. El botón de debajo abre *Nutrición*.
 - Peso más reciente y diferencia respecto al primer peso registrado.
 - Entrenamiento(s) programado(s) para hoy con su estado.
 - Comidas completadas (x/4).
@@ -94,16 +94,8 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
   - Cada registro semanal guarda una copia del nombre y la prescripción, así que el historial sigue siendo legible aunque cambies la rutina.
 - **Progresión de cargas** por ejercicio (*Ver progresión de cargas*): gráfica de la carga máxima por semana, mejor serie, volumen (kg × reps), repeticiones totales y 1RM estimado (Epley, orientativo).
 
-### Nutrición › Comidas (lo que comes de verdad)
-- Cuatro comidas: **Desayuno, Almuerzo, Merienda y Cena**. Al tocar una se abre la **cámara** (o *Elegir de la galería*).
-- **Foto del plato**: el propio iPhone reconoce los alimentos (clasificador de imágenes de Apple: gratis, sin internet y sin enviar la foto a ningún sitio) y los añade a la lista, marcados «Visto en la foto». Reconoce categorías generales (arroz, pollo, patata, brócoli, ensalada, huevo…), no si algo está cocido o crudo ni la marca: revisa la lista, quita lo que no sea y añade lo que falte.
-- **Añadir alimento**: buscas en la tabla («boniato», «patata», «pollo»…) y lo eliges. Hay versiones ya cocinadas (boniato cocido o asado, patata cocida, arroz y pasta cocidos, pollo y salmón a la plancha, huevo cocido, quinoa cocida) y queso cottage. Si no está, *Crear un alimento nuevo* con los valores por 100 g de la etiqueta.
-- Pones los **gramos** de cada alimento y la app calcula **kcal, proteínas, carbohidratos y grasas** de cada uno y el **total**. *Añadir a …* lo suma a esa comida.
-- Cada alimento se puede quitar después (✕) y el total se actualiza. Las kcal y macros registrados se restan en **Inicio** (lo que te queda).
-- Sin coste: todo se calcula en el iPhone con la tabla de alimentos.
-- **Tus calorías**: botón *Cambiar* en la tarjeta de calorías (Inicio y Comidas). Pones las kcal que quieres comer, los macros se rellenan solos (puedes retocarlos) y se quedan fijas aunque te peses o cambies el perfil. Hay un botón para volver al cálculo automático.
-
-### Nutrición › Menús (ideas y planificación)
+### Nutrición (menús)
+- **Tus calorías**: en Ajustes › Objetivos diarios, o con el botón *Cambiar* de la tarjeta de calorías de Inicio.
 - Objetivos editables en Ajustes (iniciales **provisionales**: 2.300 kcal, 180 g P, 250 g C, 65 g G).
 - Desayuno, comida, merienda y cena, con casilla para marcar cada comida en el día elegido (puedes navegar a días anteriores).
 - **9 modelos de menú** seleccionables por día, más un menú predeterminado.

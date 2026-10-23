@@ -140,15 +140,18 @@ struct TrainingView: View {
                 }
             }
             ForEach(sessions) { session in
-                NavigationLink(value: session.id) {
-                    sessionRow(session)
-                }
-                .buttonStyle(.plain)
-                .contextMenu {
-                    Button {
-                        newTitle = session.renamed(titles).title
-                        renaming = session
-                    } label: { Label("Cambiar nombre", systemImage: "pencil") }
+                HStack(spacing: 8) {
+                    NavigationLink(value: session.id) {
+                        sessionRow(session)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button {
+                            newTitle = session.renamed(titles).title
+                            renaming = session
+                        } label: { Label("Cambiar nombre", systemImage: "pencil") }
+                    }
+                    if session.kind != .rest { doneButton(session) }
                 }
             }
         }
@@ -171,13 +174,35 @@ struct TrainingView: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
-            if session.kind != .rest {
-                CheckCircle(isOn: log?.isCompleted ?? false, size: 22)
-            }
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
         }
         .padding(10)
         .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    /// Marcar la sesión como hecha (o deshacerlo) directamente desde la semana, sin entrar.
+    private func doneButton(_ base: SessionDefinition) -> some View {
+        let session = base.resolved(with: routine, titles: titles)
+        let done = log(for: session)?.isCompleted ?? false
+        return Button {
+            let log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
+            withAnimation {
+                log.isCompleted.toggle()
+                log.completedAt = log.isCompleted ? Date() : nil
+                log.lastModified = Date()
+            }
+            try? context.save()
+        } label: {
+            VStack(spacing: 2) {
+                CheckCircle(isOn: done, size: 30)
+                Text(done ? "Hecho" : "Marcar").font(.caption2.weight(.semibold))
+                    .foregroundStyle(done ? Theme.lime : Theme.textSecondary)
+            }
+            .frame(width: 56, height: 56)
+            .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(done ? "\(session.title): hecha. Deshacer" : "Marcar \(session.title) como hecha")
     }
 
     private func subtitle(_ session: SessionDefinition, progress: SessionProgress) -> String {
