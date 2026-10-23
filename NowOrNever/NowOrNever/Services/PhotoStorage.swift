@@ -1,4 +1,5 @@
 import Foundation
+import ImageIO
 import SwiftData
 import UIKit
 
@@ -22,6 +23,31 @@ enum PhotoStorage {
     static func loadImage(_ fileName: String) -> UIImage? {
         guard !fileName.isEmpty else { return nil }
         return UIImage(contentsOfFile: url(for: fileName).path)
+    }
+
+    private static let cache: NSCache<NSString, UIImage> = {
+        let c = NSCache<NSString, UIImage>()
+        c.totalCostLimit = 80 * 1024 * 1024
+        return c
+    }()
+
+    /// Versión reducida (lado mayor `maxPixel`) y guardada en memoria: las pantallas no vuelven a leer
+    /// y descomprimir la foto completa del disco en cada redibujado (ni en cada movimiento del deslizador).
+    /// Cada foto nueva tiene otro nombre de archivo, así que nunca se muestra una versión antigua.
+    static func image(_ fileName: String, maxPixel: Int) -> UIImage? {
+        guard !fileName.isEmpty else { return nil }
+        let key = "\(fileName)@\(maxPixel)" as NSString
+        if let cached = cache.object(forKey: key) { return cached }
+        guard let source = CGImageSourceCreateWithURL(url(for: fileName) as CFURL, nil) else { return nil }
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel,
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
+        let image = UIImage(cgImage: cg)
+        cache.setObject(image, forKey: key, cost: cg.bytesPerRow * cg.height)
+        return image
     }
 
     /// Normaliza a JPEG (máx. 2048 px) y guarda. Si ya hay foto para ese mes y vista, la reemplaza

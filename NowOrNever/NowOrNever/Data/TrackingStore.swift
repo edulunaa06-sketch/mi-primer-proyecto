@@ -144,10 +144,14 @@ struct TrackingSnapshot {
         return result
     }
 
-    /// Racha actual y mejor racha desde el primer día con datos o marcas hasta hoy.
+    /// Como mucho se miran los últimos 400 días: así calcular la racha es rápido aunque lleves años.
+    static let streakWindowDays = 400
+
+    /// Racha actual y mejor racha desde el primer día con datos o marcas hasta hoy (máx. 400 días).
     var streak: Streak.Result {
         let earliestMark = marksByDay.keys.compactMap(DateUtils.date(fromDayKey:)).min()
-        let start = min(trackingStart, earliestMark ?? trackingStart)
+        let window = DateUtils.calendar.date(byAdding: .day, value: -Self.streakWindowDays, to: DateUtils.startOfDay(today)) ?? today
+        let start = max(min(trackingStart, earliestMark ?? trackingStart), window)
         return Streak.compute(days(from: start, through: today).map(outcome(for:)))
     }
 

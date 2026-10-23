@@ -33,7 +33,12 @@ struct NutritionView: View {
     }
     /// Valores de una comida: lo apuntado a mano si existe; si no, la comida del menú o la elegida.
     private func values(of type: MealType) -> NutritionValues {
-        if let custom = customByType[type], !custom.isEmpty { return NutritionMath.sum(custom.map(\.values)) }
+        values(of: type, meals: meals, custom: customByType)
+    }
+
+    /// Con las comidas ya calculadas (para no recalcular el día entero varias veces en cada redibujado).
+    private func values(of type: MealType, meals: [ResolvedMeal], custom: [MealType: [CustomMealItem]]) -> NutritionValues {
+        if let items = custom[type], !items.isEmpty { return NutritionMath.sum(items.map(\.values)) }
         return meals.first { $0.type == type }?.totals ?? .zero
     }
     private var dailyTargets: NutritionValues {
@@ -64,14 +69,17 @@ struct NutritionView: View {
                             Text(rebalanceMessage).font(.caption).foregroundStyle(Theme.lime)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
+                        let dayMeals = meals
+                        let dayCustom = customByType
+                        let dayRecords = Set(records.map(\.mealTypeRaw))
                         consumedCard
-                        dayTotalsCard
-                        ForEach(meals, id: \.type) { meal in
-                            if let custom = customByType[meal.type], !custom.isEmpty {
+                        dayTotalsCard(meals: dayMeals, custom: dayCustom)
+                        ForEach(dayMeals, id: \.type) { meal in
+                            if let custom = dayCustom[meal.type], !custom.isEmpty {
                                 CustomMealCard(
                                     type: meal.type,
                                     items: custom,
-                                    isCompleted: records.contains { $0.mealTypeRaw == meal.type.rawValue },
+                                    isCompleted: dayRecords.contains(meal.type.rawValue),
                                     onToggle: { toggleCustom(meal.type, custom) },
                                     onEdit: { customFor = meal.type },
                                     onRemove: { removeCustom(meal.type) }
@@ -79,7 +87,7 @@ struct NutritionView: View {
                             } else {
                             MealCard(
                                 meal: meal.template,
-                                isCompleted: records.contains { $0.mealTypeRaw == meal.type.rawValue },
+                                isCompleted: dayRecords.contains(meal.type.rawValue),
                                 factor: meal.factor,
                                 sourceLabel: meal.isChoice || meal.plan.id != plan.id ? meal.sourceName : nil,
                                 lockedByUser: meal.isChoice && isUserChoice(meal.type),
@@ -323,8 +331,8 @@ struct NutritionView: View {
         .card()
     }
 
-    private var dayTotalsCard: some View {
-        let t = NutritionMath.sum(MealType.allCases.map(values(of:)))
+    private func dayTotalsCard(meals: [ResolvedMeal], custom: [MealType: [CustomMealItem]]) -> some View {
+        let t = NutritionMath.sum(MealType.allCases.map { values(of: $0, meals: meals, custom: custom) })
         return VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: "Total del día planificado", subtitle: "Suma automática de las 4 comidas · objetivo debajo")
             HStack {

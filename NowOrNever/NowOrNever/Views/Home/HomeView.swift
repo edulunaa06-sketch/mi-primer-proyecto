@@ -4,21 +4,14 @@ import SwiftUI
 struct HomeView: View {
     @Query private var sessionTitles: [SessionTitle]
     @Environment(AppRouter.self) private var router
-    @Environment(StepCounter.self) private var steps
 
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
     @Query private var settingsList: [UserSettings]
     @Query private var todayMeals: [MealRecord]
     @Query private var weekLogs: [WorkoutSessionLog]
     @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
-    @Query private var allMeals: [MealRecord]
-    @Query private var allLogs: [WorkoutSessionLog]
-    @Query private var dailySteps: [DailySteps]
-    @Query private var marks: [DayMarkRecord]
-    @Environment(\.modelContext) private var context
 
     @State private var showStepGoal = false
-    @State private var trackingStart = DateUtils.startOfDay(Date())
 
     private let today = Date()
 
@@ -41,15 +34,6 @@ struct HomeView: View {
 
     private var consumed: NutritionValues { NutritionMath.sum(todayMeals.map(\.values)) }
 
-    private var compliance: DailyCompliance {
-        DailyCompliance(
-            mealsCompleted: Set(todayMeals.map(\.mealTypeRaw)).count,
-            sessionsCompleted: trainableToday.filter(isCompleted).count,
-            sessionsScheduled: trainableToday.count,
-            steps: steps.todaySteps,
-            stepGoal: settings?.stepGoal ?? 8000
-        )
-    }
 
     var body: some View {
         NavigationStack {
@@ -57,9 +41,14 @@ struct HomeView: View {
                 VStack(spacing: 16) {
                     header
                     caloriesCard
-                    stepsCard
-                    streakCard
-                    complianceCard
+                    // Las tarjetas que leen los pasos en vivo son vistas aparte: cada paso nuevo solo
+                    // redibuja esas tarjetas, no toda la pantalla.
+                    HomeStepsCard(goal: settings?.stepGoal ?? 8000, adaptive: settings?.stepGoalAdaptive ?? true) { showStepGoal = true }
+                    HomeStreakCard()
+                    HomeComplianceCard(mealsCompleted: Set(todayMeals.map(\.mealTypeRaw)).count,
+                                       sessionsCompleted: trainableToday.filter(isCompleted).count,
+                                       sessionsScheduled: trainableToday.count,
+                                       stepGoal: settings?.stepGoal ?? 8000)
                     weightCard
                     todayTraining
                 }
@@ -70,7 +59,6 @@ struct HomeView: View {
             .navigationTitle("Now or Never")
             .toolbarBackground(Theme.background, for: .navigationBar)
             .sheet(isPresented: $showStepGoal) { StepGoalSheet() }
-            .onAppear { trackingStart = DataStore.trackingStart(context) }
         }
     }
 
@@ -83,24 +71,6 @@ struct HomeView: View {
                 .font(.system(.largeTitle, design: .rounded).weight(.heavy))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var complianceCard: some View {
-        HStack(spacing: 18) {
-            ProgressRing(fraction: compliance.fraction, size: 96)
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Cumplimiento diario").font(.headline)
-                ForEach(compliance.components, id: \.name) { comp in
-                    HStack {
-                        Text(comp.name).foregroundStyle(Theme.textSecondary)
-                        Spacer()
-                        Text(NumberFormat.percent(comp.fraction)).monospacedDigit()
-                    }
-                    .font(.caption)
-                }
-            }
-        }
-        .card()
     }
 
     private var weightCard: some View {
@@ -135,77 +105,6 @@ struct HomeView: View {
             }
             .buttonStyle(LimeButtonStyle(filled: false))
         }
-    }
-
-    /// Pasos de hoy con el sensor del iPhone, en vivo mientras la app está abierta.
-    private var stepsCard: some View {
-        let goal = settings?.stepGoal ?? 8000
-        let today = steps.todaySteps
-        return VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 16) {
-                ProgressRing(fraction: today.map { StepEstimates.fraction($0, goal: goal) } ?? 0, size: 84,
-                             label: today == nil ? "—" : nil)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("PASOS DE HOY").font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
-                    Text(today.map { NumberFormat.integer($0) } ?? "—")
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
-                        .monospacedDigit()
-                        .accessibilityIdentifier("home.steps")
-                    Text(today.map { $0 >= goal ? "¡Objetivo de \(NumberFormat.integer(goal)) cumplido!" : "Te faltan \(NumberFormat.integer(goal - $0)) para \(NumberFormat.integer(goal))" }
-                         ?? "Objetivo: \(NumberFormat.integer(goal)) pasos")
-                        .font(.subheadline).foregroundStyle(Theme.textSecondary)
-                    Button { showStepGoal = true } label: {
-                        Label(settings?.stepGoalAdaptive ?? true ? "Objetivo automático · cambiar" : "Objetivo manual · cambiar",
-                              systemImage: "slider.horizontal.3")
-                            .font(.caption.weight(.semibold))
-                    }
-                    .padding(.top, 2)
-                }
-                Spacer(minLength: 0)
-            }
-            if let today {
-                HStack {
-                    Label(String(format: "≈ %.1f km", StepEstimates.kilometers(today)).replacingOccurrences(of: ".", with: ","), systemImage: "map")
-                    Spacer()
-                    Label("≈ \(NumberFormat.integer(StepEstimates.kcal(today))) kcal", systemImage: "flame.fill")
-                }
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(Theme.textSecondary)
-            } else {
-                Text(steps.state == .unavailable
-                     ? "Este dispositivo no tiene sensor de pasos."
-                     : steps.state == .denied
-                     ? "Sin permiso para contar pasos. Actívalo en Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never."
-                     : "Contando pasos… Si no aparecen, revisa Ajustes › Privacidad y seguridad › Movimiento y forma física.")
-                    .font(.caption).foregroundStyle(Theme.textTertiary)
-            }
-        }
-        .card()
-        .onAppear { steps.start() }
-    }
-
-    /// Racha de días cumplidos y marca de hoy (descanso, enfermo…). Tocar abre el calendario.
-    private var streakCard: some View {
-        let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
-                                        stepGoal: settings?.stepGoal ?? 8000, trackingStart: trackingStart)
-        let streak = snapshot.streak
-        let mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
-        return Button { router.tab = .calendar } label: {
-            HStack(spacing: 14) {
-                Image(systemName: "flame.fill").font(.title2).foregroundStyle(streak.current > 0 ? Theme.lime : Theme.textTertiary)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Racha: \(Medals.days(Double(streak.current)))").font(.headline)
-                    Text(mark == .normal ? "Mejor racha: \(Medals.days(Double(streak.best)))"
-                         : mark == .trained ? "Hoy: entrenado (cuenta como cumplido)" : "Hoy: \(mark.label.lowercased()) (no rompe la racha)")
-                        .font(.caption).foregroundStyle(Theme.textSecondary)
-                }
-                Spacer()
-                Text("Calendario").font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
-            }
-            .card()
-        }
-        .buttonStyle(.plain)
     }
 
     private var todayTraining: some View {
@@ -252,5 +151,124 @@ struct HomeView: View {
         case .strength: return "dumbbell.fill"
         case .rest: return "bed.double.fill"
         }
+    }
+}
+
+/// Cumplimiento del día. Lee los pasos en vivo, así que va aparte de la pantalla principal.
+private struct HomeComplianceCard: View {
+    let mealsCompleted: Int
+    let sessionsCompleted: Int
+    let sessionsScheduled: Int
+    let stepGoal: Int
+    @Environment(StepCounter.self) private var steps
+
+    var body: some View {
+        let compliance = DailyCompliance(mealsCompleted: mealsCompleted, sessionsCompleted: sessionsCompleted,
+                                         sessionsScheduled: sessionsScheduled, steps: steps.todaySteps, stepGoal: stepGoal)
+        HStack(spacing: 18) {
+            ProgressRing(fraction: compliance.fraction, size: 96)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Cumplimiento diario").font(.headline)
+                ForEach(compliance.components, id: \.name) { comp in
+                    HStack {
+                        Text(comp.name).foregroundStyle(Theme.textSecondary)
+                        Spacer()
+                        Text(NumberFormat.percent(comp.fraction)).monospacedDigit()
+                    }
+                    .font(.caption)
+                }
+            }
+        }
+        .card()
+    }
+}
+
+/// Pasos de hoy con el sensor del iPhone, en vivo mientras la app está abierta.
+private struct HomeStepsCard: View {
+    let goal: Int
+    let adaptive: Bool
+    let onChangeGoal: () -> Void
+    @Environment(StepCounter.self) private var steps
+
+    var body: some View {
+        let today = steps.todaySteps
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                ProgressRing(fraction: today.map { StepEstimates.fraction($0, goal: goal) } ?? 0, size: 84,
+                             label: today == nil ? "—" : nil)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("PASOS DE HOY").font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
+                    Text(today.map { NumberFormat.integer($0) } ?? "—")
+                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .monospacedDigit()
+                        .accessibilityIdentifier("home.steps")
+                    Text(today.map { $0 >= goal ? "¡Objetivo de \(NumberFormat.integer(goal)) cumplido!" : "Te faltan \(NumberFormat.integer(goal - $0)) para \(NumberFormat.integer(goal))" }
+                         ?? "Objetivo: \(NumberFormat.integer(goal)) pasos")
+                        .font(.subheadline).foregroundStyle(Theme.textSecondary)
+                    Button(action: onChangeGoal) {
+                        Label(adaptive ? "Objetivo automático · cambiar" : "Objetivo manual · cambiar",
+                              systemImage: "slider.horizontal.3")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .padding(.top, 2)
+                }
+                Spacer(minLength: 0)
+            }
+            if let today {
+                HStack {
+                    Label(String(format: "≈ %.1f km", StepEstimates.kilometers(today)).replacingOccurrences(of: ".", with: ","), systemImage: "map")
+                    Spacer()
+                    Label("≈ \(NumberFormat.integer(StepEstimates.kcal(today))) kcal", systemImage: "flame.fill")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(Theme.textSecondary)
+            } else {
+                Text(steps.state == .unavailable
+                     ? "Este dispositivo no tiene sensor de pasos."
+                     : steps.state == .denied
+                     ? "Sin permiso para contar pasos. Actívalo en Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never."
+                     : "Contando pasos… Si no aparecen, revisa Ajustes › Privacidad y seguridad › Movimiento y forma física.")
+                    .font(.caption).foregroundStyle(Theme.textTertiary)
+            }
+        }
+        .card()
+        .onAppear { steps.start() }
+    }
+}
+
+/// Racha de días cumplidos y marca de hoy (descanso, enfermo…). Tocar abre el calendario.
+private struct HomeStreakCard: View {
+    @Environment(AppRouter.self) private var router
+    @Environment(\.modelContext) private var context
+    @Query private var allMeals: [MealRecord]
+    @Query private var allLogs: [WorkoutSessionLog]
+    @Query private var dailySteps: [DailySteps]
+    @Query private var marks: [DayMarkRecord]
+    @Query private var settingsList: [UserSettings]
+    @State private var trackingStart = DateUtils.startOfDay(Date())
+
+    var body: some View {
+        let today = Date()
+        let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
+                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+        let streak = snapshot.streak
+        let mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
+        Button { router.tab = .calendar } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "flame.fill").font(.title2).foregroundStyle(streak.current > 0 ? Theme.lime : Theme.textTertiary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Racha: \(Medals.days(Double(streak.current)))").font(.headline)
+                    Text(mark == .normal ? "Mejor racha: \(Medals.days(Double(streak.best)))"
+                         : mark == .trained ? "Hoy: entrenado (cuenta como cumplido)" : "Hoy: \(mark.label.lowercased()) (no rompe la racha)")
+                        .font(.caption).foregroundStyle(Theme.textSecondary)
+                }
+                Spacer()
+                Text("Calendario").font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
+            }
+            .card()
+        }
+        .buttonStyle(.plain)
+        .onAppear { trackingStart = DataStore.trackingStart(context) }
     }
 }

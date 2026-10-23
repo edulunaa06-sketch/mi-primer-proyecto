@@ -99,6 +99,7 @@ struct RootView: View {
                 #endif
                 await notifications.refreshStatus()
                 await refreshPhotoRemindersIfNeeded(settings)
+                steps.onUpdate = { saveLiveSteps($0) }
                 await syncTracking()
             }
             .overlay {
@@ -133,7 +134,7 @@ struct RootView: View {
                     await syncTracking()
                 }
             }
-            .onChange(of: steps.todaySteps) { _, value in saveLiveSteps(value) }
+
             .onOpenURL { url in
                 if url.scheme == StravaAPI.callbackScheme {
                     Task { await strava.handleCallback(url) }
@@ -194,6 +195,7 @@ struct RootView: View {
     private func applyScreenshotArguments() {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-NNSkipOnboarding") { showOnboarding = false }
+        if args.contains("-NNDemoData") { DataStore.seedDemoData(context) }
         // Las pruebas y capturas no esperan a la frase; con -NNSplash se queda fija para la captura.
         if args.contains("-NNSplash") { splashAutoDismiss = false } else if args.contains("-NNSkipOnboarding") { splashQuote = nil }
         if let i = args.firstIndex(of: "-NNTab"), i + 1 < args.count, let tab = AppTab(rawValue: args[i + 1]) {
@@ -218,8 +220,8 @@ struct RootView: View {
     }
 
     /// Los pasos en vivo se guardan cada 200 pasos o cada 2 minutos, no en cada actualización del sensor.
-    private func saveLiveSteps(_ value: Int?) {
-        guard let value, bootstrapped else { return }
+    private func saveLiveSteps(_ value: Int) {
+        guard bootstrapped else { return }
         if let last = lastStepsSave, value - last.steps < 200, Date().timeIntervalSince(last.at) < 120 { return }
         lastStepsSave = (value, Date())
         DataStore.saveSteps(value, for: Date(), goal: DataStore.settings(context).stepGoal, in: context)

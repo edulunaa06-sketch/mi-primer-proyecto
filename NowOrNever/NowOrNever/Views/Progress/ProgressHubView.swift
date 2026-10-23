@@ -128,8 +128,10 @@ struct WeightProgressView: View {
         let cutoff = range.months.flatMap { DateUtils.calendar.date(byAdding: .month, value: -$0, to: Date()) } ?? .distantPast
         let shown = sorted.filter { $0.date >= cutoff }
         let trend = WeightStats.movingAverage(sorted).filter { $0.date >= cutoff }
-        let lastDate = sorted.last?.date ?? Date()
-        let monthly = WeightStats.monthlyAverages(sorted).filter { $0.end >= cutoff }
+        let firstShown = sorted.first { $0.date >= cutoff }?.date ?? Date()
+        let chartEnd = max(sorted.last?.date ?? Date(), Date())
+        // Solo los meses que tienen tramo visible (si no, la línea empezaría después de acabar).
+        let monthly = WeightStats.monthlyAverages(sorted).filter { $0.end >= firstShown && $0.start <= chartEnd }
         let values = shown.map(\.kg) + monthly.map(\.averageKg)
         let minKg = ((values.min() ?? 0) - 0.8).rounded(.down)
         let maxKg = ((values.max() ?? 0) + 0.8).rounded(.up)
@@ -162,7 +164,7 @@ struct WeightProgressView: View {
                             .foregroundStyle(by: .value("Serie", "Peso diario"))
                             .symbolSize(22)
                     }
-                    ForEach(trend.enumerated().map { IndexedPoint(id: $0.offset, point: $0.element) }) { item in
+                    ForEach(trend.enumerated().map { IndexedPoint(id: 1_000_000 + $0.offset, point: $0.element) }) { item in
                         LineMark(x: .value("Fecha", item.point.date), y: .value("Kg", item.point.kg),
                                  series: .value("Línea", "Tendencia"))
                             .foregroundStyle(by: .value("Serie", "Tendencia 7 días"))
@@ -170,8 +172,8 @@ struct WeightProgressView: View {
                             .interpolationMethod(.monotone)
                     }
                     ForEach(monthly) { m in
-                        RuleMark(xStart: .value("Inicio", max(m.start, shown.first?.date ?? m.start)),
-                                 xEnd: .value("Fin", min(m.end, max(lastDate, Date()))),
+                        RuleMark(xStart: .value("Inicio", max(m.start, firstShown)),
+                                 xEnd: .value("Fin", min(m.end, chartEnd)),
                                  y: .value("Media", m.averageKg))
                             .foregroundStyle(by: .value("Serie", "Media del mes"))
                             .lineStyle(StrokeStyle(lineWidth: 2, dash: [5, 4]))

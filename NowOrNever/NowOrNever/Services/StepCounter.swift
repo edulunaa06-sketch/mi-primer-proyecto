@@ -20,10 +20,29 @@ final class StepCounter {
 
     private(set) var todaySteps: Int?
     private(set) var state: State
+    /// Aviso directo de cada lectura (para guardar los pasos) sin que la pantalla principal entera
+    /// tenga que redibujarse con cada paso.
+    @ObservationIgnored var onUpdate: ((Int) -> Void)?
+
+    #if DEBUG
+    /// Solo en Debug (pruebas del CI): simula un sensor que da pasos varias veces por segundo.
+    @ObservationIgnored private var fakeTimer: Timer?
+    private static var fakeSteps: Bool { ProcessInfo.processInfo.arguments.contains("-NNFakeSteps") }
+    #endif
 
     init() {
         state = CMPedometer.isStepCountingAvailable() ? .ready : .unavailable
+        #if DEBUG
+        if Self.fakeSteps { state = .ready }
+        #endif
         updateDenied()
+    }
+
+    /// Solo cambia lo que ha cambiado: asignar el mismo valor también redibujaría las pantallas.
+    private func apply(_ steps: Int) {
+        if todaySteps != steps { todaySteps = steps }
+        if state != .ready { state = .ready }
+        onUpdate?(steps)
     }
 
     private func updateDenied() {
@@ -40,11 +59,23 @@ final class StepCounter {
         if liveStart != nil { pedometer.stopUpdates() }
         liveStart = startOfDay
         if shownDay != startOfDay { todaySteps = nil; shownDay = startOfDay }
+        #if DEBUG
+        if Self.fakeSteps {
+            fakeTimer?.invalidate()
+            fakeTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.apply((self.todaySteps ?? 3000) + 7)
+                }
+            }
+            return
+        }
+        #endif
         pedometer.startUpdates(from: startOfDay) { [weak self] data, error in
             let steps = data?.numberOfSteps.intValue
             Task { @MainActor in
                 guard let self else { return }
-                if let steps { self.todaySteps = steps; self.state = .ready }
+                if let steps { self.apply(steps) }
                 if error != nil { self.updateDenied() }
             }
         }
@@ -58,6 +89,10 @@ final class StepCounter {
     }
 
     func stop() {
+        #if DEBUG
+        fakeTimer?.invalidate()
+        fakeTimer = nil
+        #endif
         pedometer.stopUpdates()
         liveStart = nil
     }

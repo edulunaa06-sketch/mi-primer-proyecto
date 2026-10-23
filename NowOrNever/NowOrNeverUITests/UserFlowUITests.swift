@@ -269,4 +269,45 @@ final class UserFlowUITests: XCTestCase {
         rebalance.tap()
         assertAppears(element(containing: "las cambiaste tú): cena"), "Reajustar no toca la cena cambiada")
     }
+
+    /// Con 8 meses de datos y el sensor de pasos actualizándose 3 veces por segundo, cada pantalla
+    /// tiene que abrirse y responder rápido (se ejecuta la última: deja esos datos para las capturas).
+    func testZ_FluidWithLotsOfData() {
+        app.terminate()
+        app.launchArguments = ["-NNSkipOnboarding", "-NNDemoData", "-NNFakeSteps"]
+        app.launch()
+        assertAppears(app.buttons["Progreso"].firstMatch, timeout: 60, "La app arranca con muchos datos")
+
+        func timed(_ name: String, limit: TimeInterval = 6, _ block: () -> Void) {
+            let start = Date()
+            block()
+            let seconds = Date().timeIntervalSince(start)
+            print("PERF \(name): \(String(format: "%.1f", seconds)) s")
+            XCTAssertLessThan(seconds, limit, "\(name) tarda demasiado")
+        }
+        func appears(_ text: String) {
+            assertAppears(element(containing: text), timeout: 10, text)
+        }
+
+        timed("Abrir Progreso") { tab("Progreso"); appears("Línea verde") }
+        timed("Semana") { app.buttons["Semana"].firstMatch.tap(); appears("Media de pasos") }
+        timed("Medallas") { app.buttons["Medallas"].firstMatch.tap(); appears("Carrera más larga") }
+        timed("Fotos") { app.buttons["Fotos"].firstMatch.tap(); appears("Privacidad") }
+        timed("Peso") { app.buttons["Peso"].firstMatch.tap(); appears("Media mensual") }
+        timed("Abrir Nutrición") { tab("Nutrición"); appears("Reajustar el resto del día") }
+        timed("Desplazar Nutrición", limit: 15) {
+            for _ in 0..<3 { app.swipeUp() }
+            for _ in 0..<3 { app.swipeDown() }
+        }
+        timed("Cambiar cena") {
+            let swap = app.buttons["Cambiar cena"].firstMatch
+            scrollTo(swap).tap()
+            assertAppears(app.buttons["Elegir esta opción"].firstMatch, timeout: 10, "Opciones de cena")
+            app.buttons["Cancelar"].firstMatch.tap()
+        }
+        timed("Abrir Calendario") { tab("Calendario"); appears("Racha actual") }
+        timed("Mes anterior") { app.buttons["Mes anterior"].firstMatch.tap(); app.buttons["Mes anterior"].firstMatch.tap() }
+        timed("Abrir Inicio") { tab("Inicio"); appears("PASOS DE HOY") }
+        timed("Abrir Entreno") { tab("Entreno"); appears("Historial") }
+    }
 }

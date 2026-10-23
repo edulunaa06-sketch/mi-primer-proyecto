@@ -88,7 +88,7 @@ struct PhotosProgressView: View {
             }
         }
         .fullScreenCover(item: $cameraView) { view in
-            CameraCaptureView(view: view, guide: previousPhoto(view).flatMap { PhotoStorage.loadImage($0.fileName) }) { data in
+            CameraCaptureView(view: view, guide: previousPhoto(view).flatMap { PhotoStorage.image($0.fileName, maxPixel: 1600) }) { data in
                 saveData(data, view: view)
             }
         }
@@ -125,7 +125,7 @@ struct PhotosProgressView: View {
             VStack(spacing: 6) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.cardRaised)
-                    if let photo, let image = PhotoStorage.loadImage(photo.fileName) {
+                    if let photo, let image = PhotoStorage.image(photo.fileName, maxPixel: 400) {
                         Image(uiImage: image).resizable().scaledToFill()
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     } else {
@@ -240,7 +240,7 @@ struct MonthPhotosView: View {
                 ForEach(PhotoView.allCases) { view in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(view.label).font(.headline)
-                        if let photo = photos.first(where: { $0.view == view }), let image = PhotoStorage.loadImage(photo.fileName) {
+                        if let photo = photos.first(where: { $0.view == view }), let image = PhotoStorage.image(photo.fileName, maxPixel: 1200) {
                             Image(uiImage: image).resizable().scaledToFit()
                                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                                 .onTapGesture { viewing = photo }
@@ -365,7 +365,7 @@ struct PhotoCompareView: View {
 
     @ViewBuilder
     private func image(for key: String) -> some View {
-        if let p = photo(for: key), let img = PhotoStorage.loadImage(p.fileName) {
+        if let p = photo(for: key), let img = PhotoStorage.image(p.fileName, maxPixel: 1200) {
             Image(uiImage: img).resizable().scaledToFit()
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                 .frame(maxWidth: .infinity)
@@ -379,8 +379,8 @@ struct PhotoCompareView: View {
     /// «Antes» a la izquierda del deslizador y «Después» a la derecha. Arrastra sobre la foto para mover la línea.
     @ViewBuilder
     private var overlayView: some View {
-        if let before = photo(for: leftKey).flatMap({ PhotoStorage.loadImage($0.fileName) }),
-           let after = photo(for: rightKey).flatMap({ PhotoStorage.loadImage($0.fileName) }) {
+        if let before = photo(for: leftKey).flatMap({ PhotoStorage.image($0.fileName, maxPixel: 1600) }),
+           let after = photo(for: rightKey).flatMap({ PhotoStorage.image($0.fileName, maxPixel: 1600) }) {
             VStack(spacing: 10) {
                 GeometryReader { geo in
                     let width = geo.size.width
