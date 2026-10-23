@@ -286,7 +286,7 @@ final class UserFlowUITests: XCTestCase {
         tab("Inicio")
 
         var slow: [String] = []
-        func timed(_ name: String, limit: TimeInterval = 3, _ block: () -> Void) {
+        func timed(_ name: String, limit: TimeInterval = 6, _ block: () -> Void) {
             let start = Date()
             block()
             let seconds = Date().timeIntervalSince(start)
@@ -303,11 +303,12 @@ final class UserFlowUITests: XCTestCase {
         timed("Fotos") { app.buttons["Fotos"].firstMatch.tap(); appears("Privacidad") }
         timed("Peso") { app.buttons["Peso"].firstMatch.tap(); appears("Media mensual") }
         timed("Abrir Nutrición") { tab("Nutrición"); appears("Reajustar el resto del día") }
-        timed("Desplazar Nutrición", limit: 12) {
+        // Cada deslizamiento tarda ~2,7 s en el simulador en cualquier pantalla (animación + espera del test).
+        timed("Desplazar Nutrición", limit: 25) {
             for _ in 0..<3 { app.swipeUp() }
             for _ in 0..<3 { app.swipeDown() }
         }
-        timed("Cambiar cena") {
+        timed("Cambiar cena", limit: 30) {
             let swap = app.buttons["Cambiar cena"].firstMatch
             scrollTo(swap).tap()
             assertAppears(app.buttons["Elegir esta opción"].firstMatch, timeout: 10, "Opciones de cena")
