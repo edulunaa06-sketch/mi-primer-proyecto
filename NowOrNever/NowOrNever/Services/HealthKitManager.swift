@@ -50,11 +50,20 @@ final class HealthKitManager {
         state = CMPedometer.isStepCountingAvailable() ? .motionOnly : .error(error.localizedDescription)
     }
 
+    /// Apple Salud no se usa: con Sideloadly o SideStore y una cuenta de Apple gratuita iOS no deja leerla.
+    /// Los pasos salen siempre del sensor de movimiento del iPhone.
+    static let usesHealthKit = false
+
     init() {
-        if !HKHealthStore.isHealthDataAvailable() { state = .unavailable }
+        if !Self.usesHealthKit {
+            state = CMPedometer.isStepCountingAvailable() ? .motionOnly : .unavailable
+        } else if !HKHealthStore.isHealthDataAvailable() {
+            state = .unavailable
+        }
     }
 
     func refreshAuthorizationState() async {
+        guard Self.usesHealthKit else { return }
         guard isAvailable else { state = CMPedometer.isStepCountingAvailable() ? .motionOnly : .unavailable; return }
         if state == .motionOnly { return }
         do {
@@ -71,7 +80,7 @@ final class HealthKitManager {
     }
 
     func requestAuthorization() async {
-        guard isAvailable, state != .motionOnly else {
+        guard Self.usesHealthKit, isAvailable, state != .motionOnly else {
             if CMPedometer.isStepCountingAvailable() { state = .motionOnly }
             // La primera consulta al podómetro es la que muestra el permiso de Movimiento y forma física.
             await refresh()

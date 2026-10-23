@@ -161,6 +161,13 @@ enum SocialAPI {
         return name
     }
 
+    /// «Edu Luna» → «eduluna» (sugerencia de @usuario a partir del nombre).
+    static func suggestUsername(_ name: String) -> String {
+        let folded = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES")).lowercased()
+        let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789_.")
+        return String(String.UnicodeScalarView(folded.unicodeScalars.filter { allowed.contains($0) }).prefix(20))
+    }
+
     // MARK: Teléfono
 
     /// «+34 600 11 12 22», «0034600111222» y «600111222» → «34600111222». Sin prefijo se asume España.

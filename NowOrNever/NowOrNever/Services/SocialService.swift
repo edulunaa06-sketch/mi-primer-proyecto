@@ -106,6 +106,51 @@ final class SocialService {
         try await refreshFriends()
     }
 
+    // MARK: Cuenta pedida al entrar
+
+    /// Lo que se pidió al abrir la app por primera vez. Se usa para crear la cuenta en cuanto hay servidor.
+    struct PendingStart: Codable, Equatable {
+        let name: String
+        let username: String
+        let phone: String?
+    }
+
+    private static let pendingStartKey = "social.pendingStart"
+    static let accountPromptKey = "social.accountPromptShown"
+
+    var pendingStart: PendingStart? {
+        UserDefaults.standard.data(forKey: Self.pendingStartKey).flatMap { try? JSONDecoder().decode(PendingStart.self, from: $0) }
+    }
+
+    /// Hay que preguntar nombre y teléfono si aún no hay cuenta ni datos guardados y no se ha preguntado.
+    var needsAccountPrompt: Bool {
+        !(isSignedIn && me != nil) && pendingStart == nil && !UserDefaults.standard.bool(forKey: Self.accountPromptKey)
+    }
+
+    func savePendingStart(name: String, username: String, phone: String) throws {
+        let cleanName = name.trimmingCharacters(in: .whitespaces)
+        guard let user = SocialAPI.normalizeUsername(username) else { throw SocialAPI.SocialError.invalidUsername }
+        let trimmedPhone = phone.trimmingCharacters(in: .whitespaces)
+        if !trimmedPhone.isEmpty && SocialAPI.normalizePhone(trimmedPhone) == nil { throw SocialAPI.SocialError.invalidPhone }
+        let pending = PendingStart(name: cleanName, username: user, phone: trimmedPhone.isEmpty ? nil : trimmedPhone)
+        UserDefaults.standard.set(try? JSONEncoder().encode(pending), forKey: Self.pendingStartKey)
+        UserDefaults.standard.set(true, forKey: Self.accountPromptKey)
+    }
+
+    /// Crea la cuenta guardada al entrar si ya hay servidor. Devuelve true si la cuenta está lista.
+    @discardableResult
+    func completePendingStart() async throws -> Bool {
+        if isSignedIn && me != nil {
+            UserDefaults.standard.removeObject(forKey: Self.pendingStartKey)
+            return true
+        }
+        guard let pending = pendingStart, isConfigured else { return false }
+        try await start(username: pending.username, displayName: pending.name)
+        if let phone = pending.phone { try await setPhone(phone) }
+        UserDefaults.standard.removeObject(forKey: Self.pendingStartKey)
+        return true
+    }
+
     // MARK: Teléfono y contactos
 
     private static let phoneKey = "social.phone"

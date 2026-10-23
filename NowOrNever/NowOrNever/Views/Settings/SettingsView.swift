@@ -54,7 +54,6 @@ private struct SettingsForm: View {
             creatineSection
             photoSection
             notificationsStatusSection
-            healthSection
             stravaSection
             trackingSection
             dataSection

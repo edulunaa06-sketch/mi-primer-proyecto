@@ -37,7 +37,6 @@ struct StrengthSessionView: View {
                             )
                         }
                     }
-                    completeButton(log)
                 } else {
                     ProgressView().padding(40)
                 }
@@ -45,6 +44,16 @@ struct StrengthSessionView: View {
             .padding(16)
         }
         .scrollDismissesKeyboard(.interactively)
+        // El botón de terminar va fijo abajo, siempre a mano, sin tener que bajar hasta el final.
+        .safeAreaInset(edge: .bottom) {
+            if let log {
+                completeButton(log)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Theme.background.opacity(0.96))
+                    .overlay(alignment: .top) { Divider().overlay(Color.white.opacity(0.08)) }
+            }
+        }
         .screenBackground()
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline)
@@ -106,7 +115,7 @@ struct StrengthSessionView: View {
     }
 
     private func completeButton(_ log: WorkoutSessionLog) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 4) {
             Button {
                 withAnimation {
                     log.isCompleted.toggle()
@@ -123,7 +132,6 @@ struct StrengthSessionView: View {
                     .font(.caption).foregroundStyle(Theme.textSecondary)
             }
         }
-        .padding(.top, 4)
     }
 }
 

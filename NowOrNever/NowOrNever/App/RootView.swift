@@ -50,6 +50,7 @@ struct RootView: View {
 
     @Query private var settingsList: [UserSettings]
     @State private var showOnboarding = false
+    @State private var showAccountSetup = false
     @State private var bootstrapped = false
     @State private var splashQuote: Motivation.Quote? = RootView.nextQuote()
     @State private var splashAutoDismiss = true
@@ -83,6 +84,8 @@ struct RootView: View {
                 await refreshPhotoRemindersIfNeeded(settings)
                 await health.refreshAuthorizationState()
                 await health.refresh()
+                // Si al entrar dejaste nombre y teléfono y ya hay servidor, la cuenta se crea sola.
+                _ = try? await social.completePendingStart()
                 try? await SocialSync.publish(social: social, health: health, context: context)
             }
             .overlay {
@@ -116,9 +119,21 @@ struct RootView: View {
                     Task { await strava.handleCallback(url) }
                 }
             }
-            .fullScreenCover(isPresented: $showOnboarding) {
+            .fullScreenCover(isPresented: $showOnboarding, onDismiss: askForAccountIfNeeded) {
                 OnboardingView { showOnboarding = false }
             }
+            .onChange(of: splashQuote == nil) { _, gone in
+                if gone && bootstrapped && !showOnboarding { askForAccountIfNeeded() }
+            }
+            .sheet(isPresented: $showAccountSetup) {
+                AccountSetupView { showAccountSetup = false }
+            }
+    }
+
+    /// La primera vez (también si ya usabas la app): nombre y teléfono para Amigos.
+    private func askForAccountIfNeeded() {
+        guard social.needsAccountPrompt, !ProcessInfo.processInfo.arguments.contains("-NNSkipOnboarding") else { return }
+        showAccountSetup = true
     }
 
     @ViewBuilder

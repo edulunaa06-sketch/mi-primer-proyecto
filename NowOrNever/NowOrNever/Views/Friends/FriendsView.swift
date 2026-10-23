@@ -415,13 +415,15 @@ private struct StartCard: View {
             if withEmail { AccountCard() }
         }
         .card()
+        .onAppear {
+            guard name.isEmpty, let pending = social.pendingStart else { return }
+            name = pending.name
+            username = pending.username
+            phone = pending.phone ?? ""
+        }
     }
 
-    /// «Edu Luna» → «eduluna».
-    static func suggest(_ name: String) -> String {
-        let folded = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES")).lowercased()
-        return String(folded.unicodeScalars.filter { CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789_.").contains($0) }.prefix(20))
-    }
+    static func suggest(_ name: String) -> String { SocialAPI.suggestUsername(name) }
 }
 
 // MARK: - Días de un amigo

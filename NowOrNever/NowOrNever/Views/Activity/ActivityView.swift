@@ -18,7 +18,7 @@ struct ActivityView: View {
                 VStack(spacing: 16) {
                     switch health.state {
                     case .unavailable:
-                        InfoBanner(text: "Apple Salud no está disponible en este dispositivo.", symbol: "heart.slash.fill", color: Theme.danger)
+                        InfoBanner(text: "Este dispositivo no tiene sensor de pasos.", symbol: "heart.slash.fill", color: Theme.danger)
                     case .notDetermined:
                         permissionCard
                     case .error(let message):

@@ -98,7 +98,7 @@ struct HomeView: View {
                     .font(.caption)
                 }
                 if health.todaySteps == nil {
-                    Text("Pasos sin datos de Salud: no cuentan en el cálculo.")
+                    Text("Sin pasos registrados todavía: no cuentan en el cálculo.")
                         .font(.caption2)
                         .foregroundStyle(Theme.textTertiary)
                 }
@@ -177,7 +177,7 @@ struct HomeView: View {
                 .buttonStyle(LimeButtonStyle())
             } else {
                 Text(health.state == .unavailable
-                     ? "Este dispositivo no tiene Apple Salud ni sensor de pasos."
+                     ? "Este dispositivo no tiene sensor de pasos."
                      : health.state == .motionOnly
                      ? "Sin pasos todavía. Si no aparecen, activa Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never."
                      : "Sin pasos todavía. Si no aparecen, revisa Ajustes › Salud › Acceso a datos › Now or Never, o Ajustes › Privacidad › Movimiento y forma física.")

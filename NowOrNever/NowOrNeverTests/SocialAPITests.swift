@@ -79,6 +79,13 @@ final class SocialAPITests: XCTestCase {
         XCTAssertNil(SocialAPI.searchProfiles(config, session: session, query: "@a"), "Hace falta escribir al menos 2 letras")
     }
 
+    func testUsernameSuggestion() {
+        XCTAssertEqual(SocialAPI.suggestUsername("Edu Luna"), "eduluna")
+        XCTAssertEqual(SocialAPI.suggestUsername("Lucía Pérez-Gómez"), "luciaperezgomez")
+        XCTAssertEqual(SocialAPI.suggestUsername("Un nombre larguísimo de verdad"), "unnombrelarguisimode")
+        XCTAssertNotNil(SocialAPI.normalizeUsername(SocialAPI.suggestUsername("Edu")))
+    }
+
     func testPhoneNumbers() throws {
         XCTAssertEqual(SocialAPI.normalizePhone("600 11 12 22"), "34600111222", "Sin prefijo: España")
         XCTAssertEqual(SocialAPI.normalizePhone("+34 600-11-12-22"), "34600111222")
