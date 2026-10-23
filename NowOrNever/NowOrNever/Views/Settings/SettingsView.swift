@@ -48,6 +48,7 @@ private struct SettingsForm: View {
     var body: some View {
         Form {
             profileSection
+            appearanceSection
             goalsSection
             StepGoalSection(settings: settings)
             SmartRemindersSection(settings: settings)
@@ -385,6 +386,21 @@ private struct SettingsForm: View {
     }
 
     @AppStorage(IntroMusicPlayer.enabledKey) private var introMusic = true
+    @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system.rawValue
+
+    private var appearanceSection: some View {
+        Section {
+            Picker("Modo", selection: $appearance) {
+                ForEach(AppAppearance.allCases) { Text($0.label).tag($0.rawValue) }
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } header: {
+            Text("Apariencia")
+        } footer: {
+            Text("Automático cambia solo entre claro y oscuro cuando lo hace tu iPhone (Ajustes del iPhone › Pantalla y brillo).")
+        }
+    }
 
     private var introSection: some View {
         Section {

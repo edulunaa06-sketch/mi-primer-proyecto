@@ -200,12 +200,12 @@ struct DayCell: View {
                 .fill(outcome == .future || outcome == .beforeStart ? Theme.cardRaised.opacity(0.5) : Self.color(for: outcome))
             Text("\(DateUtils.calendar.component(.day, from: date))")
                 .font(.footnote.weight(isToday ? .heavy : .semibold).monospacedDigit())
-                .foregroundStyle(isBright ? Color.black : (outcome == .future ? Theme.textTertiary : Theme.textPrimary))
+                .foregroundStyle(isBright ? Theme.onLime : (outcome == .future ? Theme.textTertiary : Theme.textPrimary))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             if let symbol {
                 Image(systemName: symbol)
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(isBright ? Color.black : Theme.textSecondary)
+                    .foregroundStyle(isBright ? Theme.onLime : Theme.textSecondary)
                     .padding(3)
             }
         }

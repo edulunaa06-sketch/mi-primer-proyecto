@@ -33,7 +33,7 @@ struct CustomMealCard: View {
             ForEach(items) { item in
                 CustomItemRow(item: item)
             }
-            Divider().overlay(Color.white.opacity(0.08))
+            Divider().overlay(Theme.separator)
             HStack {
                 Text("Subtotal").font(.subheadline.weight(.semibold))
                 Spacer()
@@ -180,7 +180,7 @@ struct CustomMealSheet: View {
                 }
             }
             if !items.isEmpty {
-                Divider().overlay(Color.white.opacity(0.08))
+                Divider().overlay(Theme.separator)
                 Text("Total: \(NumberFormat.integer(totals.kcal)) kcal · P \(NumberFormat.integer(totals.protein)) g · C \(NumberFormat.integer(totals.carbs)) g · G \(NumberFormat.integer(totals.fat)) g")
                     .font(.subheadline.weight(.semibold).monospacedDigit())
                 let diff = totals.kcal - target.kcal

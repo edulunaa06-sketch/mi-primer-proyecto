@@ -427,7 +427,7 @@ struct MealCard: View {
                         .font(.caption.weight(.semibold))
                 }
             }
-            Divider().overlay(Color.white.opacity(0.08))
+            Divider().overlay(Theme.separator)
             HStack {
                 Text("Subtotal").font(.subheadline.weight(.semibold))
                 Spacer()

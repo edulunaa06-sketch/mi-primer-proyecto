@@ -27,6 +27,8 @@ struct CameraCaptureView: View {
             }
         }
         .statusBarHidden()
+        // La cámara se ve siempre en oscuro, también con la app en modo claro.
+        .environment(\.colorScheme, .dark)
         .task { await camera.start() }
         .onDisappear { camera.stop() }
     }

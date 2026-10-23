@@ -60,7 +60,7 @@ struct StravaSetupGuide: View {
                     .font(.caption.weight(.heavy))
                     .frame(width: 26, height: 26)
                     .background(Theme.lime, in: Circle())
-                    .foregroundStyle(.black)
+                    .foregroundStyle(Theme.onLime)
                 Text(title).font(.headline)
             }
             if let text {
@@ -79,7 +79,7 @@ struct StravaSetupGuide: View {
                 Text(value).font(.subheadline.weight(.semibold)).foregroundStyle(important ? Theme.lime : Theme.textPrimary)
                     .textSelection(.enabled)
                 if important {
-                    Text("IMPORTANTE").font(.caption2.weight(.heavy)).foregroundStyle(.black)
+                    Text("IMPORTANTE").font(.caption2.weight(.heavy)).foregroundStyle(Theme.onLime)
                         .padding(.horizontal, 6).padding(.vertical, 2)
                         .background(Theme.lime, in: Capsule())
                 }

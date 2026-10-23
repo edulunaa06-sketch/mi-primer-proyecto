@@ -131,7 +131,7 @@ struct TrainingView: View {
                         .font(.caption2.weight(.heavy))
                         .padding(.horizontal, 8).padding(.vertical, 3)
                         .background(Theme.lime, in: Capsule())
-                        .foregroundStyle(.black)
+                        .foregroundStyle(Theme.onLime)
                 }
                 if sessions.count > 1 {
                     Text("\(sessions.count) sesiones")

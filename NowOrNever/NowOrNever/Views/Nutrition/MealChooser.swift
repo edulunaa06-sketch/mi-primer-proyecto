@@ -25,7 +25,7 @@ struct MealOptionCard: View {
                     .font(.caption.weight(.heavy))
                     .padding(.horizontal, 8).padding(.vertical, 4)
                     .background(option.fit >= 0.85 ? Theme.lime : Theme.limeDim, in: Capsule())
-                    .foregroundStyle(option.fit >= 0.85 ? Color.black : Theme.lime)
+                    .foregroundStyle(option.fit >= 0.85 ? Theme.onLime : Theme.lime)
             }
             ForEach(scaled.lines, id: \.item.persistentModelID) { line in
                 HStack {
@@ -35,7 +35,7 @@ struct MealOptionCard: View {
                         .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
                 }
             }
-            Divider().overlay(Color.white.opacity(0.08))
+            Divider().overlay(Theme.separator)
             macroLine("Esta comida", option.values, target: target)
             if let dayTotal, let daily {
                 macroLine("Día completo", dayTotal, target: daily)

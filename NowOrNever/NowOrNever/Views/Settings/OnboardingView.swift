@@ -83,7 +83,6 @@ struct OnboardingView: View {
             .scrollDismissesKeyboard(.interactively)
             .screenBackground()
         }
-        .preferredColorScheme(.dark)
         .interactiveDismissDisabled()
     }
 

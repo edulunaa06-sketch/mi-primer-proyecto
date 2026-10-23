@@ -165,7 +165,7 @@ struct RootView: View {
         .padding(.top, 4)
         .background(
             Theme.card
-                .overlay(alignment: .top) { Rectangle().fill(Color.white.opacity(0.06)).frame(height: 0.5) }
+                .overlay(alignment: .top) { Rectangle().fill(Theme.separator).frame(height: 0.5) }
                 .ignoresSafeArea(edges: .bottom)
         )
     }

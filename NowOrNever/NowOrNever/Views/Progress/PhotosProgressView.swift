@@ -393,7 +393,7 @@ struct PhotoCompareView: View {
                         Rectangle().fill(Theme.lime).frame(width: 3)
                             .offset(x: width * split - 1.5)
                         Circle().fill(Theme.lime).frame(width: 34, height: 34)
-                            .overlay(Image(systemName: "arrow.left.and.right").font(.caption.weight(.heavy)).foregroundStyle(.black))
+                            .overlay(Image(systemName: "arrow.left.and.right").font(.caption.weight(.heavy)).foregroundStyle(Theme.onLime))
                             .offset(x: width * split - 17)
                     }
                     .overlay(alignment: .topLeading) { tag("ANTES").padding(8) }

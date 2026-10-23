@@ -180,7 +180,7 @@ struct WeightProgressView: View {
                 .chartForegroundStyleScale([
                     "Peso diario": Theme.textSecondary,
                     "Tendencia 7 días": Theme.lime,
-                    "Media del mes": Color.white,
+                    "Media del mes": Theme.textPrimary,
                 ])
                 .chartLegend(position: .bottom, alignment: .leading)
                 .chartYScale(domain: minKg...maxKg)
@@ -216,7 +216,7 @@ struct WeightProgressView: View {
                         }
                     }
                     .padding(.vertical, 4)
-                    Divider().overlay(Color.white.opacity(0.06))
+                    Divider().overlay(Theme.separator)
                 }
             }
             .card()
@@ -263,7 +263,7 @@ struct WeightProgressView: View {
                 .contextMenu {
                     Button("Eliminar", systemImage: "trash", role: .destructive) { pendingDelete = entry }
                 }
-                Divider().overlay(Color.white.opacity(0.06))
+                Divider().overlay(Theme.separator)
             }
         }
         .card()
