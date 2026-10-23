@@ -238,8 +238,9 @@ struct WeightProgressView: View {
         }
     }
 
+    /// Perezoso: con muchos pesajes solo se dibujan las filas que se ven en pantalla.
     private var history: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        LazyVStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: "Historial", subtitle: "Mantén pulsado un registro para eliminarlo")
             // `entries` va del más reciente al más antiguo: el anterior de cada registro es el siguiente.
             ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in

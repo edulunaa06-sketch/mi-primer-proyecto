@@ -277,16 +277,24 @@ final class UserFlowUITests: XCTestCase {
         app.launchArguments = ["-NNSkipOnboarding", "-NNDemoData", "-NNFakeSteps"]
         app.launch()
         assertAppears(app.buttons["Progreso"].firstMatch, timeout: 60, "La app arranca con muchos datos")
+        // Los 8 meses de datos se crean al arrancar: se espera a que estén (la racha deja de ser 0 en el calendario)
+        // antes de medir, para medir las pantallas y no la creación de los datos.
+        tab("Calendario")
+        let loaded = app.descendants(matching: .any).matching(NSPredicate(format: "label BEGINSWITH %@", "Mejor racha")).firstMatch
+        assertAppears(loaded, timeout: 60, "Calendario con datos")
+        _ = element(containing: "fallados").waitForExistence(timeout: 30)
+        tab("Inicio")
 
-        func timed(_ name: String, limit: TimeInterval = 6, _ block: () -> Void) {
+        var slow: [String] = []
+        func timed(_ name: String, limit: TimeInterval = 3, _ block: () -> Void) {
             let start = Date()
             block()
             let seconds = Date().timeIntervalSince(start)
             print("PERF \(name): \(String(format: "%.1f", seconds)) s")
-            XCTAssertLessThan(seconds, limit, "\(name) tarda demasiado")
+            if seconds >= limit { slow.append("\(name) (\(String(format: "%.1f", seconds)) s)") }
         }
         func appears(_ text: String) {
-            assertAppears(element(containing: text), timeout: 10, text)
+            assertAppears(element(containing: text), timeout: 15, text)
         }
 
         timed("Abrir Progreso") { tab("Progreso"); appears("Línea verde") }
@@ -295,7 +303,7 @@ final class UserFlowUITests: XCTestCase {
         timed("Fotos") { app.buttons["Fotos"].firstMatch.tap(); appears("Privacidad") }
         timed("Peso") { app.buttons["Peso"].firstMatch.tap(); appears("Media mensual") }
         timed("Abrir Nutrición") { tab("Nutrición"); appears("Reajustar el resto del día") }
-        timed("Desplazar Nutrición", limit: 15) {
+        timed("Desplazar Nutrición", limit: 12) {
             for _ in 0..<3 { app.swipeUp() }
             for _ in 0..<3 { app.swipeDown() }
         }
@@ -309,5 +317,7 @@ final class UserFlowUITests: XCTestCase {
         timed("Mes anterior") { app.buttons["Mes anterior"].firstMatch.tap(); app.buttons["Mes anterior"].firstMatch.tap() }
         timed("Abrir Inicio") { tab("Inicio"); appears("PASOS DE HOY") }
         timed("Abrir Entreno") { tab("Entreno"); appears("Historial") }
+        timed("Volver a Progreso") { tab("Progreso"); appears("Línea verde") }
+        XCTAssertTrue(slow.isEmpty, "Pantallas lentas: \(slow.joined(separator: ", "))")
     }
 }
