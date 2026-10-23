@@ -245,4 +245,20 @@ final class UserFlowUITests: XCTestCase {
         app.buttons["Peso"].firstMatch.tap()
         assertAppears(element(containing: "Línea verde"), "Gráfica de peso")
     }
+
+    func test10_RebalanceKeepsMealsIChanged() {
+        tab("Nutrición")
+        let swap = app.buttons["Cambiar cena"].firstMatch
+        XCTAssertTrue(scrollTo(swap).exists)
+        swap.tap()
+        let pick = app.buttons["Elegir esta opción"].firstMatch
+        assertAppears(pick, "Opciones de cena")
+        pick.tap()
+        assertAppears(element(containing: "Cambiada por ti"), "La cena queda marcada como cambiada por ti")
+        app.swipeDown(); app.swipeDown(); app.swipeDown(); app.swipeDown()
+        let rebalance = app.buttons["Reajustar el resto del día a mis macros"]
+        XCTAssertTrue(scrollTo(rebalance).exists)
+        rebalance.tap()
+        assertAppears(element(containing: "las cambiaste tú): cena"), "Reajustar no toca la cena cambiada")
+    }
 }

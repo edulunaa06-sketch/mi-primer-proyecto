@@ -408,13 +408,17 @@ final class DayMealChoice {
     var mealTypeRaw: String = MealType.breakfast.rawValue
     var planID: UUID = UUID()
     var factor: Double = 1
+    /// true = la cambiaste tú (con «Cambiar» o paso a paso): «Reajustar» no la toca.
+    /// false = la puso «Reajustar»: se puede volver a reajustar.
+    var isUserChoice: Bool = true
 
-    init(dayKey: String, mealType: MealType, planID: UUID, factor: Double) {
+    init(dayKey: String, mealType: MealType, planID: UUID, factor: Double, isUserChoice: Bool = true) {
         self.key = DayMealChoice.makeKey(dayKey: dayKey, mealType: mealType)
         self.dayKey = dayKey
         self.mealTypeRaw = mealType.rawValue
         self.planID = planID
         self.factor = factor
+        self.isUserChoice = isUserChoice
     }
 
     static func makeKey(dayKey: String, mealType: MealType) -> String { "\(dayKey)|\(mealType.rawValue)" }

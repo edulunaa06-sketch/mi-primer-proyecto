@@ -62,7 +62,8 @@ enum BackupService {
         }
         file.daySelections = try all(DayPlanSelection.self).map { BackupFile.DaySelection(dayKey: $0.dayKey, planID: $0.planID) }
         file.dayChoices = try all(DayMealChoice.self).map {
-            BackupFile.DayChoice(dayKey: $0.dayKey, mealTypeRaw: $0.mealTypeRaw, planID: $0.planID, factor: $0.factor)
+            BackupFile.DayChoice(dayKey: $0.dayKey, mealTypeRaw: $0.mealTypeRaw, planID: $0.planID, factor: $0.factor,
+                                 isUserChoice: $0.isUserChoice)
         }
         file.customItems = try all(CustomMealItem.self).map {
             BackupFile.CustomItem(dayKey: $0.dayKey, mealTypeRaw: $0.mealTypeRaw, name: $0.name, grams: $0.grams, kcalPer100: $0.kcalPer100,
@@ -179,7 +180,8 @@ enum BackupService {
         for d in file.daySelections { context.insert(DayPlanSelection(dayKey: d.dayKey, planID: d.planID)) }
         for c in file.dayChoices {
             guard let type = MealType(rawValue: c.mealTypeRaw) else { continue }
-            context.insert(DayMealChoice(dayKey: c.dayKey, mealType: type, planID: c.planID, factor: c.factor))
+            context.insert(DayMealChoice(dayKey: c.dayKey, mealType: type, planID: c.planID, factor: c.factor,
+                                         isUserChoice: c.isUserChoice ?? true))
         }
         for c in file.customItems {
             guard let type = MealType(rawValue: c.mealTypeRaw) else { continue }

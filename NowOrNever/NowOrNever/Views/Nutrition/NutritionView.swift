@@ -82,6 +82,7 @@ struct NutritionView: View {
                                 isCompleted: records.contains { $0.mealTypeRaw == meal.type.rawValue },
                                 factor: meal.factor,
                                 sourceLabel: meal.isChoice || meal.plan.id != plan.id ? meal.sourceName : nil,
+                                lockedByUser: meal.isChoice && isUserChoice(meal.type),
                                 onToggle: { toggle(meal) },
                                 onEditItem: { editingItem = $0 },
                                 onAddItem: { addingTo = meal.template },
@@ -164,27 +165,38 @@ struct NutritionView: View {
         Dictionary(uniqueKeysWithValues: MealType.allCases.filter { $0 != type }.map { ($0, values(of: $0)) })
     }
 
-    /// Mantiene lo apuntado a mano y lo ya marcado como hecho; el resto se reelige para cuadrar el día.
+    /// La comida la cambiaste tú este día (con «Cambiar» o paso a paso).
+    private func isUserChoice(_ type: MealType) -> Bool {
+        choices.contains { $0.dayKey == dayKey && $0.mealTypeRaw == type.rawValue && $0.isUserChoice }
+    }
+
+    /// Mantiene lo apuntado a mano, lo ya marcado como hecho y las comidas que cambiaste tú;
+    /// solo se reeligen las demás para cuadrar el día.
     private func rebalance() {
         var fixed: [MealType: NutritionValues] = [:]
+        var kept: [MealType] = []
         for type in MealType.allCases {
             if let custom = customByType[type], !custom.isEmpty {
                 fixed[type] = NutritionMath.sum(custom.map(\.values))
             } else if let record = records.first(where: { $0.mealTypeRaw == type.rawValue }) {
                 fixed[type] = record.values
+            } else if isUserChoice(type) {
+                fixed[type] = values(of: type)
+                kept.append(type)
             }
         }
         guard fixed.count < MealType.allCases.count else {
-            rebalanceMessage = "No quedan comidas pendientes que reajustar."
+            rebalanceMessage = "No quedan comidas que reajustar: todas están hechas, apuntadas o las cambiaste tú."
             return
         }
         let applied = DataStore.rebalanceDay(day, fixed: fixed, daily: dailyTargets, plans: plans, in: context)
         refreshRecords()
         let names = MealType.allCases.filter { applied[$0] != nil }.map { $0.label.lowercased() }
         let total = NutritionMath.sum(Array(fixed.values) + applied.values.map(\.values))
-        rebalanceMessage = names.isEmpty
+        let keptText = kept.isEmpty ? "" : " Sin tocar (las cambiaste tú): \(kept.map { $0.label.lowercased() }.joined(separator: ", "))."
+        rebalanceMessage = (names.isEmpty
             ? "No se encontraron opciones para reajustar."
-            : "Reajustado: \(names.joined(separator: ", ")). Ajuste del día: \(NumberFormat.percent(MealPlanner.fit(total, to: dailyTargets)))."
+            : "Reajustado: \(names.joined(separator: ", ")). Ajuste del día: \(NumberFormat.percent(MealPlanner.fit(total, to: dailyTargets))).") + keptText
     }
 
     private func toggleCustom(_ type: MealType, _ items: [CustomMealItem]) {
@@ -349,6 +361,8 @@ struct MealCard: View {
     var factor: Double = 1
     /// Menú de origen cuando la comida no es la del menú base del día.
     var sourceLabel: String?
+    /// La cambiaste tú: «Reajustar» no la toca.
+    var lockedByUser = false
     let onToggle: () -> Void
     let onEditItem: (MealItem) -> Void
     let onAddItem: () -> Void
@@ -378,6 +392,10 @@ struct MealCard: View {
                     if let sourceLabel {
                         Text(sourceLabel + (isScaled ? " · ración al \(Int((factor * 100).rounded())) %" : ""))
                             .font(.caption2).foregroundStyle(Theme.textSecondary)
+                    }
+                    if lockedByUser {
+                        Label("Cambiada por ti · Reajustar no la toca", systemImage: "lock.fill")
+                            .font(.caption2.weight(.semibold)).foregroundStyle(Theme.lime)
                     }
                 }
                 Spacer()

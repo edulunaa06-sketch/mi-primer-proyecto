@@ -167,6 +167,8 @@ struct BackupFile: Codable, Equatable {
         var mealTypeRaw: String
         var planID: UUID
         var factor: Double
+        /// nil en copias antiguas: se trata como cambiada por ti.
+        var isUserChoice: Bool?
     }
 
     struct CustomItem: Codable, Equatable {

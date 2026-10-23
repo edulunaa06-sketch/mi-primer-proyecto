@@ -377,15 +377,16 @@ enum DataStore {
 
     /// Guarda la comida elegida para un día. Si ya estaba marcada como hecha, actualiza su registro.
     @MainActor
-    static func choose(_ type: MealType, planID: UUID, factor: Double, on date: Date, in context: ModelContext) {
+    static func choose(_ type: MealType, planID: UUID, factor: Double, on date: Date, byUser: Bool = true, in context: ModelContext) {
         let key = DayMealChoice.makeKey(dayKey: DateUtils.dayKey(date), mealType: type)
         var descriptor = FetchDescriptor<DayMealChoice>(predicate: #Predicate { $0.key == key })
         descriptor.fetchLimit = 1
         if let existing = try? context.fetch(descriptor).first {
             existing.planID = planID
             existing.factor = factor
+            existing.isUserChoice = byUser
         } else {
-            context.insert(DayMealChoice(dayKey: DateUtils.dayKey(date), mealType: type, planID: planID, factor: factor))
+            context.insert(DayMealChoice(dayKey: DateUtils.dayKey(date), mealType: type, planID: planID, factor: factor, isUserChoice: byUser))
         }
         try? context.save()
     }
@@ -448,7 +449,8 @@ enum DataStore {
         try? context.save()
     }
 
-    /// Reajusta las comidas pendientes del día (sin lo apuntado a mano ni las ya marcadas como hechas):
+    /// Reajusta las comidas pendientes del día (sin lo apuntado a mano, las ya marcadas como hechas
+    /// ni las que cambiaste tú: esas llegan en `fixed`):
     /// elige, en orden, la opción que mejor encaja con lo que queda.
     /// - Returns: las elecciones aplicadas.
     @MainActor
@@ -461,7 +463,7 @@ enum DataStore {
             let target = MealPlanner.target(for: type, daily: daily, fixed: fixedValues)
             guard let best = MealPlanner.rank(candidates(for: type, plans: plans).map(\.plannerCandidate), target: target, limit: 1).first,
                   let id = UUID(uuidString: best.id) else { continue }
-            choose(type, planID: id, factor: best.factor, on: date, in: context)
+            choose(type, planID: id, factor: best.factor, on: date, byUser: false, in: context)
             fixedValues[type] = best.values
             applied[type] = best
         }
