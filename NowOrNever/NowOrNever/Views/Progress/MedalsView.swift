@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UIKit
 
 /// Medallas por logros (bronce, plata y oro) calculadas con tus datos reales.
 struct MedalsView: View {
@@ -61,10 +62,18 @@ struct MedalCard: View {
     static func color(_ tier: MedalTier) -> Color {
         switch tier {
         case .locked: return Theme.cardRaised
-        case .bronze: return Color(red: 0.80, green: 0.50, blue: 0.22)
-        case .silver: return Color(red: 0.78, green: 0.80, blue: 0.84)
-        case .gold: return Color(red: 1.0, green: 0.80, blue: 0.15)
+        // En modo claro, tonos más oscuros: la plata y el oro claros casi no se veían sobre blanco.
+        case .bronze: return adaptive(light: (0.66, 0.38, 0.12), dark: (0.80, 0.50, 0.22))
+        case .silver: return adaptive(light: (0.45, 0.48, 0.55), dark: (0.78, 0.80, 0.84))
+        case .gold: return adaptive(light: (0.78, 0.55, 0.0), dark: (1.0, 0.80, 0.15))
         }
+    }
+
+    private static func adaptive(light: (CGFloat, CGFloat, CGFloat), dark: (CGFloat, CGFloat, CGFloat)) -> Color {
+        Color(UIColor { trait in
+            let c = trait.userInterfaceStyle == .dark ? dark : light
+            return UIColor(red: c.0, green: c.1, blue: c.2, alpha: 1)
+        })
     }
 
     var body: some View {
