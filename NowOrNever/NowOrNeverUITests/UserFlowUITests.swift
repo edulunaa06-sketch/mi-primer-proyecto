@@ -180,7 +180,7 @@ final class UserFlowUITests: XCTestCase {
         type("500", into: numbers.element(boundBy: 1))
         app.toolbars.buttons["Listo"].firstMatch.tap()
         scrollTo(app.buttons["Añadir"].firstMatch).tap()
-        app.swipeDown(); app.swipeDown()
+        // Sin deslizar hacia abajo: en una hoja, ese gesto puede cerrarla.
         assertAppears(element(containing: "Total: 500 kcal"), "Total de lo apuntado")
         app.buttons["Hecho"].tap()
 
