@@ -17,24 +17,27 @@ Para que tu iPhone y el de tu pareja se vean hace falta un pequeño servidor. Se
    - Crea también dos carpetas privadas de archivos (**avatars** para las fotos de perfil y **progress** para las fotos de progreso) con sus reglas de acceso.
    - Si ya lo ejecutaste con una versión anterior, vuelve a ejecutarlo entero: añade lo nuevo sin borrar nada.
 
-## 3. Que las cuentas funcionen al momento (recomendado)
-En **Authentication › Sign In / Providers › Email**, desactiva **Confirm email** y guarda.
+## 3. Entrar solo con un nombre (sin correo ni contraseña)
+En **Authentication › Sign In / Providers**, activa **Allow anonymous sign-ins** y pulsa **Save**.
 
-Si lo dejas activado, al crear la cuenta te llegará un correo: abre el enlace y después inicia sesión en la app. Aunque el enlace acabe en una página que no carga, la cuenta queda confirmada.
+Así cada persona solo escribe su nombre en la app. La cuenta queda guardada en su iPhone; como no tiene correo, no se puede «cerrar sesión» y volver a entrar en otro móvil.
 
-## 4. Copiar los dos datos para la app
+## 4. Copiar los dos datos
 En **Project Settings › API Keys** (o en el botón **Connect** de arriba):
 - **Project URL**: `https://xxxxxxxx.supabase.co`
 - **Publishable key** (`sb_publishable_…`) o, en proyectos antiguos, la **anon public key**.
 
 > ⚠️ Nunca uses la **secret** ni la **service_role**: la app las rechaza. La clave pública se puede compartir sin problema, porque las reglas del paso 2 deciden quién ve qué.
 
-## 5. En la app (cada persona en su iPhone)
-1. Pestaña **Amigos** → pega la URL y la clave → **Guardar**.
-2. **Crear cuenta**: correo, contraseña, @usuario (por ejemplo `edu`) y tu nombre.
-3. Tu pareja hace lo mismo en su iPhone, con la **misma URL y la misma clave**. Pásaselas por WhatsApp.
-4. Uno escribe el @usuario del otro y pulsa **Seguir**. Al otro le aparece la solicitud: con **Aceptar y seguir** os seguís los dos.
-5. Toca su nombre en **Sigues a** para ver sus últimos 14 días: entrenos hechos (✓) o sin hacer (✗), mejores series, comidas, kcal y pasos. Arriba verás el resumen de la semana, con los días en que no ha entrenado.
+**Lo más fácil:** pásale estos dos datos a Claude para que los meta dentro de la app (`NowOrNever/Models/SocialServer.swift`). Con la siguiente versión, nadie tiene que pegar nada: abren *Amigos*, escriben su nombre y listo.
+
+Si no, cada persona los pega una vez en *Amigos* y pulsa **Guardar**.
+
+## 5. Usarlo
+1. Pestaña **Amigos** → escribe tu nombre (el @usuario se rellena solo; puedes cambiarlo) → **Empezar**.
+2. En **Buscar amigos**, escribe el nombre o el @usuario de tu pareja o de un amigo y pulsa **Seguir**.
+3. Al otro le aparece la solicitud: con **Aceptar y seguir** os seguís los dos.
+4. Toca su nombre en **Sigues a** para ver sus últimos 14 días: entrenos hechos (✓) o sin hacer (✗), mejores series, comidas, kcal y pasos. Arriba verás el resumen de la semana, con los días en que no ha entrenado.
 
 ## Tu perfil
 En *Amigos*, toca tu nombre (**Ver mi perfil**):

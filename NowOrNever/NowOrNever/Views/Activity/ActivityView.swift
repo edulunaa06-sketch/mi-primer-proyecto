@@ -28,6 +28,10 @@ struct ActivityView: View {
                         todayCard
                         if health.todaySteps == nil { noDataHelp }
                         historyCard
+                    case .motionOnly:
+                        todayCard
+                        if health.motionDenied { motionHelp }
+                        historyCard
                     }
                     runsCard
                 }
@@ -38,7 +42,7 @@ struct ActivityView: View {
             .refreshable { await health.refresh() }
             .task {
                 await health.refreshAuthorizationState()
-                if health.state == .requested { await health.refresh() }
+                if health.state == .requested || health.state == .motionOnly { await health.refresh() }
             }
         }
     }
@@ -91,9 +95,23 @@ struct ActivityView: View {
         .card()
     }
 
+    private var motionHelp: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Activa Movimiento y forma física").font(.subheadline.weight(.semibold))
+            Text("Los pasos salen del sensor del iPhone. Actívalo en Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never.")
+                .font(.footnote).foregroundStyle(Theme.textSecondary)
+            Button("Abrir Ajustes") {
+                if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
+            }
+            .buttonStyle(LimeButtonStyle(filled: false))
+        }
+        .card()
+    }
+
     private var historyCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            SectionHeader(title: "Historial (últimos 30 días)", subtitle: "Solo días con datos en Salud")
+            SectionHeader(title: health.state == .motionOnly ? "Historial (últimos 7 días)" : "Historial (últimos 30 días)",
+                          subtitle: health.state == .motionOnly ? "Pasos del sensor del iPhone" : "Solo días con datos en Salud")
             if health.history.isEmpty {
                 Text("No hay datos de pasos disponibles.").font(.footnote).foregroundStyle(Theme.textSecondary)
             } else {

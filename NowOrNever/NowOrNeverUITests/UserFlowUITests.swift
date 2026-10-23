@@ -158,7 +158,7 @@ final class UserFlowUITests: XCTestCase {
         app.buttons["Guardar mi día"].tap()
 
         // Las comidas del día ahora son las elegidas y se pueden volver a cambiar.
-        let swap = app.buttons["Cambiar comida"]
+        let swap = app.buttons["Cambiar almuerzo"]
         XCTAssertTrue(scrollTo(swap).exists)
         swap.tap()
         assertAppears(element(containing: "Objetivo para tu almuerzo"), "Selector de almuerzo")

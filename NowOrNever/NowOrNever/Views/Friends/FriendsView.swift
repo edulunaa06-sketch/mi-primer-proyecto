@@ -12,6 +12,8 @@ struct FriendsView: View {
     @State private var message: String?
     @State private var isError = false
     @State private var searchName = ""
+    @State private var results: [SocialAPI.Profile] = []
+    @State private var searching = false
 
     var body: some View {
         NavigationStack {
@@ -19,10 +21,8 @@ struct FriendsView: View {
                 VStack(spacing: 16) {
                     if !social.isConfigured {
                         ServerSetupCard()
-                    } else if !social.isSignedIn {
-                        AccountCard()
-                    } else if social.me == nil {
-                        ProfileSetupCard()
+                    } else if !social.isSignedIn || social.me == nil {
+                        StartCard()
                     } else {
                         meCard
                         addFriendCard
@@ -63,9 +63,12 @@ struct FriendsView: View {
                 }
                 .buttonStyle(.plain)
                 Spacer()
-                Menu {
-                    Button("Cerrar sesión", role: .destructive) { social.signOut() }
-                } label: { Image(systemName: "ellipsis.circle").font(.title3) }
+                // Una cuenta creada solo con nombre no tiene correo: si cierras sesión no se puede recuperar.
+                if social.session?.email != nil {
+                    Menu {
+                        Button("Cerrar sesión", role: .destructive) { social.signOut() }
+                    } label: { Image(systemName: "ellipsis.circle").font(.title3) }
+                }
             }
             Toggle("Compartir mis entrenos, comidas y pasos", isOn: $share).tint(Theme.lime)
             Text(share
@@ -79,17 +82,30 @@ struct FriendsView: View {
 
     private var addFriendCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Añadir amigo", subtitle: "Busca su @usuario. Tiene que aceptar tu solicitud.")
+            SectionHeader(title: "Buscar amigos", subtitle: "Escribe su nombre o su @usuario. Te tiene que aceptar.")
             HStack {
-                TextField("@usuario", text: $searchName)
+                Image(systemName: "magnifyingglass").foregroundStyle(Theme.textTertiary)
+                TextField("Nombre o @usuario", text: $searchName)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .padding(10)
-                    .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                Button("Seguir") { Task { await run("Solicitud enviada a @\(searchName.lowercased().replacingOccurrences(of: "@", with: ""))") { try await social.follow(username: searchName) }; searchName = "" } }
-                    .buttonStyle(LimeButtonStyle())
-                    .fixedSize()
-                    .disabled(searchName.trimmingCharacters(in: .whitespaces).count < 3 || social.isWorking)
+                    .accessibilityIdentifier("friends.search")
+                if searching { ProgressView() }
+            }
+            .padding(10)
+            .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            ForEach(results) { person in
+                HStack {
+                    Avatar(profile: person, size: 40)
+                    VStack(alignment: .leading) {
+                        Text(person.shownName).font(.subheadline.weight(.semibold))
+                        Text("@\(person.username)").font(.caption).foregroundStyle(Theme.textSecondary)
+                    }
+                    Spacer()
+                    followButton(person)
+                }
+            }
+            if !searching && results.isEmpty && searchName.trimmingCharacters(in: .whitespaces).count >= 2 {
+                Text("No hay nadie con ese nombre todavía.").font(.caption).foregroundStyle(Theme.textSecondary)
             }
             if !social.outgoing.isEmpty {
                 Text("Pendientes de aceptar: " + social.outgoing.map { "@\($0.username)" }.joined(separator: ", "))
@@ -97,6 +113,36 @@ struct FriendsView: View {
             }
         }
         .card()
+        .task(id: searchName) {
+            let text = searchName
+            guard text.trimmingCharacters(in: .whitespaces).count >= 2 else { results = []; return }
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            searching = true
+            defer { searching = false }
+            do {
+                results = try await social.search(text)
+            } catch {
+                message = error.localizedDescription
+                isError = true
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func followButton(_ person: SocialAPI.Profile) -> some View {
+        if social.following.contains(where: { $0.id == person.id }) {
+            Text("Siguiendo").font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+        } else if social.outgoing.contains(where: { $0.id == person.id }) {
+            Text("Pendiente").font(.caption.weight(.semibold)).foregroundStyle(Theme.textSecondary)
+        } else {
+            Button("Seguir") {
+                Task { await run("Solicitud enviada a @\(person.username)") { try await social.follow(person) } }
+            }
+            .buttonStyle(LimeButtonStyle())
+            .fixedSize()
+            .disabled(social.isWorking)
+        }
     }
 
     private var requestsCard: some View {
@@ -246,90 +292,77 @@ private struct ServerSetupCard: View {
 
 private struct AccountCard: View {
     @Environment(SocialService.self) private var social
-    @State private var creating = true
     @State private var email = ""
     @State private var password = ""
-    @State private var username = ""
-    @State private var name = ""
     @State private var message: String?
-    @State private var isError = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Picker("", selection: $creating) {
-                Text("Crear cuenta").tag(true)
-                Text("Iniciar sesión").tag(false)
-            }
-            .pickerStyle(.segmented)
-            field("Correo", text: $email, keyboard: .emailAddress)
-            SecureField("Contraseña (mínimo 6)", text: $password)
+        VStack(alignment: .leading, spacing: 8) {
+            TextField("Correo", text: $email)
+                .keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
                 .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            if creating {
-                field("@usuario (lo que buscarán tus amigos)", text: $username, keyboard: .asciiCapable)
-                field("Tu nombre", text: $name, keyboard: .default, autocap: true)
-            }
-            Button(creating ? "Crear cuenta" : "Entrar") { Task { await submit() } }
-                .buttonStyle(LimeButtonStyle())
-                .disabled(email.isEmpty || password.isEmpty || (creating && username.isEmpty) || social.isWorking)
-            if let message { Text(message).font(.footnote).foregroundStyle(isError ? Theme.danger : Theme.lime) }
-            Text("Cada persona usa su propia cuenta en su iPhone. Tus entrenos y comidas siguen guardados en tu móvil.")
-                .font(.caption2).foregroundStyle(Theme.textTertiary)
-        }
-        .card()
-    }
-
-    private func field(_ title: String, text: Binding<String>, keyboard: UIKeyboardType, autocap: Bool = false) -> some View {
-        TextField(title, text: text)
-            .keyboardType(keyboard)
-            .textInputAutocapitalization(autocap ? .words : .never)
-            .autocorrectionDisabled()
-            .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-    }
-
-    private func submit() async {
-        do {
-            if creating {
-                let signedIn = try await social.signUp(email: email, password: password, username: username, displayName: name)
-                if !signedIn {
-                    message = SocialAPI.SocialError.confirmEmail.localizedDescription
-                    isError = false
-                    creating = false
+            SecureField("Contraseña", text: $password)
+                .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            Button("Entrar") {
+                Task {
+                    do { try await social.signIn(email: email, password: password) } catch { message = error.localizedDescription }
                 }
-            } else {
-                try await social.signIn(email: email, password: password)
             }
-        } catch {
-            message = error.localizedDescription
-            isError = true
+            .buttonStyle(LimeButtonStyle(filled: false))
+            .disabled(email.isEmpty || password.isEmpty || social.isWorking)
+            if let message { Text(message).font(.footnote).foregroundStyle(Theme.danger) }
         }
     }
 }
 
-private struct ProfileSetupCard: View {
+/// Empezar: solo tu @usuario y tu nombre. Sin correo ni contraseña.
+private struct StartCard: View {
     @Environment(SocialService.self) private var social
     @State private var username = ""
     @State private var name = ""
     @State private var error: String?
+    @State private var withEmail = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Elige tu @usuario", subtitle: "Es lo que buscarán tus amigos para seguirte.")
-            TextField("@usuario", text: $username)
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
+            SectionHeader(title: "Elige tu nombre", subtitle: "Con esto tus amigos te encuentran en la app. No hace falta correo ni contraseña.")
+            TextField("Tu nombre (p. ej. Edu)", text: $name)
+                .textInputAutocapitalization(.words)
                 .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            TextField("Tu nombre", text: $name)
-                .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-            Button("Guardar") {
-                Task {
-                    do { try await social.saveProfile(username: username, displayName: name) } catch { self.error = error.localizedDescription }
+                .onChange(of: name) { old, new in
+                    // Sugerencia de @usuario a partir del nombre mientras no lo hayas tocado.
+                    if username.isEmpty || username == Self.suggest(old) { username = Self.suggest(new) }
                 }
+            HStack(spacing: 4) {
+                Text("@").foregroundStyle(Theme.textSecondary)
+                TextField("usuario", text: $username)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .accessibilityIdentifier("friends.username")
+            }
+            .padding(10).background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            Button {
+                Task {
+                    do { try await social.start(username: username, displayName: name); error = nil } catch { self.error = error.localizedDescription }
+                }
+            } label: {
+                if social.isWorking { ProgressView().tint(.black) } else { Text("Empezar") }
             }
             .buttonStyle(LimeButtonStyle())
-            .disabled(username.count < 3)
+            .disabled(username.count < 3 || social.isWorking)
             if let error { Text(error).font(.footnote).foregroundStyle(Theme.danger) }
-            Button("Cerrar sesión", role: .destructive) { social.signOut() }.font(.footnote)
+            Text("Tu cuenta queda guardada en este iPhone. Tus entrenos y comidas siguen solo en tu móvil.")
+                .font(.caption2).foregroundStyle(Theme.textTertiary)
+            Button(withEmail ? "Ocultar" : "Ya tengo cuenta con correo") { withEmail.toggle() }
+                .font(.footnote)
+            if withEmail { AccountCard() }
         }
         .card()
+    }
+
+    /// «Edu Luna» → «eduluna».
+    static func suggest(_ name: String) -> String {
+        let folded = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "es_ES")).lowercased()
+        return String(folded.unicodeScalars.filter { CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyz0123456789_.").contains($0) }.prefix(20))
     }
 }
 

@@ -168,13 +168,15 @@ struct HomeView: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
             } else if health.state == .notDetermined {
-                Button("Conectar Apple Salud para contar tus pasos") {
+                Button("Contar mis pasos") {
                     Task { await health.requestAuthorization() }
                 }
                 .buttonStyle(LimeButtonStyle())
             } else {
                 Text(health.state == .unavailable
                      ? "Este dispositivo no tiene Apple Salud ni sensor de pasos."
+                     : health.state == .motionOnly
+                     ? "Sin pasos todavía. Si no aparecen, activa Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never."
                      : "Sin pasos todavía. Si no aparecen, revisa Ajustes › Salud › Acceso a datos › Now or Never, o Ajustes › Privacidad › Movimiento y forma física.")
                     .font(.caption).foregroundStyle(Theme.textTertiary)
             }

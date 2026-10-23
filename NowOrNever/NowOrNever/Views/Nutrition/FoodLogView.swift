@@ -218,6 +218,7 @@ struct MealLogSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(ClaudeService.self) private var claude
+    @Query(sort: \FoodItem.name) private var foods: [FoodItem]
 
     @State private var jpeg: Data?
     @State private var showCamera = false
@@ -233,7 +234,7 @@ struct MealLogSheet: View {
     private var cameraAvailable: Bool { UIImagePickerController.isSourceTypeAvailable(.camera) }
     private var validRows: [Row] { rows.filter { !$0.name.trimmingCharacters(in: .whitespaces).isEmpty } }
     private var canCalculate: Bool {
-        !validRows.isEmpty && validRows.allSatisfy { ($0.grams ?? 0) > 0 } && !claude.isWorking && claude.isConfigured
+        !validRows.isEmpty && validRows.allSatisfy { ($0.grams ?? 0) > 0 } && !claude.isWorking
     }
 
     var body: some View {
@@ -241,7 +242,7 @@ struct MealLogSheet: View {
             ScrollView {
                 VStack(spacing: 14) {
                     if !claude.isConfigured {
-                        InfoBanner(text: "Para reconocer la foto y calcular las kcal, añade tu clave de la API de Claude en Ajustes › Claude (IA).")
+                        InfoBanner(text: "Sin la IA, escribe tú los ingredientes y sus gramos: las kcal se calculan con la tabla de alimentos de la app. Para que reconozca la foto sola, añade una clave de Claude en Ajustes › Claude (IA).")
                     }
                     photoCard
                     ingredientsCard
@@ -416,6 +417,7 @@ struct MealLogSheet: View {
 
     private func calculate() async {
         error = nil
+        guard claude.isConfigured else { calculateWithCatalog(); return }
         let ingredients = validRows.map { ClaudeAPI.WeighedIngredient(name: $0.name.trimmingCharacters(in: .whitespaces), grams: $0.grams ?? 0) }
         do {
             let answer = try await claude.calculate(ingredients, jpeg: jpeg)
@@ -424,6 +426,24 @@ struct MealLogSheet: View {
             if answer.items.isEmpty { error = "Claude no ha devuelto valores válidos. Revisa los nombres." }
         } catch {
             self.error = error.localizedDescription
+        }
+    }
+
+    /// Sin clave de Claude: cada ingrediente se busca en la tabla de alimentos de la app.
+    private func calculateWithCatalog() {
+        var items: [ClaudeAPI.EstimatedItem] = []
+        var missing: [String] = []
+        for row in validRows {
+            let name = row.name.trimmingCharacters(in: .whitespaces)
+            guard let food = FoodSearch.bestMatch(for: name, in: foods, name: \.name) else { missing.append(name); continue }
+            items.append(ClaudeAPI.EstimatedItem(name: "\(food.name) (\(food.basis.label.lowercased()))", grams: row.grams ?? 0,
+                                                 kcalPer100g: food.kcalPer100, proteinPer100g: food.proteinPer100,
+                                                 carbsPer100g: food.carbsPer100, fatPer100g: food.fatPer100))
+        }
+        result = items
+        resultNote = "Calculado con la tabla de alimentos de la app. Comprueba que cada ingrediente es el que has comido."
+        if !missing.isEmpty {
+            error = "No están en la tabla de la app: \(missing.joined(separator: ", ")). Prueba con otro nombre (p. ej. «pollo», «arroz», «huevo»)."
         }
     }
 }

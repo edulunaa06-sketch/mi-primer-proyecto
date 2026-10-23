@@ -129,6 +129,25 @@ final class FoodSearchTests: XCTestCase {
         XCTAssertTrue(FoodSearch.matches(name: "Arroz", query: ""))
         XCTAssertFalse(FoodSearch.matches(name: "Arroz", query: "macarrones"))
     }
+
+    /// Sin clave de Claude, cada ingrediente escrito se busca en la tabla de la app.
+    func testBestMatchPicksTheRightCatalogFood() {
+        let names = ["Pechuga de pollo", "Contramuslo de pollo sin piel", "Huevo entero (sin cáscara)", "Clara de huevo",
+                     "Arroz blanco", "Pasta de trigo", "Jamón serrano", "Jamón cocido extra", "Boniato (pelado)",
+                     "Tomate", "Fresas", "Pan blanco (barra)", "Pan integral"]
+        func best(_ q: String) -> String? { FoodSearch.bestMatch(for: q, in: names, name: { $0 }) }
+        XCTAssertEqual(best("pollo a la plancha"), "Pechuga de pollo")
+        XCTAssertEqual(best("contramuslo de pollo"), "Contramuslo de pollo sin piel")
+        XCTAssertEqual(best("Huevos"), "Huevo entero (sin cáscara)")
+        XCTAssertEqual(best("claras de huevo"), "Clara de huevo")
+        XCTAssertEqual(best("macarrones"), "Pasta de trigo")
+        XCTAssertEqual(best("jamón cocido"), "Jamón cocido extra")
+        XCTAssertEqual(best("boniato asado"), "Boniato (pelado)")
+        XCTAssertEqual(best("tomates"), "Tomate")
+        XCTAssertEqual(best("pan blanco"), "Pan blanco (barra)")
+        XCTAssertNil(best("queso cottage"))
+        XCTAssertNil(best("de"))
+    }
 }
 
 final class ManualKcalMacrosTests: XCTestCase {

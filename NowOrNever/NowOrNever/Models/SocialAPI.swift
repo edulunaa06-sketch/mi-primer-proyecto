@@ -121,6 +121,7 @@ enum SocialAPI {
         case usernameTaken
         case invalidUsername
         case userNotFound
+        case anonymousDisabled
         case badResponse
         case server(String)
         case http(Int)
@@ -137,6 +138,7 @@ enum SocialAPI {
             case .usernameTaken: return "Ese nombre de usuario ya está cogido. Prueba otro."
             case .invalidUsername: return "El usuario debe tener de 3 a 20 caracteres: letras minúsculas, números, punto o guion bajo."
             case .userNotFound: return "No hay nadie con ese usuario."
+            case .anonymousDisabled: return "El servidor no deja entrar solo con nombre: en Supabase activa Authentication › Sign In / Providers › «Allow anonymous sign-ins»."
             case .badResponse: return "No se pudo leer la respuesta del servidor."
             case .server(let message): return "Error del servidor: \(message)"
             case .http(let code): return "Error de red (HTTP \(code))."
@@ -157,6 +159,12 @@ enum SocialAPI {
 
     static func signUp(_ config: Config, email: String, password: String) -> URLRequest {
         auth(config, path: "auth/v1/signup", query: [], body: ["email": email, "password": password])
+    }
+
+    /// Cuenta sin correo ni contraseña: solo se elige un nombre. Requiere «Allow anonymous sign-ins» en Supabase.
+    /// La sesión se guarda en el Llavero del iPhone.
+    static func signUpAnonymously(_ config: Config) -> URLRequest {
+        auth(config, path: "auth/v1/signup", query: [], body: [:])
     }
 
     static func signIn(_ config: Config, email: String, password: String) -> URLRequest {
@@ -239,6 +247,7 @@ enum SocialAPI {
         case "email_not_confirmed": return .emailNotConfirmed
         case "weak_password": return .weakPassword
         case "user_already_exists", "email_exists": return .emailTaken
+        case "anonymous_provider_disabled": return .anonymousDisabled
         default:
             if text.localizedCaseInsensitiveContains("not confirmed") { return .emailNotConfirmed }
             if text.localizedCaseInsensitiveContains("invalid login") { return .invalidCredentials }
@@ -282,6 +291,23 @@ enum SocialAPI {
         rest(config, accessToken: session.accessToken, method: "GET", table: "profiles", query: [
             URLQueryItem(name: "select", value: "id,username,display_name,avatar_path"),
             URLQueryItem(name: "username", value: "eq.\(username)"),
+        ])
+    }
+
+    /// Busca por @usuario o por nombre (contiene, sin distinguir mayúsculas). Máximo 20 resultados.
+    static func searchProfiles(_ config: Config, session: Session, query: String) -> URLRequest? {
+        let allowed = CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " ._"))
+        var text = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.hasPrefix("@") { text.removeFirst() }
+        text = String(text.unicodeScalars.filter(allowed.contains).prefix(40)).trimmingCharacters(in: .whitespaces)
+        guard text.count >= 2 else { return nil }
+        let pattern = "*\(text)*"
+        return rest(config, accessToken: session.accessToken, method: "GET", table: "profiles", query: [
+            URLQueryItem(name: "select", value: "id,username,display_name,avatar_path"),
+            URLQueryItem(name: "or", value: "(username.ilike.\(pattern),display_name.ilike.\(pattern))"),
+            URLQueryItem(name: "id", value: "neq.\(session.userID)"),
+            URLQueryItem(name: "order", value: "username"),
+            URLQueryItem(name: "limit", value: "20"),
         ])
     }
 

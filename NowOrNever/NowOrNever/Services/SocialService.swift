@@ -39,6 +39,7 @@ final class SocialService {
     init() {
         let defaults = UserDefaults.standard
         config = SocialAPI.Config(url: defaults.string(forKey: Self.urlKey) ?? "", apiKey: defaults.string(forKey: Self.apiKeyKey) ?? "")
+            ?? SocialServer.builtIn
         if let data = KeychainStore.load(account: Self.sessionAccount, service: Self.keychainService) {
             session = try? JSONDecoder().decode(SocialAPI.Session.self, from: data)
         }
@@ -73,6 +74,34 @@ final class SocialService {
         store(newSession)
         try await finishSignIn()
         return true
+    }
+
+    /// Lo único que hace falta para empezar: tu @usuario y tu nombre. Crea una cuenta sin correo (la
+    /// sesión queda en el Llavero) y guarda el perfil. Si el nombre está cogido, puedes probar otro.
+    func start(username: String, displayName: String) async throws {
+        let config = try requireConfig()
+        guard SocialAPI.normalizeUsername(username) != nil else { throw SocialAPI.SocialError.invalidUsername }
+        if session == nil {
+            let (status, data) = try await perform(SocialAPI.signUpAnonymously(config))
+            guard let newSession = try SocialAPI.decodeSession(status: status, data: data) else { throw SocialAPI.SocialError.badResponse }
+            store(newSession)
+        }
+        try await saveProfile(username: username, displayName: displayName.trimmingCharacters(in: .whitespaces))
+        try? await refreshFriends()
+    }
+
+    func search(_ text: String) async throws -> [SocialAPI.Profile] {
+        let session = try await validSession()
+        guard let request = SocialAPI.searchProfiles(try requireConfig(), session: session, query: text) else { return [] }
+        let (status, data) = try await perform(request)
+        return try SocialAPI.decodeRows(SocialAPI.Profile.self, status: status, data: data)
+    }
+
+    func follow(_ profile: SocialAPI.Profile) async throws {
+        let session = try await validSession()
+        let (status, data) = try await perform(SocialAPI.requestFollow(try requireConfig(), session: session, userID: profile.id))
+        try SocialAPI.check(status: status, data: data)
+        try await refreshFriends()
     }
 
     func signIn(email: String, password: String) async throws {

@@ -64,6 +64,21 @@ final class SocialAPITests: XCTestCase {
         XCTAssertEqual(rows?.first?["user_id"] as? String, session.userID)
     }
 
+    func testSimpleStartAndSearch() throws {
+        let anon = SocialAPI.signUpAnonymously(config)
+        XCTAssertEqual(anon.url?.absoluteString, "https://abcd.supabase.co/auth/v1/signup")
+        XCTAssertEqual(try JSONSerialization.jsonObject(with: anon.httpBody!) as? [String: String], [:])
+        XCTAssertEqual(SocialAPI.authError(status: 422, data: Data(#"{"error_code":"anonymous_provider_disabled","msg":"Anonymous sign-ins are disabled"}"#.utf8)),
+                       .anonymousDisabled)
+
+        let search = try XCTUnwrap(SocialAPI.searchProfiles(config, session: session, query: " @Lau*ra), "))
+        let query = try XCTUnwrap(URLComponents(url: search.url!, resolvingAgainstBaseURL: false)?.queryItems)
+        XCTAssertTrue(query.contains(URLQueryItem(name: "or", value: "(username.ilike.*Laura*,display_name.ilike.*Laura*)")),
+                      "Quita los caracteres que romperían el filtro")
+        XCTAssertTrue(query.contains(URLQueryItem(name: "id", value: "neq.\(session.userID)")), "No te sales tú")
+        XCTAssertNil(SocialAPI.searchProfiles(config, session: session, query: "@a"), "Hace falta escribir al menos 2 letras")
+    }
+
     func testDuplicateUsernameError() {
         let body = Data(#"{"code":"23505","message":"duplicate key value violates unique constraint"}"#.utf8)
         XCTAssertThrowsError(try SocialAPI.check(status: 409, data: body)) { XCTAssertEqual($0 as? SocialAPI.SocialError, .usernameTaken) }

@@ -275,6 +275,9 @@ private struct SettingsForm: View {
                 Text("Salud no disponible en este dispositivo.")
             case .notDetermined:
                 Button("Permitir lectura de pasos") { Task { await health.requestAuthorization() } }
+            case .motionOnly:
+                Text("Esta instalación no puede leer Apple Salud. Los pasos se cuentan con el sensor de movimiento del iPhone.")
+                    .font(.footnote)
             case .requested, .error:
                 Text("Solicitud de permiso ya mostrada. Para cambiarlo: Ajustes › Salud › Acceso a datos y dispositivos › Now or Never.")
                     .font(.footnote)
