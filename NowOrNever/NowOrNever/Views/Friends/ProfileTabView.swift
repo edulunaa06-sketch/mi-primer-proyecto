@@ -51,7 +51,7 @@ struct ProfileTabView: View {
             .refreshable { if hasAccount { try? await social.refreshFriends() } }
             .task { if hasAccount { try? await social.refreshFriends() } }
             .sheet(isPresented: $creatingAccount) { AccountSetupView { creatingAccount = false } }
-            .sheet(item: $viewing) { photo in PhotoViewer(photo: photo) }
+            .sheet(item: $viewing) { photo in ProgressPhotoViewer(photo: photo) }
             .onChange(of: avatarItem) { _, item in
                 guard let item else { return }
                 Task {
@@ -189,7 +189,7 @@ struct ProfileTabView: View {
 }
 
 /// Una foto de progreso a pantalla completa.
-private struct PhotoViewer: View {
+private struct ProgressPhotoViewer: View {
     let photo: ProgressPhoto
     @Environment(\.dismiss) private var dismiss
 
