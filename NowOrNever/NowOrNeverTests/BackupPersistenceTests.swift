@@ -111,5 +111,24 @@ final class BackupPersistenceTests: XCTestCase {
         XCTAssertNil(DataStore.updateAdaptiveStepGoal(context, today: today), "Manual: no se toca")
         XCTAssertEqual(s.stepGoal, 7000)
     }
+
+    func testStrengthMarkedDoneFromTheWeekMarksEveryExercise() throws {
+        let defaults = UserDefaults(suiteName: "week-\(UUID().uuidString)")!
+        DataStore.seedRoutineIfNeeded(context, defaults: defaults)
+        let push = WeeklyRoutine.tuesdayPushA.resolved(with: (try? context.fetch(FetchDescriptor<RoutineExercise>())) ?? [])
+        let log = DataStore.fetchOrCreateLog(for: push, weekStart: DateUtils.startOfWeek(Date()), in: context)
+        log.exercises.first?.sets.first?.weightKg = 60
+
+        log.toggleDoneFromWeek(session: push)
+        XCTAssertTrue(log.isCompleted)
+        XCTAssertNotNil(log.completedAt)
+        XCTAssertTrue(SessionProgress(session: push, log: log).isComplete, "Todos los ejercicios quedan marcados")
+        XCTAssertEqual(log.exercises.first?.sets.first?.weightKg, 60, "Los kilos apuntados no se tocan")
+
+        log.toggleDoneFromWeek(session: push)
+        XCTAssertFalse(log.isCompleted)
+        XCTAssertEqual(SessionProgress(session: push, log: log).completedExercises, 0)
+        XCTAssertEqual(log.exercises.first?.sets.first?.weightKg, 60)
+    }
 }
 #endif

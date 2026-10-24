@@ -1,8 +1,30 @@
 import SwiftUI
 
-/// Paleta y estilos compartidos: fondo carbón, acentos verde lima, texto blanco/gris.
-/// Colores fijos (la app es siempre oscura): son los más baratos de dibujar.
+/// Paleta y estilos compartidos. Colores fijos (son los más baratos de dibujar).
+/// · Versión Edu (por defecto): fondo carbón, acentos verde lima, texto blanco/gris.
+/// · Versión Daniela (se compila con la marca DANIELA): fondo blanco, acentos rosas, texto negro/gris.
+/// `lime` es «el color de acento»: verde en la de Edu y rosa en la de Daniela.
 enum Theme {
+    #if DANIELA
+    static let isLight = true
+    static let colorScheme: ColorScheme = .light
+    static let background = Color.white
+    static let card = Color(red: 0.96, green: 0.95, blue: 0.96)
+    static let cardRaised = Color(red: 0.92, green: 0.91, blue: 0.92)
+    static let lime = Color(red: 0.925, green: 0.165, blue: 0.50)
+    static let limeDim = Color(red: 0.925, green: 0.165, blue: 0.50).opacity(0.14)
+    static let textPrimary = Color.black
+    static let textSecondary = Color(white: 0.38)
+    static let textTertiary = Color(white: 0.55)
+    static let warning = Color(red: 0.85, green: 0.50, blue: 0.0)
+    static let danger = Color(red: 0.86, green: 0.15, blue: 0.15)
+    /// Texto e iconos encima de un fondo del color de acento.
+    static let onLime = Color.white
+    /// Líneas separadoras finas.
+    static let separator = Color.black.opacity(0.08)
+    #else
+    static let isLight = false
+    static let colorScheme: ColorScheme = .dark
     static let background = Color(red: 0.05, green: 0.05, blue: 0.06)
     static let card = Color(red: 0.11, green: 0.11, blue: 0.12)
     static let cardRaised = Color(red: 0.16, green: 0.16, blue: 0.17)
@@ -17,6 +39,10 @@ enum Theme {
     static let onLime = Color.black
     /// Líneas separadoras finas.
     static let separator = Color.white.opacity(0.07)
+    #endif
+
+    /// Espacio libre al final de cada pantalla para poder leer lo último sin que lo tape la barra de pestañas.
+    static let bottomBreathingRoom: CGFloat = 56
 
     static let cornerRadius: CGFloat = 18
 }
@@ -36,7 +62,7 @@ extension View {
         modifier(CardModifier(padding: padding))
     }
 
-    /// Fondo oscuro común para todas las pantallas.
+    /// Fondo común para todas las pantallas.
     func screenBackground() -> some View {
         self
             .scrollContentBackground(.hidden)

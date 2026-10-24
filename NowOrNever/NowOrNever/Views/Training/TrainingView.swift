@@ -151,7 +151,7 @@ struct TrainingView: View {
                             renaming = session
                         } label: { Label("Cambiar nombre", systemImage: "pencil") }
                     }
-                    if session.kind == .run { doneButton(session) }
+                    if session.kind != .rest { doneButton(session) }
                 }
             }
         }
@@ -174,27 +174,21 @@ struct TrainingView: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
-            if session.kind == .strength, log?.isCompleted == true {
-                Image(systemName: "checkmark.seal.fill").foregroundStyle(Theme.lime)
-                    .accessibilityLabel("Sesión completada")
-            }
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
         }
         .padding(10)
         .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    /// Carreras: marcarla como hecha (o deshacerlo) directamente desde la semana, sin entrar.
-    /// La fuerza se completa sola al marcar todos los ejercicios.
+    /// Marcar una sesión como hecha (o deshacerlo) directamente desde la semana, sin entrar.
+    /// Fuerza: marca (o desmarca) todos sus ejercicios, igual que si lo hicieras dentro; los kilos y repeticiones no se tocan.
     private func doneButton(_ base: SessionDefinition) -> some View {
         let session = base.resolved(with: routine, titles: titles)
         let done = log(for: session)?.isCompleted ?? false
         return Button {
             let log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
             withAnimation {
-                log.isCompleted.toggle()
-                log.completedAt = log.isCompleted ? Date() : nil
-                log.lastModified = Date()
+                log.toggleDoneFromWeek(session: session)
             }
             try? context.save()
         } label: {
@@ -240,6 +234,21 @@ struct SessionProgress {
 }
 
 extension WorkoutSessionLog {
+    /// Botón «Marcar / Hecho» de la semana. En fuerza marca o desmarca todos los ejercicios
+    /// (así dentro de la sesión se ve igual); una sesión sin ejercicios se marca directamente.
+    func toggleDoneFromWeek(session: SessionDefinition) {
+        let markDone = !isCompleted
+        if session.kind == .strength, !session.exercises.isEmpty {
+            let ids = Set(session.exercises.map(\.id))
+            for ex in exercises where ids.contains(ex.exerciseID) { ex.isCompleted = markDone }
+            syncStrengthCompletion(with: session)
+        } else {
+            isCompleted = markDone
+            completedAt = markDone ? Date() : nil
+        }
+        lastModified = Date()
+    }
+
     /// Fuerza: la sesión está completada exactamente cuando todos sus ejercicios están marcados.
     func syncStrengthCompletion(with session: SessionDefinition) {
         let done = SessionProgress(session: session, log: self).isComplete

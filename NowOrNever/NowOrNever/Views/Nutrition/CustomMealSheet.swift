@@ -212,7 +212,7 @@ struct CustomMealSheet: View {
             Button {
                 Task { await runEstimate() }
             } label: {
-                if claude.isWorking { ProgressView().tint(.black) } else { Label("Calcular con Claude", systemImage: "sparkles") }
+                if claude.isWorking { ProgressView().tint(Theme.onLime) } else { Label("Calcular con Claude", systemImage: "sparkles") }
             }
             .buttonStyle(LimeButtonStyle())
             .disabled(description.trimmingCharacters(in: .whitespaces).isEmpty || claude.isWorking || !claude.isConfigured)

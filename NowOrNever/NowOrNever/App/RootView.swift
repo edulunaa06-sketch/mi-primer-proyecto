@@ -84,6 +84,9 @@ struct RootView: View {
 
     var body: some View {
         content
+            // Un trozo libre del color del fondo al final de cada pantalla (también Ajustes y las listas),
+            // para poder bajar del todo y leer lo último sin que la barra de pestañas lo corte.
+            .contentMargins(.bottom, Theme.bottomBreathingRoom, for: .scrollContent)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.background.ignoresSafeArea())
             .safeAreaInset(edge: .bottom, spacing: 0) { tabBar }

@@ -57,11 +57,11 @@ struct NowOrNeverApp: App {
                     .environment(router)
                     .environment(claude)
                     .environment(steps)
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(Theme.colorScheme)
                     .tint(Theme.lime)
             } else {
                 StorageErrorView(message: containerError ?? "Error desconocido")
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(Theme.colorScheme)
             }
         }
         .backgroundTask(.appRefresh(ReminderCoordinator.refreshTaskID)) {

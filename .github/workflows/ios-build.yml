@@ -28,25 +28,35 @@ jobs:
             CODE_SIGNING_ALLOWED=NO build | tee build-device.log | grep -E "error:|warning:|BUILD" || true
           grep -q "BUILD SUCCEEDED" build-device.log
 
-      - name: Build IPA for SideStore/AltStore (Release, firma ad-hoc)
+      - name: Build IPAs (Edu y Daniela · Release, firma ad-hoc)
         run: |
           set -o pipefail
-          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
-            -destination 'generic/platform=iOS' -configuration Release \
-            -derivedDataPath build-release CODE_SIGNING_ALLOWED=NO build | tee build-release.log | grep -E "error:|BUILD" || true
-          grep -q "BUILD SUCCEEDED" build-release.log
-          APP=build-release/Build/Products/Release-iphoneos/NowOrNever.app
-          # Firma ad-hoc. Sideloadly/SideStore vuelven a firmar con tu Apple ID.
-          codesign --force --sign - --entitlements Config/NowOrNever.entitlements --timestamp=none "$APP"
-          codesign --verify "$APP"
-          rm -rf ipa && mkdir -p ipa/Payload && cp -R "$APP" ipa/Payload/
-          (cd ipa && zip -qry ../NowOrNever.ipa Payload)
-          ls -la NowOrNever.ipa
+          # Versión Daniela: fondo blanco y detalles rosas, icono rosa y su propio identificador
+          # (se pueden tener las dos instaladas a la vez).
+          DANIELA="SWIFT_ACTIVE_COMPILATION_CONDITIONS=DANIELA ASSETCATALOG_COMPILER_APPICON_NAME=AppIconDaniela ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME=AccentColorDaniela INFOPLIST_KEY_UIUserInterfaceStyle=Light LAUNCH_COLOR_NAME=LaunchBackgroundDaniela PRODUCT_BUNDLE_IDENTIFIER=com.example.nowornever.daniela"
+          for variant in Edu Daniela; do
+            EXTRA=""
+            [ "$variant" = Daniela ] && EXTRA="$DANIELA"
+            xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
+              -destination 'generic/platform=iOS' -configuration Release \
+              -derivedDataPath "build-$variant" CODE_SIGNING_ALLOWED=NO $EXTRA build | tee "build-$variant.log" | grep -E "error:|BUILD" || true
+            grep -q "BUILD SUCCEEDED" "build-$variant.log"
+            APP="build-$variant/Build/Products/Release-iphoneos/NowOrNever.app"
+            # Firma ad-hoc. Sideloadly/SideStore vuelven a firmar con tu Apple ID.
+            codesign --force --sign - --entitlements Config/NowOrNever.entitlements --timestamp=none "$APP"
+            codesign --verify "$APP"
+            rm -rf ipa && mkdir -p ipa/Payload && cp -R "$APP" ipa/Payload/
+            (cd ipa && zip -qry "../NowOrNever-$variant.ipa" Payload)
+            /usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" -c "Print UIUserInterfaceStyle" "$APP/Info.plist"
+            ls -la "NowOrNever-$variant.ipa"
+          done
 
       - uses: actions/upload-artifact@v4
         with:
           name: NowOrNever-ipa
-          path: NowOrNever/NowOrNever.ipa
+          path: |
+            NowOrNever/NowOrNever-Edu.ipa
+            NowOrNever/NowOrNever-Daniela.ipa
 
       - name: Run unit tests on simulator
         run: |
@@ -70,7 +80,7 @@ jobs:
           ) &
           PROFILER=$!
           xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
-            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST|XCTAssert|PERF" || true
+            -destination "id=$UDID" -derivedDataPath build -resultBundlePath tests.xcresult CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST|XCTAssert|PERF" || true
           wait $PROFILER || true
           grep -q "TEST SUCCEEDED" test.log
 
@@ -140,6 +150,31 @@ jobs:
             xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"
             xcrun simctl terminate "$UDID" "$BID" || true
           done
+
+          # Capturas de las pruebas (final de cada pestaña).
+          xcrun xcresulttool export attachments --path tests.xcresult --output-path screenshots/tests || true
+          # Versión Daniela (blanco y rosa) con datos de ejemplo.
+          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever -destination "id=$UDID" -configuration Debug \
+            -derivedDataPath build-daniela-sim CODE_SIGNING_ALLOWED=NO \
+            "SWIFT_ACTIVE_COMPILATION_CONDITIONS=DEBUG DANIELA" ASSETCATALOG_COMPILER_APPICON_NAME=AppIconDaniela \
+            ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME=AccentColorDaniela INFOPLIST_KEY_UIUserInterfaceStyle=Light \
+            LAUNCH_COLOR_NAME=LaunchBackgroundDaniela PRODUCT_BUNDLE_IDENTIFIER=com.example.nowornever.daniela build > build-daniela-sim.log 2>&1 || tail -40 build-daniela-sim.log
+          DAPP=build-daniela-sim/Build/Products/Debug-iphonesimulator/NowOrNever.app
+          xcrun simctl install "$UDID" "$DAPP"
+          DBID=com.example.nowornever.daniela
+          for tab in home training nutrition progress calendar settings; do
+            xcrun simctl launch "$UDID" "$DBID" -NNSkipOnboarding -NNDemoData -NNTab "$tab"; sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/daniela-$tab.png"
+            xcrun simctl terminate "$UDID" "$DBID" || true
+          done
+          xcrun simctl launch "$UDID" "$DBID" -NNSkipOnboarding -NNTab progress -NNProgress medals; sleep 5
+          xcrun simctl io "$UDID" screenshot screenshots/daniela-medals.png
+          xcrun simctl terminate "$UDID" "$DBID" || true
+          xcrun simctl launch "$UDID" "$DBID" -NNSkipOnboarding -NNSplash; sleep 1
+          xcrun simctl io "$UDID" screenshot screenshots/daniela-splash-logo.png
+          sleep 4
+          xcrun simctl io "$UDID" screenshot screenshots/daniela-splash.png
+          xcrun simctl terminate "$UDID" "$DBID" || true
 
       - uses: actions/upload-artifact@v4
         if: always()

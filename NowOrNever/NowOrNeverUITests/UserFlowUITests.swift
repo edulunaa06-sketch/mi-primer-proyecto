@@ -272,6 +272,19 @@ final class UserFlowUITests: XCTestCase {
 
     /// Con 8 meses de datos y el sensor de pasos actualizándose 3 veces por segundo, cada pantalla
     /// tiene que abrirse y responder rápido (se ejecuta la última: deja esos datos para las capturas).
+    /// Cada pestaña se baja hasta el final y se guarda una captura: lo último tiene que quedar por encima de la barra.
+    func test11_ScrollToTheBottomOfEveryTab() {
+        for name in ["Inicio", "Entreno", "Nutrición", "Progreso", "Calendario", "Ajustes"] {
+            tab(name)
+            for _ in 0..<10 { app.swipeUp(velocity: .fast) }
+            Thread.sleep(forTimeInterval: 1.5)
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = "final-\(name)"
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+    }
+
     func testZ_FluidWithLotsOfData() {
         app.terminate()
         app.launchArguments = ["-NNSkipOnboarding", "-NNDemoData", "-NNFakeSteps", "-NNClearHangs"]
