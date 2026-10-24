@@ -28,6 +28,7 @@ struct ProgressHubView: View {
             }
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("Progreso")
+            .onChange(of: section) { _, s in HangDetector.shared.screen = "Progreso › \(s.rawValue)" }
             #if DEBUG
             .onAppear {
                 let args = ProcessInfo.processInfo.arguments

@@ -153,7 +153,7 @@ Con la cuenta gratuita, para renovarla cada semana basta con conectar el iPhone 
 - **Antes / después**: deslizador sobre la propia foto (arrastra: a la izquierda «Antes», a la derecha «Después») o lado a lado. Al hacer una foto nueva, la del mes anterior sale encima en transparencia como guía de pose, con la transparencia ajustable.
 
 ### Ajustes y recordatorios
-- **Apariencia**: modo **Automático** (cambia solo según el modo claro/oscuro del iPhone), **Claro** u **Oscuro**. En claro el verde es más oscuro para que se lea bien sobre blanco; la cámara se ve siempre en oscuro.
+- **Diagnóstico de fluidez**: la app apunta cada vez que la pantalla se queda congelada más de 0,7 s, cuánto duró y en qué sección. Se ve en Ajustes; no se envía a ningún sitio.
 - Objetivos de kcal y macros.
 - **Creatina**: activar/desactivar, elegir hora, notificación de prueba. Usa un identificador fijo, así que cambiar la hora **sustituye** el recordatorio (no lo duplica). La app solo dice «programada» cuando iOS acepta la solicitud sin error.
 - **Fotos**: recordatorio mensual el **día 22 a las 20:00** (o el día de tu fecha de inicio si la configuras; hora ajustable).

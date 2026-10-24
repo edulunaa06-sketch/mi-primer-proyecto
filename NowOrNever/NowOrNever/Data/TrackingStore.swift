@@ -82,6 +82,18 @@ extension DataStore {
     }
 }
 
+extension TrackingSnapshot {
+    /// Firma barata de los datos de seguimiento. Las vistas solo recalculan racha, calendario y medallas
+    /// cuando cambia (no en cada redibujado de la pantalla).
+    static func signature(meals: [MealRecord], logs: [WorkoutSessionLog], steps: [DailySteps],
+                          marks: [DayMarkRecord], stepGoal: Int, trackingStart: Date) -> String {
+        let completed = logs.reduce(0) { $0 + ($1.isCompleted ? 1 : 0) }
+        let stepSum = steps.reduce(0) { $0 + $1.steps }
+        let markList = marks.map { $0.dayKey + $0.markRaw }.sorted().joined()
+        return "\(meals.count)|\(completed)|\(steps.count)|\(stepSum)|\(markList)|\(stepGoal)|\(trackingStart.timeIntervalSince1970)|\(DateUtils.dayKey(Date()))"
+    }
+}
+
 /// Foto de los datos necesarios para evaluar días (calendario, racha, resumen semanal y medallas).
 /// Se construye con lo que las vistas ya tienen en sus @Query.
 struct TrackingSnapshot {

@@ -25,24 +25,38 @@ struct CalendarView: View {
         return DateUtils.calendar.date(from: DateComponents(year: ym.year, month: ym.month, day: 1)) ?? DateUtils.startOfDay(date)
     }
 
-    private var snapshot: TrackingSnapshot {
-        TrackingSnapshot(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                         stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+    /// Se calcula una vez (y de nuevo solo si cambian los datos), no en cada redibujado.
+    @State private var snapshot: TrackingSnapshot?
+    @State private var streak = Streak.Result(current: 0, best: 0)
+
+    private var signature: String {
+        TrackingSnapshot.signature(meals: meals, logs: logs, steps: dailySteps, marks: marks,
+                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
     }
 
     private var monthDays: [Date] {
         guard let next = DateUtils.calendar.date(byAdding: .month, value: 1, to: month),
               let last = DateUtils.calendar.date(byAdding: .day, value: -1, to: next) else { return [] }
-        return snapshot.days(from: month, through: last)
+        var days: [Date] = []
+        var day = month
+        while day <= last, days.count < 32 {
+            days.append(day)
+            guard let next = DateUtils.calendar.date(byAdding: .day, value: 1, to: day) else { break }
+            day = next
+        }
+        return days
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    let snap = snapshot
-                    streakCard(snap.streak)
-                    monthCard(snap)
+                    streakCard(streak)
+                    if let snapshot {
+                        monthCard(snapshot)
+                    } else {
+                        ProgressView().frame(maxWidth: .infinity, minHeight: 300).card()
+                    }
                     legend
                     InfoBanner(text: "Un día está cumplido con el \(Int(DayEvaluator.doneThreshold * 100)) % o más del cumplimiento diario (comidas, entreno del día y pasos). Descanso, enfermo y trabajando no cuentan como fallo ni rompen la racha; entrenado cuenta como día cumplido. Los viernes son descanso salvo que lo cambies.",
                                symbol: "info.circle.fill", color: Theme.lime)
@@ -53,9 +67,16 @@ struct CalendarView: View {
             .screenBackground()
             .navigationTitle("Calendario")
             .onAppear { trackingStart = DataStore.trackingStart(context) }
+            .task(id: signature) {
+                let snap = TrackingSnapshot(meals: meals, logs: logs, steps: dailySteps, marks: marks,
+                                            stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                streak = snap.streak
+                snapshot = snap
+            }
             .sheet(item: $selected) { day in
-                let snap = snapshot
-                DayMarkSheet(date: day.date, input: snap.input(for: day.date), outcome: snap.outcome(for: day.date))
+                if let snap = snapshot {
+                    DayMarkSheet(date: day.date, input: snap.input(for: day.date), outcome: snap.outcome(for: day.date))
+                }
             }
         }
     }

@@ -11,9 +11,6 @@ struct NowOrNeverApp: App {
     @State private var router = AppRouter()
     @State private var claude = ClaudeService()
     @State private var steps = StepCounter()
-    @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system.rawValue
-
-    private var colorScheme: ColorScheme? { (AppAppearance(rawValue: appearance) ?? .system).colorScheme }
 
     static let schema = Schema([
         UserSettings.self,
@@ -60,11 +57,11 @@ struct NowOrNeverApp: App {
                     .environment(router)
                     .environment(claude)
                     .environment(steps)
-                    .preferredColorScheme(colorScheme)
+                    .preferredColorScheme(.dark)
                     .tint(Theme.lime)
             } else {
                 StorageErrorView(message: containerError ?? "Error desconocido")
-                    .preferredColorScheme(colorScheme)
+                    .preferredColorScheme(.dark)
             }
         }
         .backgroundTask(.appRefresh(ReminderCoordinator.refreshTaskID)) {

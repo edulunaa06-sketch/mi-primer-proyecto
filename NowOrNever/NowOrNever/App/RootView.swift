@@ -52,7 +52,7 @@ struct RootView: View {
     /// Solo al abrir la app: pantalla de carga con el logo antes de la frase.
     @State private var splashIntro = true
     @State private var backgroundedAt: Date?
-    @State private var lastStepsSave: (steps: Int, at: Date)?
+    @State private var lastTrackingSync: Date?
 
     /// Solo en Debug (capturas del CI): la intro se queda fija. Se lee al crear la vista, antes de que empiece la intro.
     static var screenshotSplash: Bool {
@@ -97,9 +97,10 @@ struct RootView: View {
                 #if DEBUG
                 applyScreenshotArguments()
                 #endif
+                // Después de preparar los datos: así la carga inicial no cuenta como bloqueo.
+                HangDetector.shared.start()
                 await notifications.refreshStatus()
                 await refreshPhotoRemindersIfNeeded(settings)
-                steps.onUpdate = { saveLiveSteps($0) }
                 await syncTracking()
             }
             .overlay {
@@ -112,8 +113,14 @@ struct RootView: View {
                 }
             }
             .onChange(of: scenePhase) { _, phase in
+                HangDetector.shared.setPaused(phase != .active)
                 if phase == .background {
                     backgroundedAt = Date()
+                    // Los pasos de hoy se guardan al salir de la app, no mientras la usas:
+                    // así ningún guardado hace recalcular la pantalla mientras te desplazas.
+                    if bootstrapped, let today = steps.todaySteps {
+                        DataStore.saveSteps(today, for: Date(), goal: DataStore.settings(context).stepGoal, in: context)
+                    }
                     steps.stop()
                     // Al salir de la app se rehacen los avisos con los últimos pasos y pesajes.
                     if bootstrapped {
@@ -134,6 +141,7 @@ struct RootView: View {
                 }
             }
 
+            .onChange(of: router.tab) { _, tab in HangDetector.shared.screen = tab.title }
             .onOpenURL { url in
                 if url.scheme == StravaAPI.callbackScheme {
                     Task { await strava.handleCallback(url) }
@@ -195,6 +203,7 @@ struct RootView: View {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-NNSkipOnboarding") { showOnboarding = false }
         if args.contains("-NNDemoData") { DataStore.seedDemoData(context) }
+        if args.contains("-NNClearHangs") { HangDetector.clear() }
         // Las pruebas y capturas no esperan a la frase; con -NNSplash se queda fija para la captura.
         if args.contains("-NNSplash") { splashAutoDismiss = false } else if args.contains("-NNSkipOnboarding") { splashQuote = nil }
         if let i = args.firstIndex(of: "-NNTab"), i + 1 < args.count, let tab = AppTab(rawValue: args[i + 1]) {
@@ -204,8 +213,10 @@ struct RootView: View {
     #endif
 
     /// Guarda los pasos de los últimos 7 días (el iPhone no guarda más), ajusta el objetivo
-    /// adaptativo una vez al día y rehace los avisos.
+    /// adaptativo una vez al día y rehace los avisos. Como mucho cada 15 minutos.
     private func syncTracking() async {
+        if let last = lastTrackingSync, Date().timeIntervalSince(last) < 15 * 60 { return }
+        lastTrackingSync = Date()
         let goal = DataStore.settings(context).stepGoal
         let history = await steps.history()
         for day in history {
@@ -216,14 +227,6 @@ struct RootView: View {
         let today = steps.todaySteps ?? history.last(where: { DateUtils.calendar.isDateInToday($0.date) })?.steps
         await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: today)
         await strava.autoSyncIfNeeded(into: context)
-    }
-
-    /// Los pasos en vivo se guardan cada 200 pasos o cada 2 minutos, no en cada actualización del sensor.
-    private func saveLiveSteps(_ value: Int) {
-        guard bootstrapped else { return }
-        if let last = lastStepsSave, value - last.steps < 200, Date().timeIntervalSince(last.at) < 120 { return }
-        lastStepsSave = (value, Date())
-        DataStore.saveSteps(value, for: Date(), goal: DataStore.settings(context).stepGoal, in: context)
     }
 
     /// Los recordatorios de fotos con día 29–31 se programan mes a mes: se renuevan al abrir la app.

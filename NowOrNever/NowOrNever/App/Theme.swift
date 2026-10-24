@@ -1,32 +1,22 @@
 import SwiftUI
-import UIKit
 
-/// Paleta y estilos compartidos. Modo oscuro: fondo carbón, verde lima y texto blanco.
-/// Modo claro: fondo gris muy claro, tarjetas blancas, verde más oscuro (para que se lea) y texto negro.
-/// Cada color cambia solo según el modo (Ajustes › Apariencia).
+/// Paleta y estilos compartidos: fondo carbón, acentos verde lima, texto blanco/gris.
+/// Colores fijos (la app es siempre oscura): son los más baratos de dibujar.
 enum Theme {
-    private static func dynamic(light: UIColor, dark: UIColor) -> Color {
-        Color(UIColor { $0.userInterfaceStyle == .dark ? dark : light })
-    }
-
-    private static func rgb(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat, _ a: CGFloat = 1) -> UIColor {
-        UIColor(red: r, green: g, blue: b, alpha: a)
-    }
-
-    static let background = dynamic(light: rgb(0.95, 0.95, 0.96), dark: rgb(0.05, 0.05, 0.06))
-    static let card = dynamic(light: rgb(1, 1, 1), dark: rgb(0.11, 0.11, 0.12))
-    static let cardRaised = dynamic(light: rgb(0.91, 0.91, 0.93), dark: rgb(0.16, 0.16, 0.17))
-    static let lime = dynamic(light: rgb(0.33, 0.56, 0.0), dark: rgb(0.78, 1.0, 0.0))
-    static let limeDim = dynamic(light: rgb(0.33, 0.56, 0.0, 0.14), dark: rgb(0.78, 1.0, 0.0, 0.18))
-    static let textPrimary = dynamic(light: rgb(0.07, 0.07, 0.08), dark: rgb(1, 1, 1))
-    static let textSecondary = dynamic(light: rgb(0.36, 0.36, 0.38), dark: rgb(0.62, 0.62, 0.62))
-    static let textTertiary = dynamic(light: rgb(0.54, 0.54, 0.56), dark: rgb(0.42, 0.42, 0.42))
-    static let warning = dynamic(light: rgb(0.80, 0.45, 0.0), dark: rgb(1.0, 0.72, 0.2))
-    static let danger = dynamic(light: rgb(0.82, 0.16, 0.16), dark: rgb(1.0, 0.36, 0.36))
-    /// Texto e iconos encima de un fondo verde: negro sobre el lima del modo oscuro, blanco sobre el verde del claro.
-    static let onLime = dynamic(light: rgb(1, 1, 1), dark: rgb(0, 0, 0))
+    static let background = Color(red: 0.05, green: 0.05, blue: 0.06)
+    static let card = Color(red: 0.11, green: 0.11, blue: 0.12)
+    static let cardRaised = Color(red: 0.16, green: 0.16, blue: 0.17)
+    static let lime = Color(red: 0.78, green: 1.0, blue: 0.0)
+    static let limeDim = Color(red: 0.78, green: 1.0, blue: 0.0).opacity(0.18)
+    static let textPrimary = Color.white
+    static let textSecondary = Color(white: 0.62)
+    static let textTertiary = Color(white: 0.42)
+    static let warning = Color(red: 1.0, green: 0.72, blue: 0.2)
+    static let danger = Color(red: 1.0, green: 0.36, blue: 0.36)
+    /// Texto e iconos encima de un fondo verde lima.
+    static let onLime = Color.black
     /// Líneas separadoras finas.
-    static let separator = dynamic(light: rgb(0, 0, 0, 0.08), dark: rgb(1, 1, 1, 0.07))
+    static let separator = Color.white.opacity(0.07)
 
     static let cornerRadius: CGFloat = 18
 }
@@ -68,30 +58,5 @@ struct LimeButtonStyle: ButtonStyle {
                     .fill(filled ? Theme.lime : Theme.limeDim)
             )
             .opacity(configuration.isPressed ? 0.75 : 1)
-    }
-}
-
-/// Apariencia elegida en Ajustes: automática (la del iPhone), clara u oscura.
-enum AppAppearance: String, CaseIterable, Identifiable {
-    case system, light, dark
-    static let storageKey = "app.appearance"
-
-    var id: String { rawValue }
-
-    var label: String {
-        switch self {
-        case .system: return "Automático (como el iPhone)"
-        case .light: return "Claro"
-        case .dark: return "Oscuro"
-        }
-    }
-
-    /// nil = seguir el modo del iPhone.
-    var colorScheme: ColorScheme? {
-        switch self {
-        case .system: return nil
-        case .light: return .light
-        case .dark: return .dark
-        }
     }
 }

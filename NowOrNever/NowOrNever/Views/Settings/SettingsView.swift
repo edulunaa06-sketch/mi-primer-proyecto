@@ -48,7 +48,6 @@ private struct SettingsForm: View {
     var body: some View {
         Form {
             profileSection
-            appearanceSection
             goalsSection
             StepGoalSection(settings: settings)
             SmartRemindersSection(settings: settings)
@@ -58,6 +57,7 @@ private struct SettingsForm: View {
             stravaSection
             trackingSection
             BackupSection()
+            DiagnosticsSection()
             dataSection
         }
         .scrollDismissesKeyboard(.interactively)
@@ -384,23 +384,6 @@ private struct SettingsForm: View {
         }
     }
 
-    @AppStorage(AppAppearance.storageKey) private var appearance = AppAppearance.system.rawValue
-
-    private var appearanceSection: some View {
-        Section {
-            Picker("Modo", selection: $appearance) {
-                ForEach(AppAppearance.allCases) { Text($0.label).tag($0.rawValue) }
-            }
-            .pickerStyle(.inline)
-            .labelsHidden()
-            .tint(Theme.lime)
-        } header: {
-            Text("Apariencia")
-        } footer: {
-            Text("Automático cambia solo entre claro y oscuro cuando lo hace tu iPhone (Ajustes del iPhone › Pantalla y brillo).")
-        }
-    }
-
     private var dataSection: some View {
         Section {
             Text("Todos los datos (pesos, entrenamientos, comidas, ajustes y fotos) se guardan solo en este iPhone. No hay cuentas ni servidores propios.")
@@ -476,3 +459,40 @@ private struct SettingsForm: View {
         if let url = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(url) }
     }
 }
+
+/// Bloqueos que ha detectado la app (pantalla congelada más de 0,7 s), para saber dónde falla.
+private struct DiagnosticsSection: View {
+    @State private var hangs: [HangDetector.Hang] = []
+
+    var body: some View {
+        Section {
+            if hangs.isEmpty {
+                Label("Sin bloqueos detectados", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.lime)
+            } else {
+                ForEach(hangs.prefix(15)) { hang in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(hang.screen).font(.subheadline.weight(.semibold))
+                            Text(hang.date.formatted(.dateTime.day().month(.abbreviated).hour().minute().second().locale(Locale(identifier: "es_ES"))))
+                                .font(.caption).foregroundStyle(Theme.textSecondary)
+                        }
+                        Spacer()
+                        Text(String(format: "%.1f s", hang.seconds).replacingOccurrences(of: ".", with: ","))
+                            .font(.headline.monospacedDigit())
+                            .foregroundStyle(hang.seconds >= 2 ? Theme.danger : Theme.warning)
+                    }
+                }
+                Button("Borrar la lista", role: .destructive) {
+                    HangDetector.clear()
+                    hangs = []
+                }
+            }
+        } header: {
+            Text("Diagnóstico de fluidez")
+        } footer: {
+            Text("La app apunta aquí cada vez que la pantalla se queda congelada más de 0,7 segundos y en qué sección estabas. Si notas que se queda pillada, haz una captura de esta lista y mándamela. No se envía a ningún sitio.")
+        }
+        .onAppear { hangs = HangDetector.all() }
+    }
+}
+

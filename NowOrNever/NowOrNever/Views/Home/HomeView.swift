@@ -246,13 +246,15 @@ private struct HomeStreakCard: View {
     @Query private var marks: [DayMarkRecord]
     @Query private var settingsList: [UserSettings]
     @State private var trackingStart = DateUtils.startOfDay(Date())
+    @State private var streak = Streak.Result(current: 0, best: 0)
+    @State private var mark: DayMark = .normal
+
+    private var signature: String {
+        TrackingSnapshot.signature(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
+                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+    }
 
     var body: some View {
-        let today = Date()
-        let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
-                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
-        let streak = snapshot.streak
-        let mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
         Button { router.tab = .calendar } label: {
             HStack(spacing: 14) {
                 Image(systemName: "flame.fill").font(.title2).foregroundStyle(streak.current > 0 ? Theme.lime : Theme.textTertiary)
@@ -270,5 +272,13 @@ private struct HomeStreakCard: View {
         }
         .buttonStyle(.plain)
         .onAppear { trackingStart = DataStore.trackingStart(context) }
+        // La racha se calcula una vez y solo de nuevo si cambian los datos.
+        .task(id: signature) {
+            let today = Date()
+            let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
+                                            stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+            streak = snapshot.streak
+            mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
+        }
     }
 }

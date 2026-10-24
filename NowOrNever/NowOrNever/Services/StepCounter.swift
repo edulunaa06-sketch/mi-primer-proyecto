@@ -20,9 +20,6 @@ final class StepCounter {
 
     private(set) var todaySteps: Int?
     private(set) var state: State
-    /// Aviso directo de cada lectura (para guardar los pasos) sin que la pantalla principal entera
-    /// tenga que redibujarse con cada paso.
-    @ObservationIgnored var onUpdate: ((Int) -> Void)?
 
     #if DEBUG
     /// Solo en Debug (pruebas del CI): simula un sensor que da pasos varias veces por segundo.
@@ -42,7 +39,6 @@ final class StepCounter {
     private func apply(_ steps: Int) {
         if todaySteps != steps { todaySteps = steps }
         if state != .ready { state = .ready }
-        onUpdate?(steps)
     }
 
     private func updateDenied() {

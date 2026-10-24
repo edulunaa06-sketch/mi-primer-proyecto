@@ -274,7 +274,7 @@ final class UserFlowUITests: XCTestCase {
     /// tiene que abrirse y responder rápido (se ejecuta la última: deja esos datos para las capturas).
     func testZ_FluidWithLotsOfData() {
         app.terminate()
-        app.launchArguments = ["-NNSkipOnboarding", "-NNDemoData", "-NNFakeSteps"]
+        app.launchArguments = ["-NNSkipOnboarding", "-NNDemoData", "-NNFakeSteps", "-NNClearHangs"]
         app.launch()
         assertAppears(app.buttons["Progreso"].firstMatch, timeout: 60, "La app arranca con muchos datos")
         // Los 8 meses de datos se crean al arrancar: se espera a que estén (la racha deja de ser 0 en el calendario)
@@ -319,6 +319,16 @@ final class UserFlowUITests: XCTestCase {
         timed("Abrir Inicio") { tab("Inicio"); appears("PASOS DE HOY") }
         timed("Abrir Entreno") { tab("Entreno"); appears("Historial") }
         timed("Volver a Progreso") { tab("Progreso"); appears("Línea verde") }
+
+        // El detector de bloqueos de la propia app: ninguna pantalla congelada 2 s o más.
+        tab("Ajustes")
+        let diagnostics = element(containing: "Diagnóstico de fluidez")
+        scrollTo(diagnostics)
+        for _ in 0..<2 { app.swipeUp() }
+        let hangs = app.staticTexts.matching(NSPredicate(format: "label MATCHES %@", "^[0-9]+,[0-9] s$")).allElementsBoundByIndex.map(\.label)
+        print("HANGS detectados: \(hangs)")
+        let long = hangs.compactMap { Double($0.replacingOccurrences(of: " s", with: "").replacingOccurrences(of: ",", with: ".")) }.filter { $0 >= 2 }
+        XCTAssertTrue(long.isEmpty, "La app se congeló: \(hangs)")
         XCTAssertTrue(slow.isEmpty, "Pantallas lentas: \(slow.joined(separator: ", "))")
     }
 }

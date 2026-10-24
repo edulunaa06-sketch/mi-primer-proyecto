@@ -14,13 +14,20 @@ struct WeeklySummaryView: View {
 
     @State private var weekStart = DateUtils.startOfWeek(Date())
     @State private var trackingStart = DateUtils.startOfDay(Date())
+    /// Se calcula una vez (y de nuevo solo si cambian los datos), no en cada redibujado.
+    @State private var snapshot: TrackingSnapshot?
+
+    private var signature: String {
+        TrackingSnapshot.signature(meals: meals, logs: logs, steps: dailySteps, marks: marks,
+                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+    }
 
     private var weekEnd: Date { DateUtils.calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart }
     private var isCurrentWeek: Bool { weekStart == DateUtils.startOfWeek(Date()) }
 
     var body: some View {
-        let snapshot = TrackingSnapshot(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+        let snapshot = self.snapshot ?? TrackingSnapshot(meals: [], logs: [], steps: [], marks: [],
+                                                         stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
         let days = snapshot.days(from: weekStart, through: weekEnd.addingTimeInterval(-1))
         let outcomes = days.map(snapshot.outcome(for:))
         let summary = WeeklySummary.make(
@@ -71,6 +78,10 @@ struct WeeklySummaryView: View {
         }
         .screenBackground()
         .onAppear { trackingStart = DataStore.trackingStart(context) }
+        .task(id: signature) {
+            snapshot = TrackingSnapshot(meals: meals, logs: logs, steps: dailySteps, marks: marks,
+                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+        }
     }
 
     private var weekNavigation: some View {
