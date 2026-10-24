@@ -71,12 +71,13 @@ struct LiveWorkoutView: View {
                         .padding(.top, 4)
                 }
                 .padding(16)
-                .padding(.bottom, 90)
+                // Hueco para la barra del descanso: el botón «Terminar» siempre queda a la vista.
+                .padding(.bottom, 170)
                 .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recordFlash)
             }
             .scrollDismissesKeyboard(.interactively)
             .background(AtlasBackground())
-            .safeAreaInset(edge: .bottom, spacing: 0) { RestTimerBar(timer: timer).animation(.snappy, value: timer.isRunning) }
+            .overlay(alignment: .bottom) { RestTimerBar(timer: timer).animation(.snappy, value: timer.isRunning) }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: { Image(systemName: "chevron.down") }
