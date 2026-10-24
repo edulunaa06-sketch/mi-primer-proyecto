@@ -47,10 +47,10 @@ struct RootView: View {
     @Query private var settingsList: [UserSettings]
     @State private var showOnboarding = false
     @State private var bootstrapped = false
-    @State private var splashQuote: Motivation.Quote? = RootView.skipSplashForTests ? nil : RootView.nextQuote()
-    @State private var splashAutoDismiss = !RootView.screenshotSplash
-    /// Solo al abrir la app: pantalla de carga con el logo antes de la frase.
-    @State private var splashIntro = true
+    /// Al abrir la app: telón con NOW / OR / NEVER que se abre y deja ver la app.
+    @State private var showCurtain = !RootView.skipSplashForTests
+    /// Al volver tras un rato fuera: una frase motivadora.
+    @State private var splashQuote: Motivation.Quote?
     @State private var backgroundedAt: Date?
     @State private var lastTrackingSync: Date?
 
@@ -67,7 +67,8 @@ struct RootView: View {
     static var skipSplashForTests: Bool {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
-        return args.contains("-NNSkipOnboarding") && !args.contains("-NNSplash")
+        // -NNCurtain: el telón se ve entero (para grabarlo en vídeo en el CI).
+        return args.contains("-NNSkipOnboarding") && !args.contains("-NNSplash") && !args.contains("-NNCurtain")
         #else
         false
         #endif
@@ -108,11 +109,18 @@ struct RootView: View {
             }
             .overlay {
                 if let quote = splashQuote {
-                    MotivationSplash(quote: quote, autoDismiss: splashAutoDismiss, showIntro: splashIntro) {
+                    MotivationSplash(quote: quote) {
                         withAnimation(.easeInOut(duration: 0.35)) { splashQuote = nil }
                     }
                     .transition(.opacity)
                     .zIndex(1)
+                }
+            }
+            .overlay {
+                // El telón se abre solo (sus mitades salen de la pantalla) y después se quita.
+                if showCurtain {
+                    CurtainIntro(autoOpen: !RootView.screenshotSplash) { showCurtain = false }
+                        .zIndex(2)
                 }
             }
             .onChange(of: scenePhase) { _, phase in
@@ -133,7 +141,6 @@ struct RootView: View {
                 if phase == .active { steps.restart() }
                 // Al volver a la app tras 10 minutos o más fuera, otra frase.
                 if phase == .active, let since = backgroundedAt, Date().timeIntervalSince(since) >= 600 {
-                    splashIntro = false
                     splashQuote = RootView.nextQuote()
                 }
                 if phase == .active { backgroundedAt = nil }
@@ -207,8 +214,6 @@ struct RootView: View {
         if args.contains("-NNSkipOnboarding") { showOnboarding = false }
         if args.contains("-NNDemoData") { DataStore.seedDemoData(context) }
         if args.contains("-NNClearHangs") { HangDetector.clear() }
-        // Las pruebas y capturas no esperan a la frase; con -NNSplash se queda fija para la captura.
-        if args.contains("-NNSplash") { splashAutoDismiss = false } else if args.contains("-NNSkipOnboarding") { splashQuote = nil }
         if let i = args.firstIndex(of: "-NNTab"), i + 1 < args.count, let tab = AppTab(rawValue: args[i + 1]) {
             router.tab = tab
         }

@@ -141,6 +141,14 @@ jobs:
             xcrun simctl terminate "$UDID" "$BID" || true
           done
 
+          # Vídeo del telón de inicio (NOW baja, NEVER sube, OR se enfoca y el telón se abre).
+          xcrun simctl io "$UDID" recordVideo --codec h264 --force screenshots/curtain.mp4 &
+          REC=$!
+          sleep 1
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNCurtain; sleep 5
+          kill -INT $REC; wait $REC || true
+          xcrun simctl terminate "$UDID" "$BID" || true
+
           # Capturas de las pruebas (final de cada pestaña).
           xcrun xcresulttool export attachments --path tests.xcresult --output-path screenshots/tests || true
 
