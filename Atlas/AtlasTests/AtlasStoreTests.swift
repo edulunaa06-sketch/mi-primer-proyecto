@@ -85,5 +85,38 @@ final class AtlasStoreTests: XCTestCase {
         XCTAssertNotNil(Store.doneThisWeek(run, workouts: workouts))
         XCTAssertEqual(workouts.first?.runMeters, 5000)
     }
+
+    func testBackupRoundTrip() throws {
+        Store.seedTemplatesIfNeeded(context)
+        let p = Store.profile(context)
+        p.name = "Edu"; p.kcalTarget = 2400; p.manualTargets = true
+        Store.logWeight(80, waistCm: 84, in: context)
+        let key = DateUtils.dayKey(Date())
+        let rice = Catalog.shared.food("rice")!
+        Store.addFood(name: rice.name, per100: rice.per100, grams: 90, meal: .lunch, dayKey: key, foodKey: rice.id, in: context)
+        Store.saveMeal(name: "Comida", entries: Store.entries(key, in: context), in: context)
+        let push = Store.templates(context).first { $0.seedID == "tue-push-a" }!
+        let w = Store.startWorkout(from: push, in: context)
+        w.sets.first!.kg = 70; w.sets.first!.reps = 8; w.sets.first!.done = true
+        Store.finish(w, in: context)
+        context.insert(CheckIn(dayKey: key, sleepHours: 8, energy: 4, soreness: 2))
+        try context.save()
+
+        let data = try AtlasBackup.encoder.encode(BackupService.make(context))
+        Store.eraseAll(context)
+        XCTAssertEqual(Store.finishedWorkouts(in: context).count, 0)
+        BackupService.restore(try AtlasBackup.decoder.decode(AtlasBackup.self, from: data), into: context)
+
+        XCTAssertEqual(Store.profile(context).name, "Edu")
+        XCTAssertEqual(Store.profile(context).kcalTarget, 2400)
+        XCTAssertEqual(Store.latestWeight(context)?.waistCm, 84)
+        XCTAssertEqual(Store.entries(key, in: context).count, 1)
+        XCTAssertEqual(Store.templates(context).count, WeeklyRoutine.allSessions.count)
+        XCTAssertEqual(Store.finishedWorkouts(in: context).first?.doneSets.first?.kg, 70)
+        XCTAssertEqual((try? context.fetchCount(FetchDescriptor<SavedMeal>())) ?? 0, 1)
+        XCTAssertEqual((try? context.fetchCount(FetchDescriptor<CheckIn>())) ?? 0, 1)
+        // El entreno sigue enlazado a su rutina tras recuperar.
+        XCTAssertNotNil(Store.doneThisWeek(Store.templates(context).first { $0.seedID == "tue-push-a" }!, workouts: Store.finishedWorkouts(in: context)))
+    }
 }
 #endif

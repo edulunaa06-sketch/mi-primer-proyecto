@@ -42,6 +42,8 @@ struct FoodDayContent: View {
     @Query private var entries: [FoodEntry]
     @State private var editing: FoodEntry?
     @State private var copiedMessage: String?
+    @State private var savingMeal: MealType?
+    @State private var favoriteName = ""
 
     init(dayKey: String) {
         self.dayKey = dayKey
@@ -73,6 +75,18 @@ struct FoodDayContent: View {
             }
         }
         .sheet(item: $editing) { EntryEditSheet(entry: $0).presentationDetents([.medium]) }
+        .alert("Guardar como comida favorita", isPresented: Binding(get: { savingMeal != nil }, set: { if !$0 { savingMeal = nil } })) {
+            TextField("Nombre (p. ej. Desayuno de siempre)", text: $favoriteName)
+            Button("Guardar") {
+                if let meal = savingMeal {
+                    let name = favoriteName.trimmingCharacters(in: .whitespaces)
+                    Store.saveMeal(name: name.isEmpty ? meal.label : name, entries: entries.filter { $0.meal == meal }, in: context)
+                    DS.haptic(.medium)
+                }
+                favoriteName = ""
+            }
+            Button("Cancelar", role: .cancel) { favoriteName = "" }
+        } message: { Text("La encontrarás arriba del todo en «Platos» para apuntarla de un toque.") }
     }
 
     private func mealSection(_ meal: MealType, entries: [FoodEntry], targets: NutritionValues) -> some View {
@@ -84,10 +98,22 @@ struct FoodDayContent: View {
                     .frame(width: 30, height: 30).background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(DS.surfaceHi))
                 VStack(alignment: .leading, spacing: 0) {
                     Text(meal.label).font(.system(size: 17, weight: .bold))
-                    Text("\(NumberFormat.integer(total.kcal)) kcal · sugerido ~\(NumberFormat.integer(targets.kcal * share))")
+                    Text("\(NumberFormat.integer(total.kcal)) kcal · ~\(NumberFormat.integer(targets.kcal * share)) kcal y ≥\(ProteinPlan.perMeal(dailyProtein: targets.protein)) g proteína")
                         .font(.system(size: 11, weight: .medium)).foregroundStyle(DS.text3)
                 }
                 Spacer()
+                if !entries.isEmpty {
+                    Menu {
+                        Button { savingMeal = meal } label: { Label("Guardar como favorita", systemImage: "star") }
+                        Button(role: .destructive) {
+                            entries.forEach(context.delete)
+                            try? context.save()
+                        } label: { Label("Vaciar \(meal.label.lowercased())", systemImage: "trash") }
+                    } label: {
+                        Image(systemName: "ellipsis").font(.system(size: 14, weight: .bold)).foregroundStyle(DS.text2)
+                            .frame(width: 34, height: 34).background(Circle().fill(DS.surfaceHi))
+                    }
+                }
                 Button {
                     app.foodSheet = FoodSheetRequest(meal: meal, dayKey: dayKey)
                 } label: {
