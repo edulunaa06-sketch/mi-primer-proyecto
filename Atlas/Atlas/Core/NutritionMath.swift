@@ -1,7 +1,7 @@
 import Foundation
 
 /// Valores nutricionales (kcal y macros en gramos). Lógica pura, sin dependencias de UI ni de SwiftData.
-struct NutritionValues: Equatable, Codable {
+struct NutritionValues: Equatable, Hashable, Codable {
     var kcal: Double
     var protein: Double
     var carbs: Double
