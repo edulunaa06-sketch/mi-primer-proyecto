@@ -197,13 +197,65 @@ final class UserFlowUITests: XCTestCase {
         assertAppears(message, "Mensaje de reajuste")
     }
 
-    func test6_MarkSessionDoneFromTheWeek() {
+    private func sessionRow(_ id: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: "session.\(id)").firstMatch
+    }
+
+    /// Arrastra la fila hacia la derecha `points` puntos y se queda quieto un momento antes de soltar (sin «lanzarla»).
+    private func swipeRight(_ row: XCUIElement, points: CGFloat) {
+        let start = row.coordinate(withNormalizedOffset: CGVector(dx: 0.12, dy: 0.5))
+        start.press(forDuration: 0.05, thenDragTo: start.withOffset(CGVector(dx: points, dy: 0)),
+                    withVelocity: 500, thenHoldForDuration: 0.2)
+        Thread.sleep(forTimeInterval: 0.8)
+    }
+
+    private func assertLabel(_ row: XCUIElement, contains text: String, _ message: String) {
+        let ok = NSPredicate(format: "label CONTAINS %@", text)
+        expectation(for: ok, evaluatedWith: row)
+        waitForExpectations(timeout: 5) { error in
+            if error != nil { print("UI-DUMP \(message): \(row.label)") }
+        }
+    }
+
+    func test6_SwipeRightToCompleteSessions() {
         tab("Entreno")
-        let mark = app.buttons.matching(NSPredicate(format: "label ENDSWITH %@", "como hecha")).firstMatch
-        XCTAssertTrue(scrollTo(mark).exists, "Botón de marcar en la semana")
-        mark.tap()
+        let run = sessionRow("sat-run"), chest = sessionRow("sat-chest-back")
+        XCTAssertTrue(scrollTo(chest).exists, "Fila de pecho y espalda del sábado")
+        assertLabel(run, contains: "pendiente", "Carrera pendiente al empezar")
+        assertLabel(chest, contains: "pendiente", "Pecho pendiente al empezar")
+
+        // Un arrastre corto no cambia nada ni abre la sesión.
+        swipeRight(run, points: 40)
+        assertLabel(run, contains: "pendiente", "Arrastre corto: sigue pendiente")
+        XCTAssertTrue(app.navigationBars["Entrenamientos"].exists, "Arrastrar no abre la sesión")
+
+        // Deslizar del todo: cada actividad del mismo día por separado.
+        swipeRight(run, points: 180)
+        assertLabel(run, contains: "hecha", "Carrera hecha al deslizar")
+        assertLabel(chest, contains: "pendiente", "El pecho sigue pendiente (son independientes)")
+        XCTAssertTrue(app.navigationBars["Entrenamientos"].exists, "Deslizar no abre la sesión")
+        swipeRight(chest, points: 180)
+        assertLabel(chest, contains: "hecha", "Pecho hecho al deslizar")
+
+        // El mismo gesto deshace.
+        swipeRight(run, points: 180)
+        assertLabel(run, contains: "pendiente", "Deslizar otra vez la desmarca")
+
+        // Tocar sigue abriendo la sesión.
+        run.tap()
+        let back = app.navigationBars.buttons["Entrenamientos"].firstMatch
+        XCTAssertTrue(back.waitForExistence(timeout: 5), "Tocar abre la sesión")
+        back.tap()
+
+        // Al cerrar y volver a abrir la app se mantiene.
+        app.terminate()
+        app.launch()
+        tab("Entreno")
+        XCTAssertTrue(scrollTo(chest).exists)
+        assertLabel(chest, contains: "hecha", "Se guarda al cerrar la app")
+        assertLabel(run, contains: "pendiente", "La desmarcada sigue desmarcada")
         app.swipeDown(); app.swipeDown(); app.swipeDown()
-        assertAppears(element(containing: "1 de "), "Cuenta como hecha en el resumen semanal")
+        assertAppears(element(containing: "1 de "), "Cuenta una sesión hecha en el resumen semanal")
     }
 
     func test7_StrengthSessionCompletesItself() {

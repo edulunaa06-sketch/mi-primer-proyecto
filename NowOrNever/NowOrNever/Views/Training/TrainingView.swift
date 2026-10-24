@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UIKit
 
 /// Calendario semanal. Cada semana (lunes a domingo) tiene sus propios registros:
 /// al empezar una semana nueva las casillas aparecen vacías y el historial anterior se conserva.
@@ -140,19 +141,7 @@ struct TrainingView: View {
                 }
             }
             ForEach(sessions) { session in
-                HStack(spacing: 8) {
-                    NavigationLink(value: session.id) {
-                        sessionRow(session)
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        Button {
-                            newTitle = session.renamed(titles).title
-                            renaming = session
-                        } label: { Label("Cambiar nombre", systemImage: "pencil") }
-                    }
-                    if session.kind != .rest { doneButton(session) }
-                }
+                swipeableRow(session)
             }
         }
         .card()
@@ -174,34 +163,53 @@ struct TrainingView: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
+            if session.kind != .rest, log?.isCompleted == true {
+                Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(Theme.lime)
+                    .transition(.scale.combined(with: .opacity))
+            }
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
         }
         .padding(10)
         .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        // Completada: borde verde fino.
+        .overlay {
+            if session.kind != .rest, log?.isCompleted == true {
+                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.lime.opacity(0.55), lineWidth: 1)
+            }
+        }
     }
 
-    /// Marcar una sesión como hecha (o deshacerlo) directamente desde la semana, sin entrar.
-    /// Fuerza: marca (o desmarca) todos sus ejercicios, igual que si lo hicieras dentro; los kilos y repeticiones no se tocan.
-    private func doneButton(_ base: SessionDefinition) -> some View {
+    /// Tocar abre la sesión; deslizar hacia la derecha la marca como hecha (o la desmarca si ya lo estaba).
+    /// Mantener pulsado: cambiar el nombre. Los días de descanso solo se abren.
+    private func swipeableRow(_ base: SessionDefinition) -> some View {
         let session = base.resolved(with: routine, titles: titles)
         let done = log(for: session)?.isCompleted ?? false
-        return Button {
-            let log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
-            withAnimation {
-                log.toggleDoneFromWeek(session: session)
-            }
-            try? context.save()
-        } label: {
-            VStack(spacing: 2) {
-                CheckCircle(isOn: done, size: 30)
-                Text(done ? "Hecho" : "Marcar").font(.caption2.weight(.semibold))
-                    .foregroundStyle(done ? Theme.lime : Theme.textSecondary)
-            }
-            .frame(width: 56, height: 56)
-            .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        let open = { path.append(base.id) }
+        return SwipeToComplete(isDone: done, enabled: base.kind != .rest, onOpen: open) {
+            toggleDone(base)
+        } content: {
+            sessionRow(base)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(done ? "\(session.title): hecha. Deshacer" : "Marcar \(session.title) como hecha")
+        .contextMenu {
+            Button {
+                newTitle = base.renamed(titles).title
+                renaming = base
+            } label: { Label("Cambiar nombre", systemImage: "pencil") }
+        }
+        .accessibilityIdentifier("session.\(base.id)")
+        .accessibilityLabel(base.kind == .rest ? session.title : "\(session.title), \(done ? "hecha" : "pendiente")")
+        .accessibilityHint(base.kind == .rest ? "Abre el día" : "Desliza a la derecha para \(done ? "desmarcarla" : "marcarla como hecha")")
+    }
+
+    /// Marca la sesión como hecha (o la desmarca) en el registro de esta semana; reutiliza el registro si ya existe.
+    /// Fuerza: marca o desmarca todos sus ejercicios, igual que si lo hicieras dentro; los kilos y repeticiones no se tocan.
+    private func toggleDone(_ base: SessionDefinition) {
+        let session = base.resolved(with: routine, titles: titles)
+        let log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            log.toggleDoneFromWeek(session: session)
+        }
+        try? context.save()
     }
 
     private func subtitle(_ session: SessionDefinition, progress: SessionProgress) -> String {
@@ -336,5 +344,99 @@ struct RestDayView: View {
         .screenBackground()
         .navigationTitle("Viernes")
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+/// Fila que se completa deslizándola hacia la derecha (como en Mail o Recordatorios).
+/// · Mientras arrastras aparece debajo un fondo verde con un check (o gris con «Desmarcar» si ya estaba hecha).
+/// · Al pasar el umbral vibra; si sueltas ahí, se marca. Si sueltas antes, vuelve a su sitio sin cambiar nada.
+/// · Un toque normal abre la sesión; un deslizamiento nunca la abre. El gesto solo se activa si el dedo va
+///   claramente en horizontal, así que el desplazamiento vertical de la lista sigue igual.
+struct SwipeToComplete<Content: View>: View {
+    let isDone: Bool
+    var enabled = true
+    let onOpen: () -> Void
+    let onToggle: () -> Void
+    @ViewBuilder let content: () -> Content
+
+    /// Arrastre en curso. Se vuelve a cero solo (con un muelle) al soltar o si iOS cancela el gesto,
+    /// así la fila nunca se queda a medio camino.
+    @GestureState(resetTransaction: Transaction(animation: .spring(response: 0.35, dampingFraction: 0.8)))
+    private var dragState = DragState()
+
+    struct DragState {
+        var dx: CGFloat = 0
+        /// nil = aún no se sabe hacia dónde va el dedo; true = horizontal (es nuestro); false = vertical (es de la lista).
+        var horizontal: Bool?
+    }
+
+    private var offset: CGFloat {
+        guard dragState.horizontal == true else { return 0 }
+        let raw = max(dragState.dx, 0)
+        // Resistencia suave pasado el umbral, como en iOS.
+        return raw <= Self.threshold ? raw : Self.threshold + (raw - Self.threshold) * 0.35
+    }
+
+    private var armed: Bool { dragState.horizontal == true && dragState.dx >= Self.threshold }
+
+    static var threshold: CGFloat { 96 }
+
+    var body: some View {
+        content()
+            .offset(x: offset)
+            .background(alignment: .leading) { if offset > 0 { reveal } }
+            .contentShape(Rectangle())
+            .onTapGesture { if offset == 0 { onOpen() } }
+            .simultaneousGesture(drag, including: enabled ? .all : .subviews)
+            .onChange(of: armed) { _, isArmed in
+                // Vibración al pasar (o volver a cruzar) el umbral.
+                UIImpactFeedbackGenerator(style: isArmed ? .medium : .light).impactOccurred()
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onOpen() }
+            .accessibilityActions {
+                if enabled {
+                    Button(isDone ? "Desmarcar" : "Marcar como hecha") { onToggle() }
+                }
+            }
+    }
+
+    private var reveal: some View {
+        let color = isDone ? Theme.textTertiary : Theme.lime
+        return RoundedRectangle(cornerRadius: 12, style: .continuous)
+            .fill(color.opacity(armed ? 1 : 0.35 + 0.5 * min(offset / Self.threshold, 1)))
+            .frame(width: max(offset, 0))
+            .overlay(alignment: .leading) {
+                Label(isDone ? "Desmarcar" : "Hecho", systemImage: isDone ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
+                    .labelStyle(.iconOnly)
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(isDone ? Theme.textPrimary : Theme.onLime)
+                    .scaleEffect(armed ? 1.15 : 0.9)
+                    .padding(.leading, 16)
+                    .opacity(offset > 28 ? 1 : 0)
+            }
+            .accessibilityHidden(true)
+    }
+
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+            .updating($dragState) { value, state, _ in
+                if state.horizontal == nil {
+                    // Se decide con el primer movimiento: hacia la derecha y bastante más horizontal que vertical.
+                    let dx = value.translation.width, dy = value.translation.height
+                    state.horizontal = dx > 0 && abs(dx) > abs(dy) * 1.6
+                }
+                state.dx = value.translation.width
+            }
+            .onEnded { value in
+                let dx = value.translation.width, dy = value.translation.height
+                // Igual que al empezar: solo cuenta un deslizamiento claramente horizontal hacia la derecha.
+                guard dx > 0, abs(dx) > abs(dy) * 1.6, abs(dy) < 60 else { return }
+                if dx >= Self.threshold || value.predictedEndTranslation.width >= Self.threshold * 1.6 {
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    onToggle()
+                }
+            }
     }
 }

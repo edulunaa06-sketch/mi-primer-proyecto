@@ -130,5 +130,34 @@ final class BackupPersistenceTests: XCTestCase {
         XCTAssertEqual(SessionProgress(session: push, log: log).completedExercises, 0)
         XCTAssertEqual(log.exercises.first?.sets.first?.weightKg, 60)
     }
+
+    func testSwipeToggleReusesTheWeekLogAndPersists() throws {
+        let defaults = UserDefaults(suiteName: "swipe-\(UUID().uuidString)")!
+        DataStore.seedRoutineIfNeeded(context, defaults: defaults)
+        let routine = (try? context.fetch(FetchDescriptor<RoutineExercise>())) ?? []
+        let week = DateUtils.startOfWeek(Date())
+        let run = WeeklyRoutine.saturdayRun
+        let chest = WeeklyRoutine.saturdayChestBack.resolved(with: routine)
+        let exercisesBefore = chest.exercises.map(\.id)
+
+        // Carrera y pecho del mismo día, cada una por separado; marcar, desmarcar y volver a marcar.
+        DataStore.fetchOrCreateLog(for: run, weekStart: week, in: context).toggleDoneFromWeek(session: run)
+        DataStore.fetchOrCreateLog(for: run, weekStart: week, in: context).toggleDoneFromWeek(session: run)
+        DataStore.fetchOrCreateLog(for: run, weekStart: week, in: context).toggleDoneFromWeek(session: run)
+        DataStore.fetchOrCreateLog(for: chest, weekStart: week, in: context).toggleDoneFromWeek(session: chest)
+        try context.save()
+
+        XCTAssertEqual(count(WorkoutSessionLog.self), 2, "Un registro por sesión y semana, sin duplicados")
+        XCTAssertEqual(DataStore.sessionLog(for: run, weekStart: week, in: context)?.isCompleted, true)
+        XCTAssertEqual(DataStore.sessionLog(for: chest, weekStart: week, in: context)?.isCompleted, true)
+        XCTAssertEqual(DataStore.sessionLog(for: run, weekStart: week, in: context)?.weekStart, week, "La fecha no cambia")
+        XCTAssertEqual(WeeklyRoutine.saturdayChestBack.resolved(with: routine).exercises.map(\.id), exercisesBefore,
+                       "La rutina no se toca")
+
+        // Con un contexto nuevo (como al volver a abrir la app) sigue guardado.
+        let fresh = ModelContext(container)
+        let logs = try fresh.fetch(FetchDescriptor<WorkoutSessionLog>())
+        XCTAssertEqual(Set(logs.filter(\.isCompleted).map(\.sessionID)), ["sat-run", "sat-chest-back"])
+    }
 }
 #endif
