@@ -133,7 +133,7 @@ struct FoodSearchList: View {
         case .drained: return "escurrido"
         case .cookedDrained: return "cocido y escurrido"
         case .edible: return "parte comestible"
-        case .none: return ""
+        default: return ""
         }
     }
 }
