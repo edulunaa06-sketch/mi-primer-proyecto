@@ -159,6 +159,9 @@ struct ProgressTabView: View {
                     }
                 }
                 .frame(height: 210)
+                // La curva suavizada se sale un poco por abajo: se recorta
+                // para que no tape las esquinas de la tarjeta.
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
         .card()
