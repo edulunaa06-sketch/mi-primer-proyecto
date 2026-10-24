@@ -156,13 +156,4 @@ final class AtlasFlowTests: XCTestCase {
         XCTAssertTrue(containing("¿Qué apuntamos?").waitForExistence(timeout: 5))
         shot("quick-add")
     }
-
-    func test7_RecoveryCheckIn() {
-        launch(["-AtlasSkipOnboarding"])
-        let save = el("checkin.save")
-        XCTAssertTrue(scrollTo(save).exists, "Chequeo de recuperación en Hoy")
-        save.tap()
-        XCTAssertTrue(el("checkin.result").waitForExistence(timeout: 5), "Resultado de preparación")
-        shot("checkin")
-    }
 }

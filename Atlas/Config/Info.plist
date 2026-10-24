@@ -6,10 +6,6 @@
 	<string>ATLAS</string>
 	<key>NSMotionUsageDescription</key>
 	<string>ATLAS cuenta tus pasos con el sensor de movimiento del iPhone para enseñártelos en Hoy. No salen de tu iPhone.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>ATLAS usa la cámara para escanear el código de barras de los alimentos y para tus fotos de progreso. Nada sale de tu iPhone.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>ATLAS usa tus fotos solo si eliges una foto de progreso. Se guarda dentro de la app, en tu iPhone.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>strava</string>

@@ -9,7 +9,7 @@ struct AddFoodSheet: View {
     @State private var meal: MealType = .breakfast
 
     enum Mode: String, CaseIterable, Identifiable {
-        case search = "Buscar", scan = "Escanear", menus = "Platos", quick = "Rápido", create = "Crear"
+        case search = "Buscar", menus = "Platos", quick = "Rápido", create = "Crear"
         var id: String { rawValue }
     }
 
@@ -27,7 +27,6 @@ struct AddFoodSheet: View {
                 .accessibilityIdentifier("food.mode")
                 switch mode {
                 case .search: FoodSearchList(meal: meal, dayKey: request.dayKey, onDone: { dismiss() })
-                case .scan: ScanFoodView(meal: meal, dayKey: request.dayKey, onDone: { dismiss() })
                 case .menus: DishList(meal: meal, dayKey: request.dayKey, onDone: { dismiss() })
                 case .quick: QuickAddForm(meal: meal, dayKey: request.dayKey, onDone: { dismiss() })
                 case .create: CreateFoodForm(onCreated: { mode = .search })
@@ -204,7 +203,6 @@ struct DishList: View {
     let onDone: () -> Void
     @Environment(\.modelContext) private var context
     @Query private var profiles: [Profile]
-    @Query(sort: \SavedMeal.createdAt, order: .reverse) private var favorites: [SavedMeal]
     @State private var selected: RankedDish?
     @State private var ranked: [RankedDish] = []
 
@@ -217,30 +215,6 @@ struct DishList: View {
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 12) {
-                if !favorites.isEmpty {
-                    SectionTitle(title: "Tus comidas favoritas")
-                    ForEach(favorites) { fav in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(fav.name).font(.system(size: 15, weight: .bold))
-                                Text("\(NumberFormat.integer(fav.total.kcal)) kcal · P \(Int(fav.total.protein)) · \(fav.items.count) alimentos")
-                                    .font(.system(size: 11)).foregroundStyle(DS.text3)
-                            }
-                            Spacer()
-                            Button {
-                                Store.addSavedMeal(fav, to: meal, dayKey: dayKey, in: context)
-                                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                                onDone()
-                            } label: { Image(systemName: "plus.circle.fill").font(.title2).foregroundStyle(DS.brandDiagonal) }
-                            .buttonStyle(.plain)
-                        }
-                        .glass(padding: 12, radius: 16)
-                        .contextMenu {
-                            Button(role: .destructive) { context.delete(fav); try? context.save() } label: { Label("Borrar favorita", systemImage: "trash") }
-                        }
-                    }
-                    SectionTitle(title: "Menú de platos")
-                }
                 Text("Raciones ajustadas a lo que te queda hoy para \(meal.label.lowercased()). Los mejores encajes primero.")
                     .font(.footnote).foregroundStyle(DS.text2).frame(maxWidth: .infinity, alignment: .leading)
                 ForEach(ranked) { item in

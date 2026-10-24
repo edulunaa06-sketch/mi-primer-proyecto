@@ -73,7 +73,7 @@ struct RootView: View {
         .sheet(isPresented: $app.showQuickAdd) { QuickAddSheet().presentationDetents([.medium]) }
         .sheet(isPresented: $app.showProfile) { ProfileSheet() }
         .sheet(item: $app.foodSheet) { req in AddFoodSheet(request: req) }
-        .sheet(isPresented: $app.showWeight) { WeightSheet().presentationDetents([.height(430)]) }
+        .sheet(isPresented: $app.showWeight) { WeightSheet().presentationDetents([.height(340)]) }
         .sheet(item: $app.runTemplate) { req in RunLogSheet(template: req.template).presentationDetents([.large]) }
         .fullScreenCover(item: $app.liveWorkout) { w in LiveWorkoutView(workout: w) }
         .fullScreenCover(isPresented: $showOnboarding) { OnboardingView { showOnboarding = false } }

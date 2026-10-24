@@ -96,8 +96,6 @@ struct ProfileForm: View {
                         value: $profile.waterGoalMl, in: 1000...6000, step: 250)
             }
             StravaSection()
-            RemindersSection(profile: profile)
-            BackupSection()
             Section {
                 Button("Borrar todos mis datos", role: .destructive) { confirmErase = true }
             } footer: {

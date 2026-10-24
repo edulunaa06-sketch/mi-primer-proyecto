@@ -12,7 +12,6 @@ struct TodayView: View {
     @Query(filter: #Predicate<Workout> { $0.finishedAt != nil }, sort: \Workout.startedAt, order: .reverse) private var workouts: [Workout]
     @Query(sort: \WeightLog.date) private var weights: [WeightLog]
     @Query private var waterToday: [WaterLog]
-    @Query private var checkInToday: [CheckIn]
 
     private let todayKey: String
 
@@ -21,7 +20,6 @@ struct TodayView: View {
         todayKey = key
         _todayEntries = Query(filter: #Predicate<FoodEntry> { $0.dayKey == key })
         _waterToday = Query(filter: #Predicate<WaterLog> { $0.dayKey == key })
-        _checkInToday = Query(filter: #Predicate<CheckIn> { $0.dayKey == key })
     }
 
     private var profile: Profile? { profiles.first }
@@ -37,7 +35,6 @@ struct TodayView: View {
                         app.tab = .food
                     }
                     todayTraining
-                    CheckInCard(checkIn: checkInToday.first, dayKey: todayKey)
                     HStack(spacing: 12) {
                         StepsTile(goal: profile?.stepGoal ?? 8000)
                         WaterTile(ml: waterToday.first?.ml ?? 0, goal: profile?.waterGoalMl ?? 2500) {
@@ -423,85 +420,5 @@ struct CoachTip: View {
             return ("bolt.fill", "Llevas unos días sin entrenar. No hace falta que sea perfecto: hoy, aunque sea una sesión corta.")
         }
         return ("moon.stars.fill", "Dormir 7–9 horas mejora tu fuerza y tu apetito más que cualquier suplemento.")
-    }
-}
-
-/// Chequeo de recuperación: sueño, energía y agujetas → preparación de hoy y consejo.
-struct CheckInCard: View {
-    let checkIn: CheckIn?
-    let dayKey: String
-    @Environment(\.modelContext) private var context
-    @State private var sleep: Double = 7.5
-    @State private var energy = 3
-    @State private var soreness = 2
-    @State private var editing = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let c = checkIn, !editing {
-                let advice = Readiness.advice(c.score)
-                HStack(spacing: 14) {
-                    ZStack {
-                        Ring(progress: Double(c.score) / 100, lineWidth: 7, style: c.score >= 50 ? AnyShapeStyle(DS.good) : AnyShapeStyle(DS.warn))
-                        Text("\(c.score)").font(.number(17, .heavy))
-                    }
-                    .frame(width: 54, height: 54)
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("RECUPERACIÓN").font(.system(size: 10, weight: .heavy).width(.expanded)).tracking(1.2).foregroundStyle(DS.text3)
-                        Text(advice.title).font(.system(size: 16, weight: .bold))
-                        Text(advice.text).font(.system(size: 12)).foregroundStyle(DS.text2).fixedSize(horizontal: false, vertical: true)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture { sleep = c.sleepHours; energy = c.energy; soreness = c.soreness; editing = true }
-                .accessibilityIdentifier("checkin.result")
-            } else {
-                SectionTitle(title: "¿Cómo estás hoy?")
-                HStack {
-                    Label("Sueño", systemImage: "moon.zzz.fill").font(.system(size: 14, weight: .semibold))
-                    Spacer()
-                    Stepper(String(format: "%.1f h", sleep).replacingOccurrences(of: ".", with: ","), value: $sleep, in: 3...12, step: 0.5)
-                        .font(.system(size: 14, weight: .bold).monospacedDigit())
-                        .fixedSize()
-                }
-                scale("Energía", "bolt.fill", $energy, low: "Sin pilas", high: "A tope")
-                scale("Agujetas", "figure.cooldown", $soreness, low: "Nada", high: "Muchas")
-                Button {
-                    if let c = checkIn {
-                        c.sleepHours = sleep; c.energy = energy; c.soreness = soreness
-                    } else {
-                        context.insert(CheckIn(dayKey: dayKey, sleepHours: sleep, energy: energy, soreness: soreness))
-                    }
-                    try? context.save()
-                    DS.haptic(.medium)
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) { editing = false }
-                } label: { Text("Ver mi preparación") }
-                .buttonStyle(.primary)
-                .accessibilityIdentifier("checkin.save")
-            }
-        }
-        .glass()
-    }
-
-    private func scale(_ title: String, _ symbol: String, _ value: Binding<Int>, low: String, high: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Label(title, systemImage: symbol).font(.system(size: 14, weight: .semibold))
-            HStack(spacing: 8) {
-                ForEach(1...5, id: \.self) { n in
-                    Button {
-                        value.wrappedValue = n
-                        DS.haptic(.soft)
-                    } label: {
-                        Text("\(n)").font(.system(size: 15, weight: .bold))
-                            .frame(maxWidth: .infinity, minHeight: 36)
-                            .background(RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .fill(value.wrappedValue == n ? AnyShapeStyle(DS.brandDiagonal) : AnyShapeStyle(DS.surfaceHi)))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            HStack { Text(low); Spacer(); Text(high) }.font(.system(size: 10, weight: .medium)).foregroundStyle(DS.text3)
-        }
     }
 }

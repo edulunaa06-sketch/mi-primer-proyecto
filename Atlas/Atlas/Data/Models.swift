@@ -22,11 +22,6 @@ final class Profile {
     var stepGoal: Int = 8000
     var waterGoalMl: Int = 2500
     var onboarded: Bool = false
-    // Recordatorios (hora en minutos desde las 00:00; -1 = apagado).
-    var remindWeighIn: Int = -1
-    var remindDinner: Int = -1
-    var remindWorkout: Int = -1
-    var remindCreatine: Int = -1
     var createdAt: Date = Date()
 
     init() {}
@@ -51,56 +46,7 @@ final class Profile {
 final class WeightLog {
     var date: Date = Date()
     var kg: Double = 0
-    /// Cintura en cm (0 = no medida). En recomposición dice más que la báscula.
-    var waistCm: Double = 0
-    init(date: Date, kg: Double, waistCm: Double = 0) { self.date = date; self.kg = kg; self.waistCm = waistCm }
-}
-
-/// Chequeo diario de recuperación (sueño, energía y agujetas).
-@Model
-final class CheckIn {
-    var dayKey: String = ""
-    var sleepHours: Double = 7
-    var energy: Int = 3
-    var soreness: Int = 2
-    init(dayKey: String, sleepHours: Double, energy: Int, soreness: Int) {
-        self.dayKey = dayKey; self.sleepHours = sleepHours; self.energy = energy; self.soreness = soreness
-    }
-    var score: Int { Readiness.score(sleepHours: sleepHours, energy: energy, soreness: soreness) }
-}
-
-/// Comida favorita: varios alimentos que se apuntan de un toque.
-@Model
-final class SavedMeal {
-    var id: UUID = UUID()
-    var name: String = ""
-    var itemsData: Data = Data()
-    var createdAt: Date = Date()
-
-    struct Item: Codable, Equatable {
-        var name: String
-        var grams: Double
-        var foodKey: String
-        var per100: NutritionValues?
-        var values: NutritionValues
-    }
-
-    init(name: String, items: [Item]) {
-        self.name = name
-        self.itemsData = (try? JSONEncoder().encode(items)) ?? Data()
-    }
-
-    var items: [Item] { (try? JSONDecoder().decode([Item].self, from: itemsData)) ?? [] }
-    var total: NutritionValues { NutritionMath.sum(items.map(\.values)) }
-}
-
-/// Foto de progreso (la imagen va en un archivo dentro de la app, solo en este iPhone).
-@Model
-final class ProgressPhoto {
-    var id: UUID = UUID()
-    var date: Date = Date()
-    var fileName: String = ""
-    init(date: Date, fileName: String) { self.date = date; self.fileName = fileName }
+    init(date: Date, kg: Double) { self.date = date; self.kg = kg }
 }
 
 /// Lo que comes: cada alimento apuntado guarda sus valores (así el historial no cambia si cambia el catálogo).
@@ -283,7 +229,6 @@ final class WorkoutSet {
 enum AtlasSchema {
     static let models: [any PersistentModel.Type] = [
         Profile.self, WeightLog.self, FoodEntry.self, CustomFood.self, WaterLog.self,
-        CheckIn.self, SavedMeal.self, ProgressPhoto.self,
         WorkoutTemplate.self, TemplateExercise.self, Workout.self, WorkoutSet.self,
     ]
 }

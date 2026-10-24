@@ -86,14 +86,12 @@ enum Store {
     }
 
     /// Un pesaje por día: si ya hay uno hoy, se sustituye.
-    static func logWeight(_ kg: Double, waistCm: Double? = nil, date: Date = Date(), in context: ModelContext) {
+    static func logWeight(_ kg: Double, date: Date = Date(), in context: ModelContext) {
         let start = DateUtils.startOfDay(date)
         let end = start.addingTimeInterval(86400)
         let sameDay = (try? context.fetch(FetchDescriptor<WeightLog>(predicate: #Predicate { $0.date >= start && $0.date < end }))) ?? []
-        // Si ya habías medido la cintura hoy y ahora no, se conserva.
-        let previousWaist = sameDay.map(\.waistCm).max() ?? 0
         sameDay.forEach(context.delete)
-        context.insert(WeightLog(date: date, kg: kg, waistCm: waistCm ?? previousWaist))
+        context.insert(WeightLog(date: date, kg: kg))
         let p = profile(context)
         p.recalculate(weightKg: kg)
         try? context.save()
@@ -158,20 +156,6 @@ enum Store {
         let w = WaterLog(dayKey: dayKey, ml: 0)
         context.insert(w)
         return w
-    }
-
-    /// Guarda una comida del día como favorita.
-    static func saveMeal(name: String, entries: [FoodEntry], in context: ModelContext) {
-        let items = entries.map { SavedMeal.Item(name: $0.name, grams: $0.grams, foodKey: $0.foodKey, per100: $0.per100, values: $0.values) }
-        context.insert(SavedMeal(name: name, items: items))
-        try? context.save()
-    }
-
-    static func addSavedMeal(_ meal: SavedMeal, to type: MealType, dayKey: String, in context: ModelContext) {
-        for i in meal.items {
-            context.insert(FoodEntry(dayKey: dayKey, meal: type, name: i.name, grams: i.grams, per100: i.per100, values: i.values, foodKey: i.foodKey))
-        }
-        try? context.save()
     }
 
     // MARK: Rutina
@@ -299,10 +283,6 @@ enum Store {
         try? context.delete(model: WaterLog.self)
         try? context.delete(model: WeightLog.self)
         try? context.delete(model: Profile.self)
-        try? context.delete(model: CheckIn.self)
-        try? context.delete(model: SavedMeal.self)
-        for p in (try? context.fetch(FetchDescriptor<ProgressPhoto>())) ?? [] { PhotoFiles.delete(p.fileName) }
-        try? context.delete(model: ProgressPhoto.self)
         try? context.save()
     }
 }

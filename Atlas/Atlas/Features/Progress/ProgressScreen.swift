@@ -1,5 +1,4 @@
 import Charts
-import PhotosUI
 import SwiftData
 import SwiftUI
 
@@ -38,7 +37,6 @@ struct ProgressScreen: View {
                     case .body:
                         WeightChartCard(weights: weights) { app.showWeight = true }
                         expenditureCard
-                        PhotosCard()
                     case .strength:
                         RecordsCard(workouts: workouts)
                         ExerciseChartCard(workouts: workouts)
@@ -133,7 +131,7 @@ struct WeightChartCard: View {
             HStack(spacing: 18) {
                 metric("Tendencia", trend.last.map { NumberFormat.kg($0.kg) + " kg" } ?? "—")
                 metric("Ritmo", rate.map { (($0 >= 0) ? "+" : "−") + NumberFormat.kg(abs($0), decimals: 2) + " kg/sem" } ?? "—")
-                metric("Cintura", waistText)
+                metric("Último", weights.last.map { NumberFormat.kg($0.kg) + " kg" } ?? "—")
             }
             if visible.count >= 2 {
                 Chart {
@@ -162,15 +160,6 @@ struct WeightChartCard: View {
             }
         }
         .glass()
-    }
-
-    /// Última cintura y cambio desde la primera medida.
-    private var waistText: String {
-        let measured = weights.filter { $0.waistCm > 0 }
-        guard let last = measured.last else { return "—" }
-        guard let first = measured.first, first !== last else { return NumberFormat.oneDecimal(last.waistCm) + " cm" }
-        let d = last.waistCm - first.waistCm
-        return NumberFormat.oneDecimal(last.waistCm) + " (" + (d >= 0 ? "+" : "−") + NumberFormat.oneDecimal(abs(d)) + ")"
     }
 
     private func metric(_ title: String, _ value: String) -> some View {
@@ -328,22 +317,7 @@ struct CardioCard: View {
         let km = month.reduce(0) { $0 + $1.runMeters } / 1000
         let reference = RacePredictor.reference(samples)
         let bestPace = samples.filter { $0.meters >= 1000 }.compactMap { RunMath.paceSecondsPerKm(distanceMeters: $0.meters, seconds: $0.seconds) }.min()
-        let load = RunningLoad.compute(runs.map { (date: $0.startedAt, meters: $0.runMeters) })
         return VStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionTitle(title: "Carga semanal")
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(NumberFormat.oneDecimal(load.thisWeekKm)).font(.number(30, .heavy))
-                    Text("km esta semana").font(.system(size: 13, weight: .semibold)).foregroundStyle(DS.text2)
-                }
-                ProgressBarView(fraction: load.nextWeekMaxKm > 0 ? load.thisWeekKm / load.nextWeekMaxKm : 0, color: load.isSpike ? DS.warn : DS.good)
-                Text(load.isSpike
-                     ? "Vas más de un 30 % por encima de tu media (\(NumberFormat.oneDecimal(load.fourWeekAverageKm)) km). Los picos de carga son la causa nº 1 de lesiones: suaviza el resto de la semana."
-                     : "Semana pasada \(NumberFormat.oneDecimal(load.lastWeekKm)) km · media \(NumberFormat.oneDecimal(load.fourWeekAverageKm)) km. Regla del 10 %: la próxima semana, como mucho \(NumberFormat.oneDecimal(load.nextWeekMaxKm)) km.")
-                    .font(.footnote).foregroundStyle(load.isSpike ? DS.warn : DS.text2).fixedSize(horizontal: false, vertical: true)
-            }
-            .glass()
-            .accessibilityIdentifier("running.load")
             HStack(spacing: 12) {
                 StatTile(title: "Km en 30 días", value: NumberFormat.oneDecimal(km), unit: "km", symbol: "map.fill", tint: DS.good)
                 StatTile(title: "Mejor ritmo", value: RunMath.formatPace(bestPace).replacingOccurrences(of: " /km", with: ""), unit: "/km", symbol: "bolt.fill", tint: DS.cyan)
@@ -416,7 +390,6 @@ struct WeightSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var kg: Double?
-    @State private var waist: Double?
 
     var body: some View {
         VStack(spacing: 18) {
@@ -427,15 +400,9 @@ struct WeightSheet: View {
                     .accessibilityIdentifier("weight.field")
                 step(+0.1)
             }
-            HStack {
-                Text("Cintura (opcional)").foregroundStyle(DS.text2)
-                Spacer()
-                NumberField(placeholder: "cm", value: $waist, width: 100)
-                Text("cm").foregroundStyle(DS.text3)
-            }
-            Text("Mejor por la mañana, en ayunas y después del baño. La cintura, a la altura del ombligo.").font(.footnote).foregroundStyle(DS.text2)
+            Text("Mejor por la mañana, en ayunas y después del baño.").font(.footnote).foregroundStyle(DS.text2)
             Button {
-                if let kg { Store.logWeight(kg, waistCm: waist, in: context) }
+                if let kg { Store.logWeight(kg, in: context) }
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 dismiss()
             } label: { Label("Guardar", systemImage: "checkmark") }
@@ -457,111 +424,5 @@ struct WeightSheet: View {
                 .frame(width: 46, height: 46).background(Circle().fill(DS.surfaceHi))
         }
         .buttonStyle(.plain)
-    }
-}
-
-/// Fotos de progreso: añadir desde la galería o la cámara y comparar dos fechas lado a lado.
-struct PhotosCard: View {
-    @Environment(\.modelContext) private var context
-    @Query(sort: \ProgressPhoto.date) private var photos: [ProgressPhoto]
-    @State private var pickerItem: PhotosPickerItem?
-    @State private var compare = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                SectionTitle(title: "Fotos de progreso")
-                Spacer()
-                PhotosPicker(selection: $pickerItem, matching: .images) {
-                    Label("Añadir", systemImage: "camera.fill").font(.system(size: 13, weight: .semibold))
-                }
-            }
-            if photos.isEmpty {
-                Text("Una foto al mes, misma luz y misma pose. Es la mejor prueba de tu cambio (la báscula a veces engaña).")
-                    .font(.footnote).foregroundStyle(DS.text2)
-            } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 10) {
-                        ForEach(photos.reversed()) { p in
-                            VStack(spacing: 4) {
-                                PhotoThumb(name: p.fileName).frame(width: 96, height: 128)
-                                Text(DateUtils.dayMonth(p.date)).font(.system(size: 10, weight: .semibold)).foregroundStyle(DS.text2)
-                            }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    PhotoFiles.delete(p.fileName)
-                                    context.delete(p)
-                                    try? context.save()
-                                } label: { Label("Borrar", systemImage: "trash") }
-                            }
-                        }
-                    }
-                }
-                if photos.count >= 2 {
-                    Button { compare = true } label: { Label("Comparar primera y última", systemImage: "rectangle.split.2x1") }
-                        .buttonStyle(.secondary)
-                }
-            }
-        }
-        .glass()
-        .onChange(of: pickerItem) { _, item in
-            guard let item else { return }
-            Task {
-                if let data = try? await item.loadTransferable(type: Data.self), let image = UIImage(data: data),
-                   let name = PhotoFiles.save(image) {
-                    context.insert(ProgressPhoto(date: Date(), fileName: name))
-                    try? context.save()
-                }
-                pickerItem = nil
-            }
-        }
-        .sheet(isPresented: $compare) {
-            if let first = photos.first, let last = photos.last {
-                PhotoCompare(before: first, after: last)
-            }
-        }
-    }
-}
-
-struct PhotoThumb: View {
-    let name: String
-    var body: some View {
-        Group {
-            if let img = PhotoFiles.image(name) {
-                Image(uiImage: img).resizable().scaledToFill()
-            } else {
-                DS.surfaceHi
-            }
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-}
-
-/// Antes y después lado a lado.
-struct PhotoCompare: View {
-    let before: ProgressPhoto
-    let after: ProgressPhoto
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        NavigationStack {
-            HStack(spacing: 8) {
-                column(before, "ANTES")
-                column(after, "DESPUÉS")
-            }
-            .padding(12)
-            .frame(maxHeight: .infinity)
-            .background(AtlasBackground())
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } } }
-        }
-    }
-
-    private func column(_ p: ProgressPhoto, _ title: String) -> some View {
-        VStack(spacing: 6) {
-            Text(title).font(.system(size: 11, weight: .heavy).width(.expanded)).foregroundStyle(DS.text2)
-            PhotoThumb(name: p.fileName).aspectRatio(3 / 4, contentMode: .fit)
-            Text(DateUtils.shortDate(p.date)).font(.caption).foregroundStyle(DS.text2)
-        }
-        .frame(maxWidth: .infinity)
     }
 }
