@@ -96,7 +96,7 @@ final class AtlasFlowTests: XCTestCase {
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Menú")).firstMatch.waitForExistence(timeout: 8), "Platos de los menús")
         shot("menus")
         _ = first
-        let card = app.buttons.matching(NSPredicate(format: "label CONTAINS %@", "Menú")).firstMatch
+        let card = app.buttons.matching(identifier: "dish.card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 5))
         card.tap()
         let addDish = el("dish.add")

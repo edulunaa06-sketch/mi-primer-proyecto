@@ -220,6 +220,7 @@ struct DishList: View {
                 ForEach(ranked) { item in
                     Button { selected = item } label: { card(item.dish, item.option) }
                         .buttonStyle(.plain)
+                        .accessibilityIdentifier("dish.card")
                 }
             }
             .padding(.bottom, 20)

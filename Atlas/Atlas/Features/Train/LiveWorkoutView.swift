@@ -24,6 +24,14 @@ struct LiveWorkoutView: View {
     }
 
     var body: some View {
+        if let summary {
+            WorkoutSummaryView(workout: summary) { app.liveWorkout = nil }
+        } else {
+            live
+        }
+    }
+
+    private var live: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
@@ -54,7 +62,7 @@ struct LiveWorkoutView: View {
                         Store.finish(workout, in: context)
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
                         timer.stop()
-                        summary = workout
+                        withAnimation(.easeInOut(duration: 0.3)) { summary = workout }
                     } label: { Label("Terminar entreno", systemImage: "flag.checkered") }
                     .buttonStyle(.primary)
                     .accessibilityIdentifier("live.finish")
@@ -88,7 +96,6 @@ struct LiveWorkoutView: View {
                 }
             }
             .sheet(item: $plates) { PlateCalculatorSheet(target: $0.kg) }
-            .sheet(item: $summary, onDismiss: { app.liveWorkout = nil }) { WorkoutSummaryView(workout: $0) }
             .confirmationDialog("¿Descartar este entreno?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Descartar", role: .destructive) {
                     timer.stop()
@@ -301,7 +308,7 @@ struct ExercisePicker: View {
 /// Resumen al terminar: duración, volumen, series y récords.
 struct WorkoutSummaryView: View {
     let workout: Workout
-    @Environment(\.dismiss) private var dismiss
+    let onDone: () -> Void
     @State private var appear = false
 
     var body: some View {
@@ -326,12 +333,11 @@ struct WorkoutSummaryView: View {
             .opacity(appear ? 1 : 0)
             .offset(y: appear ? 0 : 20)
             Spacer()
-            Button("Seguir") { dismiss() }.buttonStyle(.primary)
+            Button("Seguir", action: onDone).buttonStyle(.primary)
                 .accessibilityIdentifier("summary.done")
         }
         .padding(24)
         .background(AtlasBackground())
-        .interactiveDismissDisabled()
         .onAppear { withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) { appear = true } }
     }
 }
