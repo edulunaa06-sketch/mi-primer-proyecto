@@ -26,12 +26,12 @@ struct WeeklySummaryView: View {
     private var isCurrentWeek: Bool { weekStart == DateUtils.startOfWeek(Date()) }
 
     var body: some View {
-        let snapshot = self.snapshot ?? TrackingSnapshot(meals: [], logs: [], steps: [], marks: [],
+        let snap = snapshot ?? TrackingSnapshot(meals: [], logs: [], steps: [], marks: [],
                                                          stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
-        let days = snapshot.days(from: weekStart, through: weekEnd.addingTimeInterval(-1))
-        let outcomes = days.map(snapshot.outcome(for:))
+        let days = snap.days(from: weekStart, through: weekEnd.addingTimeInterval(-1))
+        let outcomes = days.map(snap.outcome(for:))
         let summary = WeeklySummary.make(
-            stepsByDay: days.compactMap(snapshot.steps),
+            stepsByDay: days.compactMap(snap.steps),
             runs: runs.filter { StravaAPI.runSportTypes.contains($0.sportType) || $0.isManual }.map(\.sample),
             weights: weights.map { WeightStats.Point(date: $0.date, kg: $0.weightKg) },
             outcomes: outcomes, weekStart: weekStart, weekEnd: weekEnd)
