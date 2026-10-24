@@ -116,7 +116,12 @@ final class AtlasFlowTests: XCTestCase {
         XCTAssertTrue(el("rest.time").waitForExistence(timeout: 5), "Empieza el descanso")
         shot("live-rest")
         let finish = el("live.finish")
-        scrollTo(finish).tap()
+        scrollTo(finish)
+        // Hasta el final, como haría una persona, para que la barra del descanso no lo tape.
+        app.swipeUp(velocity: .slow)
+        app.swipeUp(velocity: .slow)
+        Thread.sleep(forTimeInterval: 0.8)
+        finish.tap()
         let done = el("summary.done")
         XCTAssertTrue(done.waitForExistence(timeout: 8), "Resumen del entreno")
         shot("summary")
