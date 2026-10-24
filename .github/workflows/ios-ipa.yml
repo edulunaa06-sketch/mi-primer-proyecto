@@ -10,14 +10,17 @@ on:
 jobs:
   build:
     name: Compilar sin firmar y empaquetar
-    runs-on: macos-14
+    # macOS 15 trae Xcode 16, que es el formato de proyecto que escribe XcodeGen.
+    runs-on: macos-15
 
     steps:
       - name: Descargar el repositorio
         uses: actions/checkout@v4
 
       - name: Ver versión de Xcode
-        run: xcodebuild -version
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i ios || true
 
       - name: Instalar XcodeGen
         run: brew install xcodegen
