@@ -389,6 +389,9 @@ struct SwipeToComplete<Content: View>: View {
 
     private var armed: Bool { dragState.horizontal == true && dragState.dx >= Self.threshold }
 
+    /// Cuándo se puso el dedo (para distinguir un toque de una pulsación larga).
+    @State private var touchStart: Date?
+
     static var threshold: CGFloat { 96 }
 
     var body: some View {
@@ -396,8 +399,9 @@ struct SwipeToComplete<Content: View>: View {
             .offset(x: offset)
             .background(alignment: .leading) { if offset > 0 { reveal } }
             .contentShape(Rectangle())
-            .onTapGesture { if offset == 0 { onOpen() } }
-            .simultaneousGesture(drag, including: enabled ? .all : .subviews)
+            // Un solo gesto decide si es un toque (abrir) o un deslizamiento (completar): así un arrastre,
+            // aunque sea corto, nunca abre la sesión.
+            .simultaneousGesture(drag)
             .onChange(of: armed) { _, isArmed in
                 // Vibración al pasar (o volver a cruzar) el umbral.
                 UIImpactFeedbackGenerator(style: isArmed ? .medium : .light).impactOccurred()
@@ -430,19 +434,30 @@ struct SwipeToComplete<Content: View>: View {
     }
 
     private var drag: some Gesture {
-        DragGesture(minimumDistance: 12, coordinateSpace: .local)
+        DragGesture(minimumDistance: 0, coordinateSpace: .local)
             .updating($dragState) { value, state, _ in
-                if state.horizontal == nil {
-                    // Se decide con el primer movimiento: hacia la derecha y bastante más horizontal que vertical.
-                    let dx = value.translation.width, dy = value.translation.height
-                    state.horizontal = dx > 0 && abs(dx) > abs(dy) * 1.6
+                let dx = value.translation.width, dy = value.translation.height
+                // Se decide con el primer movimiento claro: hacia la derecha y bastante más horizontal que vertical.
+                if state.horizontal == nil, hypot(dx, dy) >= 12 {
+                    state.horizontal = enabled && dx > 0 && abs(dx) > abs(dy) * 1.6
                 }
-                state.dx = value.translation.width
+                state.dx = dx
+            }
+            .onChanged { value in
+                // El primer evento llega con el dedo recién puesto (sin desplazamiento).
+                if touchStart == nil || value.translation == .zero { touchStart = value.time }
             }
             .onEnded { value in
+                let started = touchStart
+                touchStart = nil
                 let dx = value.translation.width, dy = value.translation.height
+                // Toque: el dedo casi no se ha movido y no ha sido una pulsación larga (esa abre el menú).
+                if hypot(dx, dy) < 10 {
+                    if value.time.timeIntervalSince(started ?? value.time) < 0.5 { onOpen() }
+                    return
+                }
                 // Igual que al empezar: solo cuenta un deslizamiento claramente horizontal hacia la derecha.
-                guard dx > 0, abs(dx) > abs(dy) * 1.6, abs(dy) < 60 else { return }
+                guard enabled, dx > 0, abs(dx) > abs(dy) * 1.6, abs(dy) < 60 else { return }
                 if dx >= Self.threshold || value.predictedEndTranslation.width >= Self.threshold * 1.6 {
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                     onToggle()
