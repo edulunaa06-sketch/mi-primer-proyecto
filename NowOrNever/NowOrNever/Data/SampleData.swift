@@ -8,8 +8,13 @@ enum SampleData {
     /// Contenedor en memoria con perfil, rutina, menú de hoy, un entreno y pesos.
     static let container: ModelContainer = {
         let container = makeContainer()
-        let context = container.mainContext
+        populate(container.mainContext)
+        return container
+    }()
 
+    /// Rellena un contexto con datos de ejemplo. Lo usan las previews y el
+    /// modo demo con el que se hacen las capturas en el simulador.
+    nonisolated static func populate(_ context: ModelContext) {
         let profile = UserProfile(age: 17,
                                   sex: .male,
                                   heightCm: 178,
@@ -58,8 +63,7 @@ enum SampleData {
         }
 
         try? context.save()
-        return container
-    }()
+    }
 
     /// Contenedor vacío, para ver la pantalla de bienvenida.
     static let emptyContainer: ModelContainer = makeContainer()

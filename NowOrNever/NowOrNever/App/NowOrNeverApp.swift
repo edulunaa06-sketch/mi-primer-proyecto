@@ -22,6 +22,18 @@ struct NowOrNeverApp: App {
 
     init() {
         AppAppearance.apply()
+
+        // Modo capturas: datos de ejemplo en memoria, sin tocar lo del móvil.
+        if LaunchOptions.isDemo || LaunchOptions.showsOnboarding {
+            let configuration = ModelConfiguration(schema: Self.schema, isStoredInMemoryOnly: true)
+            let demoContainer = try! ModelContainer(for: Self.schema, configurations: configuration)
+            if LaunchOptions.isDemo {
+                SampleData.populate(demoContainer.mainContext)
+            }
+            container = demoContainer
+            return
+        }
+
         do {
             container = try ModelContainer(for: Self.schema,
                                            configurations: ModelConfiguration(schema: Self.schema))

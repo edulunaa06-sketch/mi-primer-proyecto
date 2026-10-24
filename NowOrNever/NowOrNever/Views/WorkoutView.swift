@@ -7,16 +7,16 @@ struct WorkoutView: View {
     @Query(sort: \WorkoutDayPlan.weekday) private var days: [WorkoutDayPlan]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
 
+    @State private var path: [WorkoutDayPlan] = []
+
     private var todayIndex: Int { DateHelper.weekdayIndex() }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             ScrollView {
                 VStack(spacing: Theme.Spacing.normal) {
                     ForEach(days) { day in
-                        NavigationLink {
-                            WorkoutDayView(day: day)
-                        } label: {
+                        NavigationLink(value: day) {
                             dayCard(day)
                         }
                         .buttonStyle(.plain)
@@ -55,8 +55,21 @@ struct WorkoutView: View {
             .screenBackground()
             .navigationTitle("Entreno")
             .navigationBarTitleDisplayMode(.large)
+            .navigationDestination(for: WorkoutDayPlan.self) { day in
+                WorkoutDayView(day: day)
+            }
         }
-        .onAppear { PlanService.seedRoutineIfNeeded(context: context) }
+        .onAppear {
+            PlanService.seedRoutineIfNeeded(context: context)
+            openDayForScreenshotsIfNeeded()
+        }
+    }
+
+    /// Solo para las capturas: abre un día de la rutina al arrancar.
+    private func openDayForScreenshotsIfNeeded() {
+        guard LaunchOptions.opensWorkoutDay, path.isEmpty,
+              let day = days.first(where: { $0.kind.hasExercises }) else { return }
+        path = [day]
     }
 
     private var recentSessions: [WorkoutSession] {
