@@ -115,13 +115,14 @@ final class PlannedMeal {
 
     /// Sustituye el contenido por el de otra receta ya escalada.
     func apply(_ meal: ScaledRecipe) {
+        let totals = meal.totals
         recipeID = meal.recipe.id
         name = meal.recipe.name
         ingredientLines = meal.ingredientLines
-        calories = meal.totals.calories
-        protein = meal.totals.protein
-        carbs = meal.totals.carbs
-        fat = meal.totals.fat
+        calories = totals.calories.rounded()
+        protein = totals.protein.rounded()
+        carbs = totals.carbs.rounded()
+        fat = totals.fat.rounded()
     }
 }
 
