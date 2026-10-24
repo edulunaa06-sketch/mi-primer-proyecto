@@ -28,7 +28,7 @@
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
-		<string>$(LAUNCH_COLOR_NAME)</string>
+		<string>LaunchBackground</string>
 	</dict>
 	<key>UIBackgroundModes</key>
 	<array>

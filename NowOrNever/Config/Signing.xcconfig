@@ -7,6 +7,3 @@
 
 BUNDLE_ID_PREFIX = com.example
 // DEVELOPMENT_TEAM = XXXXXXXXXX
-
-// Color de la pantalla de arranque (la versión Daniela usa LaunchBackgroundDaniela, blanco).
-LAUNCH_COLOR_NAME = LaunchBackground

@@ -72,9 +72,8 @@ struct MedalCard: View {
         switch tier {
         case .locked: return Theme.cardRaised
         case .bronze: return Color(red: 0.80, green: 0.50, blue: 0.22)
-        // Sobre fondo blanco (versión Daniela) la plata y el oro van más oscuros para que se vean.
-        case .silver: return Theme.isLight ? Color(red: 0.52, green: 0.55, blue: 0.60) : Color(red: 0.78, green: 0.80, blue: 0.84)
-        case .gold: return Theme.isLight ? Color(red: 0.85, green: 0.62, blue: 0.0) : Color(red: 1.0, green: 0.80, blue: 0.15)
+        case .silver: return Color(red: 0.78, green: 0.80, blue: 0.84)
+        case .gold: return Color(red: 1.0, green: 0.80, blue: 0.15)
         }
     }
 
