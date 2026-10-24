@@ -1,0 +1,66 @@
+name: Compilar Now or Never (.ipa)
+
+on:
+  push:
+    paths:
+      - 'NowOrNever/**'
+      - '.github/workflows/ios-ipa.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Compilar sin firmar y empaquetar
+    runs-on: macos-14
+
+    steps:
+      - name: Descargar el repositorio
+        uses: actions/checkout@v4
+
+      - name: Ver versión de Xcode
+        run: xcodebuild -version
+
+      - name: Instalar XcodeGen
+        run: brew install xcodegen
+
+      - name: Generar el proyecto de Xcode
+        working-directory: NowOrNever
+        run: xcodegen generate --spec project.yml
+
+      - name: Compilar en Release (sin firmar)
+        working-directory: NowOrNever
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project NowOrNever.xcodeproj \
+            -scheme NowOrNever \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Empaquetar como NowOrNever.ipa
+        working-directory: NowOrNever
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/NowOrNever.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "No se ha encontrado la app compilada en $APP_PATH"
+            exit 1
+          fi
+          rm -rf Payload NowOrNever.ipa
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -qry NowOrNever.ipa Payload
+          unzip -l NowOrNever.ipa | head -20
+          ls -lh NowOrNever.ipa
+
+      - name: Subir el .ipa como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NowOrNever-ipa
+          path: NowOrNever/NowOrNever.ipa
+          if-no-files-found: error
+          retention-days: 30

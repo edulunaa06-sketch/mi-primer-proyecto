@@ -1,0 +1,7 @@
+# Lo genera XcodeGen a partir de project.yml
+*.xcodeproj
+build/
+DerivedData/
+Payload/
+*.ipa
+.DS_Store
