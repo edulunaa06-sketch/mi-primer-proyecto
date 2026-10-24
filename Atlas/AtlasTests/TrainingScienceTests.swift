@@ -95,3 +95,25 @@ final class TrainingScienceTests: XCTestCase {
         XCTAssertNil(RacePredictor.reference([]))
     }
 }
+
+final class StravaAPITests: XCTestCase {
+    func testAuthorizeURLAndCallback() throws {
+        XCTAssertNil(StravaAPI.authorizeURL(clientID: "abc", state: "s"))
+        let url = StravaAPI.authorizeURL(clientID: "12345", state: "xyz")!
+        XCTAssertTrue(url.absoluteString.contains("redirect_uri=atlas://localhost/strava"))
+        let ok = URL(string: "atlas://localhost/strava?state=xyz&code=CODE&scope=read,activity:read_all")!
+        XCTAssertEqual(try StravaAPI.parseCallback(ok, expectedState: "xyz"), "CODE")
+        XCTAssertThrowsError(try StravaAPI.parseCallback(ok, expectedState: "otro"))
+        let denied = URL(string: "atlas://localhost/strava?error=access_denied&state=xyz")!
+        XCTAssertThrowsError(try StravaAPI.parseCallback(denied, expectedState: "xyz"))
+    }
+
+    func testRunsAreDecoded() throws {
+        let json = """
+        [{"id": 1, "name": "Rodaje", "sport_type": "Run", "start_date": "2026-10-20T07:00:00Z", "distance": 8000, "moving_time": 2400, "elapsed_time": 2500},
+         {"id": 2, "name": "Bici", "sport_type": "Ride", "start_date": "2026-10-21T07:00:00Z", "distance": 30000, "moving_time": 3600, "elapsed_time": 3700}]
+        """
+        let list = try StravaAPI.decodeActivities(Data(json.utf8))
+        XCTAssertEqual(list.filter(\.isRun).map(\.id), [1])
+    }
+}

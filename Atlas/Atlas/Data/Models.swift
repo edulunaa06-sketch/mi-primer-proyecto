@@ -166,6 +166,8 @@ final class Workout {
     var runMeters: Double = 0
     var runSeconds: Int = 0
     var note: String = ""
+    /// Id de la actividad en Strava (0 = no viene de Strava). Evita importarla dos veces.
+    var stravaID: Int64 = 0
     @Relationship(deleteRule: .cascade, inverse: \WorkoutSet.workout)
     var sets: [WorkoutSet] = []
 

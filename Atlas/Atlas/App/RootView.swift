@@ -7,6 +7,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var app
     @Environment(StepCounter.self) private var steps
+    @Environment(StravaService.self) private var strava
     @Query private var profiles: [Profile]
     @State private var bootstrapped = false
     @State private var showIntro = !RootView.skipIntro
@@ -53,9 +54,21 @@ struct RootView: View {
             if let open = try? context.fetch(FetchDescriptor<Workout>(predicate: #Predicate { $0.finishedAt == nil })).first {
                 app.liveWorkout = open
             }
+            await strava.autoSyncIfNeeded(into: context)
+        }
+        .onOpenURL { url in
+            if url.scheme == StravaAPI.callbackScheme {
+                Task {
+                    await strava.handleCallback(url)
+                    await strava.syncRuns(into: context)
+                }
+            }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { steps.restart() } else if phase == .background { steps.stop() }
+            if phase == .active {
+                steps.restart()
+                Task { await strava.autoSyncIfNeeded(into: context) }
+            } else if phase == .background { steps.stop() }
         }
         .sheet(isPresented: $app.showQuickAdd) { QuickAddSheet().presentationDetents([.medium]) }
         .sheet(isPresented: $app.showProfile) { ProfileSheet() }

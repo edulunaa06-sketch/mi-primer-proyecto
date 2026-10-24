@@ -95,6 +95,7 @@ struct ProfileForm: View {
                 Stepper("Agua: \(String(format: "%.2f", Double(profile.waterGoalMl) / 1000).replacingOccurrences(of: ".", with: ",")) L",
                         value: $profile.waterGoalMl, in: 1000...6000, step: 250)
             }
+            StravaSection()
             Section {
                 Button("Borrar todos mis datos", role: .destructive) { confirmErase = true }
             } footer: {

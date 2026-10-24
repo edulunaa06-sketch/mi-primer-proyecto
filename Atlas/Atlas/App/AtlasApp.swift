@@ -7,6 +7,7 @@ struct AtlasApp: App {
     let error: String?
     @State private var app = AppState()
     @State private var steps = StepCounter()
+    @State private var strava = StravaService()
 
     init() {
         do {
@@ -33,6 +34,7 @@ struct AtlasApp: App {
                         .modelContainer(container)
                         .environment(app)
                         .environment(steps)
+                        .environment(strava)
                 } else {
                     VStack(spacing: 12) {
                         Image(systemName: "exclamationmark.triangle.fill").font(.largeTitle).foregroundStyle(DS.warn)

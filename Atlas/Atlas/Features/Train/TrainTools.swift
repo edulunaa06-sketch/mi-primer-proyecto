@@ -119,64 +119,15 @@ struct PlateCalculatorSheet: View {
     @State var target: Double?
     @State private var bar: Double = 20
 
+    private var weight: Double { target ?? 0 }
+
     var body: some View {
-        let weight = target ?? 0
-        let result = PlateCalculator.load(target: weight, bar: bar)
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("PESO TOTAL").font(.caption.weight(.heavy)).foregroundStyle(DS.text2)
-                        HStack {
-                            NumberField(placeholder: "kg", value: $target, width: 120)
-                                .accessibilityIdentifier("plates.target")
-                            Text("kg").foregroundStyle(DS.text2)
-                            Spacer()
-                        }
-                        Picker("Barra", selection: $bar) {
-                            Text("Barra 20 kg").tag(20.0)
-                            Text("15 kg").tag(15.0)
-                            Text("10 kg (EZ)").tag(10.0)
-                        }
-                        .pickerStyle(.segmented)
-                    }
-                    .glass()
-
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("DISCOS POR LADO").font(.caption.weight(.heavy)).foregroundStyle(DS.text2)
-                        if result.perSide.isEmpty {
-                            Text(weight > 0 && weight <= bar ? "Solo la barra." : "Escribe el peso total.")
-                                .foregroundStyle(DS.text2)
-                        } else {
-                            barView(result.perSide)
-                            Text(result.perSide.map { NumberFormat.kg($0) }.joined(separator: " + ") + " kg en cada lado")
-                                .font(.subheadline.weight(.semibold).monospacedDigit())
-                                .accessibilityIdentifier("plates.perSide")
-                        }
-                        if result.isApproximate, weight > bar {
-                            Label("Con discos normales lo más cerca es \(NumberFormat.kg(result.total)) kg.", systemImage: "info.circle")
-                                .font(.caption).foregroundStyle(DS.warn)
-                        }
-                    }
-                    .glass()
-
-                    let warmup = Warmup.sets(working: weight, bar: bar)
-                    if !warmup.isEmpty {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("CALENTAMIENTO").font(.caption.weight(.heavy)).foregroundStyle(DS.text2)
-                            ForEach(Array(warmup.enumerated()), id: \.offset) { i, s in
-                                HStack {
-                                    Text("\(i + 1)").font(.caption.weight(.heavy)).frame(width: 22, height: 22)
-                                        .background(DS.cyanDim, in: Circle()).foregroundStyle(DS.cyan)
-                                    Text("\(NumberFormat.kg(s.kg)) kg × \(s.reps)").font(.subheadline.monospacedDigit())
-                                    Spacer()
-                                }
-                            }
-                            Text("Después, tus series de trabajo a \(NumberFormat.kg(weight)) kg.")
-                                .font(.caption).foregroundStyle(DS.text2)
-                        }
-                        .glass()
-                    }
+                    inputCard
+                    platesCard
+                    warmupCard
                 }
                 .padding(16)
             }
@@ -186,6 +137,72 @@ struct PlateCalculatorSheet: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) { Button("Listo") { dismiss() } }
             }
+        }
+    }
+
+    private var inputCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("PESO TOTAL").font(.caption.weight(.heavy)).foregroundStyle(DS.text2)
+            HStack {
+                NumberField(placeholder: "kg", value: $target, width: 120)
+                    .accessibilityIdentifier("plates.target")
+                Text("kg").foregroundStyle(DS.text2)
+                Spacer()
+            }
+            Picker("Barra", selection: $bar) {
+                Text("Barra 20 kg").tag(20.0)
+                Text("15 kg").tag(15.0)
+                Text("10 kg (EZ)").tag(10.0)
+            }
+            .pickerStyle(.segmented)
+        }
+        .glass()
+    }
+
+    private var platesCard: some View {
+        let result = PlateCalculator.load(target: weight, bar: bar)
+        let perSideText: String = result.perSide.map { NumberFormat.kg($0) }.joined(separator: " + ") + " kg en cada lado"
+        let emptyText: String = (weight > 0 && weight <= bar) ? "Solo la barra." : "Escribe el peso total."
+        return VStack(alignment: .leading, spacing: 12) {
+            Text("DISCOS POR LADO").font(.caption.weight(.heavy)).foregroundStyle(DS.text2)
+            if result.perSide.isEmpty {
+                Text(emptyText).foregroundStyle(DS.text2)
+            } else {
+                barView(result.perSide)
+                Text(perSideText)
+                    .font(.subheadline.weight(.semibold).monospacedDigit())
+                    .accessibilityIdentifier("plates.perSide")
+            }
+            if result.isApproximate && weight > bar {
+                Label("Con discos normales lo más cerca es \(NumberFormat.kg(result.total)) kg.", systemImage: "info.circle")
+                    .font(.caption).foregroundStyle(DS.warn)
+            }
+        }
+        .glass()
+    }
+
+    @ViewBuilder
+    private var warmupCard: some View {
+        let warmup: [SetSample] = Warmup.sets(working: weight, bar: bar)
+        if !warmup.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("CALENTAMIENTO").font(.caption.weight(.heavy)).foregroundStyle(DS.text2)
+                ForEach(Array(warmup.enumerated()), id: \.offset) { item in
+                    warmupRow(item.offset, item.element)
+                }
+                Text("Después, tus series de trabajo a \(NumberFormat.kg(weight)) kg.")
+                    .font(.caption).foregroundStyle(DS.text2)
+            }
+            .glass()
+        }
+    }
+
+    private func warmupRow(_ i: Int, _ s: SetSample) -> some View {
+        HStack {
+            Text("\(i + 1)").font(.caption.weight(.heavy)).frame(width: 22, height: 22)
+                .background(DS.cyan.opacity(0.16), in: Circle()).foregroundStyle(DS.cyan)
+            Text("\(NumberFormat.kg(s.kg)) kg × \(s.reps)").font(.subheadline.monospacedDigit())
+            Spacer()
         }
     }
 
