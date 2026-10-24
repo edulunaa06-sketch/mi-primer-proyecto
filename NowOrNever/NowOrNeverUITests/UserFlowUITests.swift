@@ -91,7 +91,9 @@ final class UserFlowUITests: XCTestCase {
 
         // Inicio refleja el nuevo objetivo calórico.
         tab("Inicio")
-        XCTAssertTrue(element(containing: "Objetivo 2550").waitForExistence(timeout: 5))
+        let goal = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label CONTAINS %@ AND label CONTAINS %@", "2550", "Objetivo")).firstMatch
+        XCTAssertTrue(goal.waitForExistence(timeout: 5), "Objetivo de 2550 kcal en Inicio")
     }
 
     func test2_EditRoutineAndLogSets() {
