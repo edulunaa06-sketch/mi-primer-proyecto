@@ -18,6 +18,42 @@ enum Theme {
     /// Líneas separadoras finas.
     static let separator = Color.white.opacity(0.07)
 
+    // MARK: Colores con significado (solo cuando comunican algo; el lima sigue siendo el de las acciones)
+
+    /// Racha: fuego naranja y ámbar.
+    static let flame = Color(red: 1.0, green: 0.45, blue: 0.10)
+    static let amber = Color(red: 1.0, green: 0.70, blue: 0.18)
+    static let flameGradient = LinearGradient(colors: [amber, flame], startPoint: .top, endPoint: .bottom)
+
+    /// Medallas, récords y logros: dorado (más profundo y cálido que el lima y que el amarillo de las calorías).
+    static let gold = Color(red: 0.93, green: 0.72, blue: 0.26)
+    static let goldDeep = Color(red: 0.72, green: 0.50, blue: 0.12)
+    static let goldGradient = LinearGradient(colors: [Color(red: 1.0, green: 0.86, blue: 0.48), gold, goldDeep],
+                                             startPoint: .topLeading, endPoint: .bottomTrailing)
+
+    /// Calorías: azul (margen), amarillo dorado (te acercas), verde (objetivo ± margen), rojo (te has pasado).
+    static let kcalPlenty = Color(red: 0.33, green: 0.62, blue: 1.0)
+    static let kcalApproaching = Color(red: 1.0, green: 0.84, blue: 0.32)
+    static let kcalOnTarget = Color(red: 0.25, green: 0.84, blue: 0.45)
+    static let kcalOver = Color(red: 1.0, green: 0.33, blue: 0.33)
+
+    static func color(_ status: CalorieStatus) -> Color {
+        switch status {
+        case .plenty: return kcalPlenty
+        case .approaching: return kcalApproaching
+        case .onTarget: return kcalOnTarget
+        case .over: return kcalOver
+        }
+    }
+
+    /// Macronutrientes: cada uno con su color fijo.
+    static let protein = Color(red: 1.0, green: 0.50, blue: 0.42)   // coral
+    static let carbs = Color(red: 0.66, green: 0.52, blue: 1.0)     // violeta
+    static let fat = Color(red: 0.22, green: 0.84, blue: 0.80)      // turquesa
+
+    /// Días de descanso: gris azulado discreto.
+    static let rest = Color(red: 0.55, green: 0.63, blue: 0.75)
+
     /// Espacio libre al final de cada pantalla para poder leer lo último sin que lo tape la barra de pestañas.
     static let bottomBreathingRoom: CGFloat = 56
 

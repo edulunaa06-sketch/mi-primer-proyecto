@@ -9,6 +9,8 @@ final class UserSettings {
     var proteinTarget: Double = 180
     var carbsTarget: Double = 250
     var fatTarget: Double = 65
+    /// Margen (± kcal) dentro del que el día cuenta como objetivo cumplido (verde).
+    var kcalMargin: Double = 100
     var stepGoal: Int = 8000
 
     /// Fecha de inicio del seguimiento. Solo se rellena si el usuario la introduce.

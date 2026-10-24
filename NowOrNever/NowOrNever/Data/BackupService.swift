@@ -22,7 +22,8 @@ enum BackupService {
             stepGoalAdaptive: s.stepGoalAdaptive, stepGoalAdjustedDayKey: s.stepGoalAdjustedDayKey,
             stepReminderEnabled: s.stepReminderEnabled, stepReminderFromMinutes: s.stepReminderFromMinutes,
             stepReminderToMinutes: s.stepReminderToMinutes, weightReminderEnabled: s.weightReminderEnabled,
-            weightReminderFromMinutes: s.weightReminderFromMinutes, weightReminderToMinutes: s.weightReminderToMinutes)
+            weightReminderFromMinutes: s.weightReminderFromMinutes, weightReminderToMinutes: s.weightReminderToMinutes,
+            kcalMargin: s.kcalMargin)
 
         var file = BackupFile(createdAt: now,
                               appVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?",
@@ -96,6 +97,7 @@ enum BackupService {
         let s = DataStore.settings(context)
         let b = file.settings
         s.kcalTarget = b.kcalTarget; s.proteinTarget = b.proteinTarget; s.carbsTarget = b.carbsTarget; s.fatTarget = b.fatTarget
+        if let margin = b.kcalMargin { s.kcalMargin = margin }
         s.stepGoal = b.stepGoal; s.trackingStartDate = b.trackingStartDate; s.onboardingCompleted = b.onboardingCompleted
         s.creatineReminderEnabled = b.creatineReminderEnabled; s.creatineHour = b.creatineHour; s.creatineMinute = b.creatineMinute
         s.photoReminderEnabled = b.photoReminderEnabled; s.photoReminderHour = b.photoReminderHour; s.defaultPlanID = b.defaultPlanID

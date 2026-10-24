@@ -14,6 +14,7 @@ struct TrainingView: View {
     @State private var confirmScratch = false
     @State private var confirmDefaults = false
     @State private var newTitle = ""
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let weekStart: Date
     private let todayWeekday: Int
@@ -147,15 +148,18 @@ struct TrainingView: View {
         .card()
     }
 
+    /// Pendiente: gris neutro (legible). Descanso: gris azulado. Hecha: icono y check en lima, borde fino y fondo un poco teñido.
     private func sessionRow(_ base: SessionDefinition) -> some View {
         let session = base.resolved(with: routine, titles: titles)
         let log = log(for: session)
         let progress = SessionProgress(session: session, log: log)
+        let done = session.kind != .rest && log?.isCompleted == true
+        let tint = done ? Theme.lime : session.kind == .rest ? Theme.rest : Theme.textSecondary
         return HStack(spacing: 12) {
             Image(systemName: session.kind == .run ? "figure.run" : session.kind == .rest ? "bed.double.fill" : "dumbbell.fill")
-                .foregroundStyle(Theme.lime)
+                .foregroundStyle(tint)
                 .frame(width: 28, height: 28)
-                .background(Theme.limeDim, in: RoundedRectangle(cornerRadius: 8))
+                .background(done ? Theme.limeDim : tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.title).font(.subheadline.weight(.semibold))
                 Text(subtitle(session, progress: progress))
@@ -163,17 +167,23 @@ struct TrainingView: View {
                     .foregroundStyle(Theme.textSecondary)
             }
             Spacer()
-            if session.kind != .rest, log?.isCompleted == true {
+            if done {
                 Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(Theme.lime)
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(reduceMotion ? .opacity : .scale(scale: 0.3).combined(with: .opacity))
+                    .accessibilityHidden(true)
+            } else if session.kind != .rest {
+                Text("Pendiente").font(.caption2.weight(.semibold)).foregroundStyle(Theme.textSecondary)
             }
             Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
         }
         .padding(10)
-        .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-        // Completada: borde verde fino.
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.cardRaised)
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.lime.opacity(done ? 0.07 : 0)))
+        }
+        // Completada: borde lima fino.
         .overlay {
-            if session.kind != .rest, log?.isCompleted == true {
+            if done {
                 RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.lime.opacity(0.55), lineWidth: 1)
             }
         }
@@ -206,7 +216,7 @@ struct TrainingView: View {
     private func toggleDone(_ base: SessionDefinition) {
         let session = base.resolved(with: routine, titles: titles)
         let log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+        withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.65)) {
             log.toggleDoneFromWeek(session: session)
         }
         try? context.save()

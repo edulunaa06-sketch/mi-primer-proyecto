@@ -57,6 +57,8 @@ struct BackupFile: Codable, Equatable {
         var weightReminderEnabled: Bool
         var weightReminderFromMinutes: Int
         var weightReminderToMinutes: Int
+        /// Margen (± kcal) del objetivo calórico. Opcional: las copias antiguas no lo traen.
+        var kcalMargin: Double? = nil
     }
 
     struct Weight: Codable, Equatable {

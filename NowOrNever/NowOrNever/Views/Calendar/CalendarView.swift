@@ -84,8 +84,9 @@ struct CalendarView: View {
     private func streakCard(_ streak: Streak.Result) -> some View {
         HStack(spacing: 12) {
             MetricTile(title: "Racha actual", value: Medals.days(Double(streak.current)),
-                       detail: streak.current > 0 ? "Días cumplidos seguidos" : "Cumple hoy para empezarla", symbol: "flame.fill")
-            MetricTile(title: "Mejor racha", value: Medals.days(Double(streak.best)), detail: "Desde que usas la app", symbol: "trophy.fill")
+                       detail: streak.current > 0 ? "Días cumplidos seguidos" : "Cumple hoy para empezarla", symbol: "flame.fill",
+                       symbolColor: streak.current > 0 ? Theme.flame : Theme.textTertiary)
+            MetricTile(title: "Mejor racha", value: Medals.days(Double(streak.best)), detail: "Desde que usas la app", symbol: "trophy.fill", symbolColor: Theme.gold)
         }
     }
 
@@ -196,7 +197,7 @@ struct DayCell: View {
             return Theme.lime.opacity(0.45 + 0.55 * t)
         case .today(let f): return Theme.lime.opacity(0.08 + 0.25 * f)
         case .missed(let f): return Theme.danger.opacity(0.18 + 0.3 * (1 - f))
-        case .excused: return Color(red: 0.35, green: 0.55, blue: 1.0).opacity(0.28)
+        case .excused: return Theme.rest.opacity(0.30)
         case .future, .beforeStart: return Theme.card
         }
     }

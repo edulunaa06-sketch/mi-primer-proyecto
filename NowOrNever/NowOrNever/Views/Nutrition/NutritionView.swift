@@ -312,21 +312,25 @@ struct NutritionView: View {
     private var consumedCard: some View {
         let target = settings
         let kcalFraction = NutritionMath.progress(consumed: consumed.kcal, target: target?.kcalTarget ?? 0)
+        let status = CalorieStatus.evaluate(consumed: consumed.kcal, target: target?.kcalTarget ?? 0,
+                                            margin: target?.kcalMargin ?? CalorieStatus.defaultMargin)
         return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 16) {
-                ProgressRing(fraction: kcalFraction, size: 80)
+                ProgressRing(fraction: kcalFraction, size: 80, color: Theme.color(status))
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Consumido (comidas marcadas)").font(.headline)
                     Text("\(NumberFormat.integer(consumed.kcal)) de \(NumberFormat.integer(target?.kcalTarget ?? 0)) kcal")
                         .font(.subheadline.monospacedDigit())
                         .foregroundStyle(Theme.textSecondary)
+                    Label(status.title, systemImage: status.symbol)
+                        .font(.caption.weight(.bold)).foregroundStyle(Theme.color(status))
                     Text("\(records.count) de 4 comidas completadas")
                         .font(.caption).foregroundStyle(Theme.textTertiary)
                 }
             }
-            MacroRow(name: "Proteínas", consumed: consumed.protein, target: target?.proteinTarget ?? 0)
-            MacroRow(name: "Carbohidratos", consumed: consumed.carbs, target: target?.carbsTarget ?? 0)
-            MacroRow(name: "Grasas", consumed: consumed.fat, target: target?.fatTarget ?? 0)
+            MacroRow(name: Macro.protein.name, consumed: consumed.protein, target: target?.proteinTarget ?? 0, color: Macro.protein.color)
+            MacroRow(name: Macro.carbs.name, consumed: consumed.carbs, target: target?.carbsTarget ?? 0, color: Macro.carbs.color)
+            MacroRow(name: Macro.fat.name, consumed: consumed.fat, target: target?.fatTarget ?? 0, color: Macro.fat.color)
         }
         .card()
     }

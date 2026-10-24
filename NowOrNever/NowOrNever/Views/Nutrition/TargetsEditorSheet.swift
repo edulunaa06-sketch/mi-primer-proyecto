@@ -33,6 +33,15 @@ struct TargetsEditorSheet: View {
                 } footer: {
                     Text("Al cambiar las calorías, los macros se recalculan (proteína según tu objetivo y tu peso, grasa 25 %, el resto carbohidratos). Puedes retocarlos antes de guardar.")
                 }
+                Section {
+                    Picker("Margen del objetivo", selection: Binding(get: { settings.kcalMargin },
+                                                                     set: { settings.kcalMargin = $0; try? context.save() })) {
+                        ForEach([50.0, 100, 150, 200], id: \.self) { Text("± \(NumberFormat.integer($0)) kcal").tag($0) }
+                    }
+                    .accessibilityIdentifier("targets.margin")
+                } footer: {
+                    Text("Si acabas el día a menos de esta diferencia de tu objetivo (por arriba o por abajo), cuenta como cumplido y se ve en verde. Se guarda al momento.")
+                }
                 if let error {
                     Text(error).font(.footnote).foregroundStyle(Theme.danger)
                 }

@@ -24,15 +24,18 @@ struct ProgressRing: View {
     var lineWidth: CGFloat = 10
     var size: CGFloat = 84
     var label: String?
+    var color: Color = Theme.lime
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
             Circle().stroke(Theme.cardRaised, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: min(max(fraction, 0), 1))
-                .stroke(Theme.lime, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+                .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.easeOut(duration: 0.4), value: fraction)
+                .animation(reduceMotion ? nil : .easeOut(duration: 0.4), value: fraction)
+                .animation(reduceMotion ? nil : .easeInOut(duration: 0.3), value: color)
             Text(label ?? NumberFormat.percent(fraction))
                 .font(.system(size: size * 0.22, weight: .bold, design: .rounded))
                 .foregroundStyle(Theme.textPrimary)
@@ -45,6 +48,7 @@ struct ProgressBar: View {
     let fraction: Double
     var height: CGFloat = 8
     var color: Color = Theme.lime
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         GeometryReader { geo in
@@ -53,30 +57,72 @@ struct ProgressBar: View {
                 Capsule()
                     .fill(color)
                     .frame(width: geo.size.width * min(max(fraction, 0), 1))
-                    .animation(.easeOut(duration: 0.3), value: fraction)
+                    .animation(reduceMotion ? nil : .easeOut(duration: 0.3), value: fraction)
             }
         }
         .frame(height: height)
     }
 }
 
-/// Barra de macro: consumido / objetivo.
+/// Barra de macro: consumido / objetivo y lo que queda (o lo que te has pasado).
+/// El color identifica el nutriente (proteínas coral, hidratos violeta, grasas turquesa) y no cambia al pasarte:
+/// el exceso se indica con texto y un icono.
 struct MacroRow: View {
     let name: String
     let consumed: Double
     let target: Double
     var unit = "g"
+    var color: Color = Theme.lime
 
     var body: some View {
+        let left = target - consumed
         VStack(alignment: .leading, spacing: 6) {
             HStack {
+                Circle().fill(color).frame(width: 8, height: 8)
                 Text(name).font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("\(NumberFormat.integer(consumed)) / \(NumberFormat.integer(target)) \(unit)")
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(Theme.textSecondary)
+                    .contentTransition(.numericText())
             }
-            ProgressBar(fraction: NutritionMath.progress(consumed: consumed, target: target))
+            ProgressBar(fraction: NutritionMath.progress(consumed: consumed, target: target), color: color)
+            if target > 0 {
+                Label(left >= 0 ? "Quedan \(NumberFormat.integer(left)) \(unit)" : "\(NumberFormat.integer(-left)) \(unit) de más",
+                      systemImage: left >= 0 ? "arrow.down.right" : "plus.circle.fill")
+                    .font(.caption2.weight(left >= 0 ? .regular : .semibold).monospacedDigit())
+                    .foregroundStyle(left >= 0 ? Theme.textTertiary : Theme.textPrimary)
+            }
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Los tres macronutrientes con sus colores fijos.
+enum Macro: CaseIterable {
+    case protein, carbs, fat
+
+    var name: String {
+        switch self {
+        case .protein: return "Proteínas"
+        case .carbs: return "Carbohidratos"
+        case .fat: return "Grasas"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .protein: return Theme.protein
+        case .carbs: return Theme.carbs
+        case .fat: return Theme.fat
+        }
+    }
+
+    func value(_ v: NutritionValues) -> Double {
+        switch self {
+        case .protein: return v.protein
+        case .carbs: return v.carbs
+        case .fat: return v.fat
         }
     }
 }
@@ -86,12 +132,13 @@ struct MetricTile: View {
     let value: String
     var detail: String?
     var symbol: String?
+    var symbolColor: Color = Theme.lime
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 if let symbol {
-                    Image(systemName: symbol).foregroundStyle(Theme.lime).font(.caption.weight(.bold))
+                    Image(systemName: symbol).foregroundStyle(symbolColor).font(.caption.weight(.bold))
                 }
                 Text(title)
                     .font(.caption.weight(.semibold))
@@ -140,7 +187,7 @@ struct CheckCircle: View {
     var body: some View {
         Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
             .font(.system(size: size))
-            .foregroundStyle(isOn ? Theme.lime : Theme.textTertiary)
+            .foregroundStyle(isOn ? Theme.lime : Theme.textSecondary)
             .contentTransition(.symbolEffect(.replace))
     }
 }

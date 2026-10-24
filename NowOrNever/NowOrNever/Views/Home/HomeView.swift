@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @Query private var sessionTitles: [SessionTitle]
@@ -99,7 +100,7 @@ struct HomeView: View {
             CaloriesLeftCard(consumed: consumed,
                              target: NutritionValues(kcal: settings?.kcalTarget ?? 0, protein: settings?.proteinTarget ?? 0,
                                                      carbs: settings?.carbsTarget ?? 0, fat: settings?.fatTarget ?? 0),
-                             title: "Calorías de hoy")
+                             title: "Calorías de hoy", margin: settings?.kcalMargin ?? CalorieStatus.defaultMargin)
             Button { router.tab = .nutrition } label: {
                 Label("Apuntar lo que como", systemImage: "plus.circle.fill").frame(maxWidth: .infinity)
             }
@@ -122,7 +123,7 @@ struct HomeView: View {
                 ForEach(todaySessions) { session in
                     HStack {
                         Image(systemName: icon(for: session.kind))
-                            .foregroundStyle(Theme.lime)
+                            .foregroundStyle(session.kind == .rest ? Theme.rest : isCompleted(session) ? Theme.lime : Theme.textSecondary)
                             .frame(width: 24)
                         VStack(alignment: .leading) {
                             Text(session.title).font(.subheadline.weight(.semibold))
@@ -218,7 +219,7 @@ private struct HomeStepsCard: View {
                 HStack {
                     Label(String(format: "≈ %.1f km", StepEstimates.kilometers(today)).replacingOccurrences(of: ".", with: ","), systemImage: "map")
                     Spacer()
-                    Label("≈ \(NumberFormat.integer(StepEstimates.kcal(today))) kcal", systemImage: "flame.fill")
+                    Label("≈ \(NumberFormat.integer(StepEstimates.kcal(today))) kcal", systemImage: "bolt.fill")
                 }
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(Theme.textSecondary)
@@ -236,10 +237,13 @@ private struct HomeStepsCard: View {
     }
 }
 
-/// Racha de días cumplidos y marca de hoy (descanso, enfermo…). Tocar abre el calendario.
+/// Racha de días cumplidos (llama naranja y ámbar) y marca de hoy (descanso, enfermo…). Tocar abre el calendario.
+/// Sale de los datos reales (DayEvaluator): un día suma 1 solo cuando llega al 70 % de su cumplimiento
+/// (comidas, entrenos previstos y pasos) o lo marcas como entrenado. Abrir la app no suma nada.
 private struct HomeStreakCard: View {
     @Environment(AppRouter.self) private var router
     @Environment(\.modelContext) private var context
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var allMeals: [MealRecord]
     @Query private var allLogs: [WorkoutSessionLog]
     @Query private var dailySteps: [DailySteps]
@@ -248,6 +252,12 @@ private struct HomeStreakCard: View {
     @State private var trackingStart = DateUtils.startOfDay(Date())
     @State private var streak = Streak.Result(current: 0, best: 0)
     @State private var mark: DayMark = .normal
+    /// Sube cada vez que la racha crece, para animar la llama una vez.
+    @State private var bounce = 0
+    @State private var newRecord = false
+
+    private static let seenCurrentKey = "streak.lastSeenCurrent"
+    private static let seenBestKey = "streak.lastSeenBest"
 
     private var signature: String {
         TrackingSnapshot.signature(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
@@ -255,14 +265,35 @@ private struct HomeStreakCard: View {
     }
 
     var body: some View {
+        let active = streak.current > 0
         Button { router.tab = .calendar } label: {
             HStack(spacing: 14) {
-                Image(systemName: "flame.fill").font(.title2).foregroundStyle(streak.current > 0 ? Theme.lime : Theme.textTertiary)
+                ZStack {
+                    Circle().fill(active ? Theme.flame.opacity(0.16) : Theme.cardRaised)
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 26, weight: .bold))
+                        .foregroundStyle(active ? AnyShapeStyle(Theme.flameGradient) : AnyShapeStyle(Theme.textTertiary))
+                        .symbolEffect(.bounce, value: bounce)
+                }
+                .frame(width: 52, height: 52)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Racha: \(Medals.days(Double(streak.current)))").font(.headline)
-                    Text(mark == .normal ? "Mejor racha: \(Medals.days(Double(streak.best)))"
-                         : mark == .trained ? "Hoy: entrenado (cuenta como cumplido)" : "Hoy: \(mark.label.lowercased()) (no rompe la racha)")
-                        .font(.caption).foregroundStyle(Theme.textSecondary)
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text("\(streak.current)")
+                            .font(.system(size: 34, weight: .heavy, design: .rounded))
+                            .monospacedDigit()
+                            .contentTransition(.numericText())
+                            .foregroundStyle(active ? Theme.textPrimary : Theme.textSecondary)
+                            .accessibilityIdentifier("streak.current")
+                        Text(streak.current == 1 ? "día seguido" : "días seguidos")
+                            .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.textSecondary)
+                    }
+                    if newRecord {
+                        Label("¡Nuevo récord!", systemImage: "trophy.fill")
+                            .font(.caption.weight(.heavy))
+                            .foregroundStyle(Theme.gold)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                    Text(subtitle).font(.caption).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
                 Text("Calendario").font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
@@ -271,14 +302,45 @@ private struct HomeStreakCard: View {
             .card()
         }
         .buttonStyle(.plain)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Racha: \(Medals.days(Double(streak.current))). \(subtitle)")
         .onAppear { trackingStart = DataStore.trackingStart(context) }
         // La racha se calcula una vez y solo de nuevo si cambian los datos.
         .task(id: signature) {
             let today = Date()
             let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
                                             stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
-            streak = snapshot.streak
+            let result = snapshot.streak
             mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
+            celebrateIfNeeded(result)
+            withAnimation(reduceMotion ? nil : .snappy) { streak = result }
+        }
+    }
+
+    private var subtitle: String {
+        if mark == .trained { return "Hoy: entrenado (cuenta como cumplido)" }
+        if mark != .normal { return "Hoy: \(mark.label.lowercased()) (no rompe la racha)" }
+        if streak.current == 0 {
+            return streak.best > 0 ? "Hoy puedes empezar una nueva · Mejor: \(Medals.days(Double(streak.best)))"
+                                   : "Cumple el día para empezar tu racha"
+        }
+        return "Mejor racha: \(Medals.days(Double(streak.best)))"
+    }
+
+    /// Compara con lo último que se vio en este iPhone: cada subida se anima una sola vez.
+    private func celebrateIfNeeded(_ result: Streak.Result) {
+        let defaults = UserDefaults.standard
+        let seenCurrent = defaults.object(forKey: Self.seenCurrentKey) as? Int
+        let seenBest = defaults.object(forKey: Self.seenBestKey) as? Int
+        let feedback = StreakFeedback.evaluate(current: result.current, best: result.best,
+                                               lastSeenCurrent: seenCurrent, lastSeenBest: seenBest)
+        defaults.set(result.current, forKey: Self.seenCurrentKey)
+        defaults.set(max(result.best, seenBest ?? 0), forKey: Self.seenBestKey)
+        guard feedback != .none else { return }
+        if !reduceMotion { bounce += 1 }
+        if feedback == .newRecord {
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            withAnimation(reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.6)) { newRecord = true }
         }
     }
 }

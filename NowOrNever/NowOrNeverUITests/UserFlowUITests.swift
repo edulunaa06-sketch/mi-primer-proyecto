@@ -337,6 +337,24 @@ final class UserFlowUITests: XCTestCase {
         }
     }
 
+    /// Colores con significado: estado de las calorías (con texto), racha con llama y medallas doradas o pendientes.
+    func test12_VisualStates() {
+        tab("Inicio")
+        let status = app.descendants(matching: .any).matching(identifier: "kcal.status").firstMatch
+        XCTAssertTrue(scrollTo(status).exists, "Estado de las calorías")
+        let states = ["Margen amplio", "Te acercas al objetivo", "Objetivo cumplido", "Por encima del objetivo"]
+        XCTAssertTrue(states.contains { status.label.contains($0) }, "Estado con texto, no solo color: \(status.label)")
+        XCTAssertTrue(element(containing: "Proteínas").exists && element(containing: "Carbohidratos").exists
+                      && element(containing: "Grasas").exists, "Los tres macros")
+        XCTAssertTrue(scrollTo(element(containing: "Racha:")).exists, "Tarjeta de racha")
+        tab("Progreso")
+        app.buttons["Medallas"].firstMatch.tap()
+        let medal = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", "Racha más larga:")).firstMatch
+        assertAppears(medal, "Medalla de racha con su estado")
+        XCTAssertTrue(medal.label.contains("pendiente") || medal.label.contains("Bronce") || medal.label.contains("Plata")
+                      || medal.label.contains("Oro"), medal.label)
+    }
+
     func testZ_FluidWithLotsOfData() {
         app.terminate()
         app.launchArguments = ["-NNSkipOnboarding", "-NNDemoData", "-NNFakeSteps", "-NNClearHangs"]

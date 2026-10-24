@@ -234,9 +234,9 @@ struct DayBuilderSheet: View {
         return VStack(alignment: .leading, spacing: 12) {
             SectionHeader(title: "Resumen del día", subtitle: "Ajuste con tus objetivos: \(NumberFormat.percent(MealPlanner.fit(total, to: daily)))")
             MacroRow(name: "Calorías", consumed: total.kcal, target: daily.kcal, unit: "kcal")
-            MacroRow(name: "Proteínas", consumed: total.protein, target: daily.protein)
-            MacroRow(name: "Carbohidratos", consumed: total.carbs, target: daily.carbs)
-            MacroRow(name: "Grasas", consumed: total.fat, target: daily.fat)
+            ForEach(Macro.allCases, id: \.self) { m in
+                MacroRow(name: m.name, consumed: m.value(total), target: m.value(daily), color: m.color)
+            }
             Button("Guardar mi día") {
                 // Lo apuntado a mano se mantiene en las comidas resueltas así; en las demás se descarta.
                 onFinish(order.compactMap { type in picks[type].map { (type, $0) } },
