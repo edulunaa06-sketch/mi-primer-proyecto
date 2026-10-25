@@ -78,7 +78,7 @@ struct StrengthSessionView: View {
             // Aplica los cambios de la rutina al registro de esta semana (series nuevas, nombres…).
             if let log {
                 DataStore.ensureStructure(log, session: current, in: context)
-                prepareSets(log)
+                adviceByExercise = prepareSets(log)
                 try? context.save()
             }
         }) {
@@ -108,23 +108,22 @@ struct StrengthSessionView: View {
         // Crear el registro de la semana NO marca nada como completado.
         let created = DataStore.fetchOrCreateLog(for: current, weekStart: weekStart, in: context)
         previous = DataStore.previousLog(for: current, before: weekStart, in: context)
-        prepareSets(created)
-        var advice: [String: ProgressionEngine.Advice] = [:]
-        for exerciseLog in created.exercises {
-            advice[exerciseLog.exerciseID] = StrengthStore.advice(for: exerciseLog, in: context)
-        }
-        adviceByExercise = advice
+        adviceByExercise = prepareSets(created)
         log = created
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("-AtlasEditRoutine") { editingRoutine = true }
         #endif
     }
 
-    /// Crea las filas de serie que falten, con el peso que propone la progresión.
-    private func prepareSets(_ log: WorkoutSessionLog) {
+    /// Crea las filas de serie que falten, con el peso que propone la progresión, y de paso
+    /// se queda con la propuesta de cada ejercicio: una sola lectura del historial por ejercicio.
+    @discardableResult
+    private func prepareSets(_ log: WorkoutSessionLog) -> [String: ProgressionEngine.Advice] {
+        var advice: [String: ProgressionEngine.Advice] = [:]
         for exerciseLog in log.exercises {
-            StrengthStore.ensureSets(for: exerciseLog, in: context)
+            advice[exerciseLog.exerciseID] = StrengthStore.ensureSets(for: exerciseLog, in: context).advice
         }
+        return advice
     }
 
     // MARK: Cambios

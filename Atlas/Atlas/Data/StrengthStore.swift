@@ -8,23 +8,57 @@ enum StrengthStore {
 
     // MARK: Series de una sesión
 
-    /// Crea las filas de serie que faltan para un ejercicio, con el peso propuesto por la
-    /// progresión. No toca las series que ya tengan algo apuntado.
-    @MainActor
-    static func ensureSets(for exerciseLog: ExerciseLog, in context: ModelContext) {
-        let target = max(exerciseLog.targetSets, 1)
-        guard exerciseLog.sets.count < target else { return }
+    /// Todo lo que hace falta saber de un ejercicio para abrir su tarjeta, con UNA sola
+    /// lectura del historial. Antes se leía tres veces por ejercicio (series, propuesta y
+    /// sesión anterior), y con varios meses apuntados eso se notaba al abrir el entreno.
+    struct ExerciseContext {
+        /// Sesiones anteriores a la semana en curso, de la más antigua a la más reciente.
+        let history: [ExerciseSessionSummary]
+        /// Series de la última sesión anterior con datos.
+        let previousSets: [LoggedSet]
+        let advice: ProgressionEngine.Advice
+    }
 
-        let history = history(exerciseID: exerciseLog.exerciseID, in: context)
+    @MainActor
+    static func exerciseContext(for exerciseLog: ExerciseLog, in context: ModelContext) -> ExerciseContext {
+        let exerciseID = exerciseLog.exerciseID
+        let weekStart = exerciseLog.session?.weekStart ?? Date()
+        let descriptor = FetchDescriptor<ExerciseLog>(predicate: #Predicate { $0.exerciseID == exerciseID })
+        let logs = (try? context.fetch(descriptor)) ?? []
+
+        // Solo lo ANTERIOR a esta semana: la sesión de hoy no se compara consigo misma.
+        let earlier = logs.compactMap { log -> (date: Date, log: ExerciseLog)? in
+            guard let session = log.session, session.weekStart < weekStart else { return nil }
+            return (session.completedAt ?? session.finishedAt ?? session.weekStart, log)
+        }
+        .sorted { $0.date < $1.date }
+
+        let history = earlier.compactMap { $0.log.summary(on: $0.date) }
+        let previousSets = earlier.last { $0.log.hasLoggedData }?.log.loggedSets ?? []
         let advice = ProgressionEngine.advise(history: history, target: exerciseLog.repTarget,
                                               equipment: exerciseLog.equipment,
                                               hasDiscomfort: exerciseLog.hasDiscomfort,
-                                              isDeloadWeek: isDeloadWeek(exerciseLog.session?.weekStart, in: context))
-        let previous = previousSets(exerciseID: exerciseLog.exerciseID,
-                                    before: exerciseLog.session?.weekStart ?? Date(), in: context)
-        let planned = ProgressionEngine.plannedSets(previous: previous, advice: advice,
-                                                    targetSets: target, target: exerciseLog.repTarget)
+                                              isDeloadWeek: isDeloadWeek(weekStart, in: context))
+        return ExerciseContext(history: history, previousSets: previousSets, advice: advice)
+    }
 
+    /// Crea las filas de serie que faltan para un ejercicio, con el peso propuesto por la
+    /// progresión. No toca las series que ya tengan algo apuntado.
+    @MainActor
+    @discardableResult
+    static func ensureSets(for exerciseLog: ExerciseLog, in context: ModelContext) -> ExerciseContext {
+        let prepared = exerciseContext(for: exerciseLog, in: context)
+        ensureSets(for: exerciseLog, using: prepared, in: context)
+        return prepared
+    }
+
+    @MainActor
+    static func ensureSets(for exerciseLog: ExerciseLog, using prepared: ExerciseContext,
+                           in context: ModelContext) {
+        let target = max(exerciseLog.targetSets, 1)
+        guard exerciseLog.sets.count < target else { return }
+        let planned = ProgressionEngine.plannedSets(previous: prepared.previousSets, advice: prepared.advice,
+                                                    targetSets: target, target: exerciseLog.repTarget)
         for index in exerciseLog.sets.count..<target {
             let set = SetLog(order: index)
             if index < planned.count { set.apply(planned[index]) }
@@ -90,27 +124,10 @@ enum StrengthStore {
         return candidates.max { $0.date < $1.date }?.sets ?? []
     }
 
-    /// El ExerciseLog de la última sesión anterior con datos (para comparar mientras entrenas).
-    @MainActor
-    static func previousExerciseLog(exerciseID: String, before weekStart: Date, in context: ModelContext) -> ExerciseLog? {
-        let descriptor = FetchDescriptor<ExerciseLog>(predicate: #Predicate { $0.exerciseID == exerciseID })
-        let logs = (try? context.fetch(descriptor)) ?? []
-        return logs
-            .filter { ($0.session?.weekStart ?? Date.distantFuture) < weekStart && $0.hasLoggedData }
-            .max { ($0.session?.weekStart ?? .distantPast) < ($1.session?.weekStart ?? .distantPast) }
-    }
-
     /// Propuesta de progresión para un ejercicio de la sesión en curso.
     @MainActor
     static func advice(for exerciseLog: ExerciseLog, in context: ModelContext) -> ProgressionEngine.Advice {
-        let weekStart = exerciseLog.session?.weekStart ?? Date()
-        // Solo cuenta el historial ANTERIOR a esta semana: la sesión de hoy no se compara consigo misma.
-        let history = history(exerciseID: exerciseLog.exerciseID, in: context)
-            .filter { $0.date < weekStart }
-        return ProgressionEngine.advise(history: history, target: exerciseLog.repTarget,
-                                        equipment: exerciseLog.equipment,
-                                        hasDiscomfort: exerciseLog.hasDiscomfort,
-                                        isDeloadWeek: isDeloadWeek(weekStart, in: context))
+        exerciseContext(for: exerciseLog, in: context).advice
     }
 
     // MARK: Rutina desde la biblioteca
