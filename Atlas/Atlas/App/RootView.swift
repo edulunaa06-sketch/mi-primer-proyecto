@@ -34,8 +34,6 @@ struct RootView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // Espacio para la barra flotante: lo último de cada pantalla siempre se puede leer.
-            .safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: 84) }
 
             TabBar()
         }
@@ -102,7 +100,7 @@ struct TabBar: View {
                 Image(systemName: "plus")
                     .font(.system(size: 22, weight: .heavy))
                     .foregroundStyle(.white)
-                    .frame(width: 56, height: 56)
+                    .frame(width: DS.tabBarButton, height: DS.tabBarButton)
                     .background(Circle().fill(DS.brandDiagonal))
                     .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
                     .shadow(color: DS.indigo.opacity(0.6), radius: 14, y: 4)
@@ -115,14 +113,14 @@ struct TabBar: View {
             item(.progress)
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.vertical, DS.tabBarPaddingV)
         .background(
             Capsule().fill(Color(red: 0.07, green: 0.075, blue: 0.10).opacity(0.96))
                 .overlay(Capsule().strokeBorder(DS.stroke, lineWidth: 1))
                 .shadow(color: .black.opacity(0.6), radius: 20, y: 8)
         )
         .padding(.horizontal, 16)
-        .padding(.bottom, 6)
+        .padding(.bottom, DS.tabBarBottom)
     }
 
     private func item(_ tab: AppTab) -> some View {

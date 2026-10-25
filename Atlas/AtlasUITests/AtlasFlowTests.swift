@@ -35,6 +35,15 @@ final class AtlasFlowTests: XCTestCase {
         add(a)
     }
 
+    /// Lo último de una pantalla tiene que verse entero, sin que la barra flotante lo tape.
+    private func assertAboveTabBar(_ e: XCUIElement, _ what: String) {
+        let bar = app.buttons.matching(identifier: "tab.add").firstMatch
+        XCTAssertTrue(bar.exists, "Barra de pestañas")
+        XCTAssertTrue(e.exists, "\(what) existe")
+        XCTAssertTrue(e.isHittable, "\(what) se puede tocar (la barra no lo tapa)")
+        XCTAssertLessThanOrEqual(e.frame.maxY, bar.frame.minY, "\(what) acaba por encima de la barra")
+    }
+
     @discardableResult
     private func scrollTo(_ e: XCUIElement, max: Int = 10) -> XCUIElement {
         var n = 0
@@ -164,6 +173,8 @@ final class AtlasFlowTests: XCTestCase {
             for _ in 0..<8 { app.swipeUp(velocity: .fast) }
             Thread.sleep(forTimeInterval: 1.2)
             shot("tab-\(t)-final")
+            // Al final de Comer está Cena: es lo que antes quedaba debajo de la barra.
+            if t == "Comer" { assertAboveTabBar(el("add.dinner"), "El botón de Cena") }
         }
         el("tab.add").tap()
         XCTAssertTrue(containing("¿Qué apuntamos?").waitForExistence(timeout: 5))

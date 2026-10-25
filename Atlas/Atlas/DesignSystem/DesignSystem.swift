@@ -10,6 +10,16 @@ enum DS {
     static let surfaceHi = Color.white.opacity(0.08)
     static let stroke = Color.white.opacity(0.08)
 
+    // Barra flotante de pestañas (medidas reales de TabBar, para que nada quede debajo)
+    static let tabBarButton: CGFloat = 56
+    static let tabBarPaddingV: CGFloat = 8
+    static let tabBarBottom: CGFloat = 6
+    /// Alto de la cápsula más su separación del borde de abajo.
+    static let tabBarHeight: CGFloat = tabBarButton + tabBarPaddingV * 2 + tabBarBottom
+    /// Hueco que se reserva al final de cada pantalla. Va holgado a propósito: mejor que sobre
+    /// un poco de aire a que la última tarjeta quede medio tapada por la barra.
+    static let tabBarSpace: CGFloat = tabBarHeight + 60
+
     // Texto
     static let text = Color.white
     static let text2 = Color.white.opacity(0.62)
@@ -83,8 +93,16 @@ struct AtlasBackground: View {
 extension View {
     func atlasScreen() -> some View {
         scrollContentBackground(.hidden)
+            .tabBarRoom()
             .background(AtlasBackground())
             .toolbarBackground(.hidden, for: .navigationBar)
+    }
+
+    /// Reserva sitio al final para la barra flotante, de modo que lo último de la pantalla
+    /// se pueda subir por encima de ella y leerse entero. Va dentro del NavigationStack:
+    /// puesto por fuera, la pila de navegación no lo traslada a sus pantallas.
+    func tabBarRoom() -> some View {
+        safeAreaInset(edge: .bottom, spacing: 0) { Color.clear.frame(height: DS.tabBarSpace) }
     }
 
     /// Tarjeta de cristal.

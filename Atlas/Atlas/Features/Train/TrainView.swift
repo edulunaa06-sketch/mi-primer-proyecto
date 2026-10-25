@@ -265,6 +265,7 @@ struct TemplateDetailView: View {
             .listRowBackground(Color.clear)
         }
         .scrollContentBackground(.hidden)
+        .tabBarRoom()
         .background(AtlasBackground())
         .environment(\.editMode, .constant(editing ? .active : .inactive))
         .toolbar {
@@ -454,6 +455,7 @@ struct WorkoutDetailView: View {
             }
             .padding(16)
         }
+        .tabBarRoom()
         .background(AtlasBackground())
         .confirmationDialog("¿Borrar este entreno?", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("Borrar", role: .destructive) { context.delete(workout); try? context.save(); dismiss() }
