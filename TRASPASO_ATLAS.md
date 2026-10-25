@@ -6,46 +6,47 @@
 - Ningún secreto en el código.
 - Quiere un IPA instalable con Sideloadly, y solo cuando todo esté probado y verificado.
 
-## Estado de la app (decidido por el usuario)
-- La app ATLAS vuelve al estado anterior a las «mejoras expertas» (contenido del commit 722cb43).
-  Están CANCELADOS: Health, widgets, planes de carrera, rediseño y funciones expertas. No los añadas.
-- La rutina semanal (`Atlas/Atlas/Core/Routine.swift`) es idéntica a la de Now or Never
-  (`NowOrNever/NowOrNever/Models/Routine.swift`): L carrera suave, M Push A, X Pull A,
-  J Piernas y abdominales, V descanso, S carrera + pecho y espalda, D hombros y brazos.
-- El usuario puede añadir ejercicios: Entrenar › sesión › Editar › «Añadir ejercicio».
-  El lunes es de carrera; para meter fuerza ese día se usa «Nueva rutina» con el día Lunes.
+## Estado de la app
+- Rama de trabajo: `claude/modest-curie-l89w4f`, con la PR #1 abierta hacia `main`.
+  La rama anterior `now-or-never-ios` está incluida entera en esta (avance sin merge).
+- Código en `Atlas/`. El proyecto Xcode se genera con `Atlas/tools/gen_xcodeproj.py` y usa
+  grupos sincronizados: **un .swift nuevo entra solo**, no hay que regenerar nada.
+- Documentación: `Atlas/ARQUITECTURA.md` y `Atlas/INSTALAR_EN_IPHONE.md`.
 
-## Proyecto
-- Rama: `now-or-never-ios`. Código en `Atlas/`. El proyecto Xcode se genera con `Atlas/tools/gen_xcodeproj.py`.
-- CI: `.github/workflows/atlas-build.yml` (macos-15). Compila, crea el IPA (artefacto «Atlas-ipa»),
-  pasa las pruebas en simulador y sube capturas y grabaciones (artefacto «atlas-screenshots»).
-- Consultar el CI con curl a través del proxy (no hay gh):
-  - `https://api.github.com/repos/edulunaa06-sketch/mi-primer-proyecto/actions/workflows/atlas-build.yml/runs?per_page=1`
-  - `.../actions/runs/<id>/jobs`, `.../actions/jobs/<id>/logs`
-  - `.../actions/runs/<id>/artifacts`, `.../actions/artifacts/<id>/zip`
-- Si falla una prueba de interfaz: en el zip de «atlas-screenshots», `tests/manifest.json` dice qué archivos
-  son de cada prueba (jerarquía de la interfaz en .txt, grabación en .mp4).
-- Los commits terminan con:
-  `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
-  `Claude-Session: https://claude.ai/code/session_01WuB6s2FpvGD1hSxzu35gDP`
+### Cambio de rumbo importante (25/10/2026)
+El usuario pidió por escrito una app de entrenamiento de élite con **registro de kilos,
+repeticiones, RIR, RPE, 1RM estimado, volumen por grupo muscular y progresión**. Eso
+**revierte a propósito** la decisión anterior de «entreno sin kilos» que figuraba en este
+mismo documento. Si vuelve a cambiar de opinión, que lo diga él: no se deshace por iniciativa propia.
 
-## Por dónde iba
-- Último commit de código: ab30352. La prueba test4 (entreno en vivo) ahora baja hasta el final antes de
-  pulsar «Terminar entreno»; antes la barra del descanso tapaba el botón. En la app ya se arregló en b87a3f1
-  (barra superpuesta y 170 de margen inferior).
-- En el CI anterior pasaban las 20 pruebas lógicas y las pruebas de interfaz 1, 2, 3, 5 y 6. Solo fallaba test4.
-- El CI de ab30352 es el run 40125238490 (estaba en curso).
+Lo que hay ahora, además de lo que ya existía (nutrición, menús, peso, fotos, pasos,
+calendario, medallas, copia de seguridad, Strava, IA opcional):
+- Sesión de fuerza en vivo: series con kilos, repeticiones y RIR, calentamientos, cronómetro
+  con pausa que sobrevive a cerrar la app, comparación con la sesión anterior, récords al
+  terminar, nota y molestia por ejercicio.
+- Biblioteca de 57 ejercicios con músculos, patrón, material, ejecución, errores, seguridad
+  y variantes, con un comparador que explica qué cambia al sustituir uno por otro.
+- Volumen por grupo muscular con referencia, frecuencia, programado frente a realizado,
+  estancamiento y descarga.
+- Recuperación (sueño, energía, fatiga, estrés, agujetas, molestias) e informes por periodo
+  con comparación con el anterior.
+- Suplementos con dosis, coste al mes, evidencia, duplicados y avisos.
 
-## Qué hacer ahora
-1. Mira el resultado del último run de atlas-build.yml (el de ab30352 o uno posterior).
-2. Si está en VERDE:
-   - Descarga el artefacto «Atlas-ipa» y comprueba que dentro hay `Payload/Atlas.app` con el ejecutable
-     y el Info.plist.
-   - Cópialo a `Atlas/dist/Atlas.ipa`, añádelo con `git add -f` y haz commit con `[skip ci]` en el mensaje.
-     Haz push.
-   - Entrégaselo al usuario (SendUserFile) y explícale en español cómo instalarlo con Sideloadly
-     (Apple ID gratis; hay que reinstalar cada 7 días; activar el Modo desarrollador y confiar en el perfil
-     en Ajustes › General › VPN y gestión de dispositivos).
-   - Recuérdale que Strava se conecta en Perfil › Strava, con la guía paso a paso que trae la app.
-3. Si está en ROJO: diagnostica con el log y los artefactos, arréglalo, prueba, haz push y repite hasta
-   que esté en verde. Solo entonces entrega el IPA.
+## Pruebas
+- 235 pruebas de lógica se ejecutan **en Linux** con el toolchain de Swift. Es la forma rápida
+  de trabajar: copia a un paquete SwiftPM los archivos que solo importan Foundation y los corre.
+  El script de sincronización está en el directorio temporal de la sesión; se rehace en dos minutos
+  (ver «Pruebas» en ARQUITECTURA.md).
+- Persistencia e interfaz, en el simulador desde el CI.
+
+## CI
+- `.github/workflows/atlas-build.yml` (macos-15): compila para dispositivo, genera el IPA
+  (artefacto `Atlas-ipa`), pasa las pruebas en simulador y sube capturas (`atlas-screenshots`).
+- Si falla, el artefacto `atlas-test-log` trae `build-device.log` con los errores de compilación.
+- Al terminar en verde: copiar el IPA a `Atlas/dist/Atlas.ipa` con `git add -f` y `[skip ci]`
+  en el mensaje, entregarlo con SendUserFile y explicar la instalación.
+
+## Lo que NO se puede hacer desde aquí
+El contenedor es Linux: no hay Xcode. La compilación y el IPA salen del runner macOS del CI.
+**La firma para el iPhone del usuario no se puede hacer en ningún servidor**: necesita su Apple ID.
+No se inventan certificados ni perfiles.
