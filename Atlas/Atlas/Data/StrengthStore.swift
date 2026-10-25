@@ -215,7 +215,10 @@ enum StrengthStore {
     @MainActor
     static func work(from start: Date, to end: Date, in context: ModelContext) -> [VolumeAnalytics.ExerciseWork] {
         let first = DateUtils.startOfWeek(start)
-        let descriptor = FetchDescriptor<WorkoutSessionLog>(predicate: #Predicate { $0.weekStart >= first })
+        // El periodo se acota por los dos lados: si no, pedir una semana de hace dos meses
+        // se traía de la base de datos todas las sesiones desde entonces hasta hoy.
+        let last = DateUtils.startOfWeek(end)
+        let descriptor = FetchDescriptor<WorkoutSessionLog>(predicate: #Predicate { $0.weekStart >= first && $0.weekStart <= last })
         let sessions = (try? context.fetch(descriptor)) ?? []
         var out: [VolumeAnalytics.ExerciseWork] = []
         for session in sessions {
@@ -342,9 +345,11 @@ enum StrengthStore {
         var input = ReportInput(period: period)
         input.work = work(from: period.start, to: period.end, in: context)
 
-        // Sesiones completadas dentro del periodo.
+        // Sesiones completadas dentro del periodo, acotadas por los dos lados.
         let firstWeek = DateUtils.startOfWeek(period.start)
-        let sessionDescriptor = FetchDescriptor<WorkoutSessionLog>(predicate: #Predicate { $0.weekStart >= firstWeek })
+        let lastWeek = DateUtils.startOfWeek(period.end)
+        let sessionDescriptor = FetchDescriptor<WorkoutSessionLog>(
+            predicate: #Predicate { $0.weekStart >= firstWeek && $0.weekStart <= lastWeek })
         let sessions = (try? context.fetch(sessionDescriptor)) ?? []
         let inPeriod = sessions.filter { session in
             let date = session.completedAt ?? session.finishedAt ?? session.weekStart
@@ -365,7 +370,10 @@ enum StrengthStore {
             }
 
         // Nutrición: suma por día de lo registrado.
-        let mealDescriptor = FetchDescriptor<MealRecord>(predicate: #Predicate { $0.date >= firstWeek })
+        let periodStart = DateUtils.startOfDay(period.start)
+        let periodEnd = endOfDay(period.end)
+        let mealDescriptor = FetchDescriptor<MealRecord>(
+            predicate: #Predicate { $0.date >= periodStart && $0.date <= periodEnd })
         let meals = ((try? context.fetch(mealDescriptor)) ?? []).filter { period.contains($0.date) }
         let byDay = Dictionary(grouping: meals, by: \.dayKey)
         input.nutritionDays = byDay.compactMap { key, records in
@@ -381,15 +389,15 @@ enum StrengthStore {
         input.proteinTarget = settings.proteinTarget
 
         // Peso.
-        let start = DateUtils.startOfDay(period.start)
-        let end = endOfDay(period.end)
-        let weightDescriptor = FetchDescriptor<WeightEntry>(predicate: #Predicate { $0.date >= start && $0.date <= end })
+        let weightDescriptor = FetchDescriptor<WeightEntry>(
+            predicate: #Predicate { $0.date >= periodStart && $0.date <= periodEnd })
         input.weights = ((try? context.fetch(weightDescriptor)) ?? []).map { WeightStats.Point(date: $0.date, kg: $0.weightKg) }
 
         input.recovery = recovery(from: period.start, to: period.end, in: context)
 
         // Carreras.
-        let runDescriptor = FetchDescriptor<StravaActivityRecord>(predicate: #Predicate { $0.startDate >= start && $0.startDate <= end })
+        let runDescriptor = FetchDescriptor<StravaActivityRecord>(
+            predicate: #Predicate { $0.startDate >= periodStart && $0.startDate <= periodEnd })
         let runs = (try? context.fetch(runDescriptor)) ?? []
         input.runs = runs.count
         input.runKilometers = runs.reduce(0) { $0 + $1.distanceMeters } / 1000

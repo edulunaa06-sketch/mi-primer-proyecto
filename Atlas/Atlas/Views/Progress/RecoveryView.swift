@@ -41,6 +41,8 @@ struct RecoveryView: View {
         let today = StrengthStore.fetchOrCreateRecovery(for: Date(), in: context)
         entry = today
         refresh(today)
+        // La correlación mira diez semanas: se calcula una vez al abrir, no en cada toque.
+        relation = sleepRelation()
     }
 
     private func refresh(_ today: RecoveryLogEntry) {
@@ -49,7 +51,6 @@ struct RecoveryView: View {
         let week = ReportRange.week.period(endingAt: Date())
         let entries = StrengthStore.recovery(from: week.start, to: week.end, in: context)
         weekAverages = RecoveryAnalysis.averages(entries)
-        relation = sleepRelation()
     }
 
     private func save() {
