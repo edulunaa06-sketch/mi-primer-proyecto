@@ -399,4 +399,70 @@ enum StrengthStore {
     static func report(range: ReportRange, endingAt date: Date = Date(), in context: ModelContext) -> PeriodReport {
         ReportBuilder.build(reportInput(range: range, endingAt: date, in: context))
     }
+
+    // MARK: Contexto para la IA
+
+    /// Cuántos ejercicios como máximo viajan en el contexto de la IA.
+    /// Se limita a propósito: menos texto, menos coste y menos datos fuera del teléfono.
+    static let aiExerciseLimit = 15
+
+    /// Monta lo que la IA puede ver. Solo lectura y a partir del mismo informe que ve el usuario.
+    @MainActor
+    static func aiContext(range: ReportRange, endingAt date: Date = Date(), in context: ModelContext) -> AIContext {
+        let period = range.period(endingAt: date)
+        let report = ReportBuilder.build(reportInput(period: period, in: context))
+        let settings = DataStore.settings(context)
+        let weight = DataStore.latestWeight(context)
+
+        let profile: AIContext.Profile? = {
+            guard settings.heightCm != nil || settings.age != nil || weight != nil else { return nil }
+            return AIContext.Profile(
+                sex: settings.sex?.label, age: settings.age, heightCm: settings.heightCm, weightKg: weight,
+                activity: settings.activity.label, goal: settings.goal.label,
+                kcalTarget: settings.kcalTarget, proteinTarget: settings.proteinTarget,
+                carbsTarget: settings.carbsTarget, fatTarget: settings.fatTarget,
+                automaticTargets: settings.autoTargets)
+        }()
+
+        // Ejercicios: los trabajados en el periodo primero, y luego los de la rutina con historial.
+        let work = work(from: period.start, to: period.end, in: context)
+        var seen = Set<String>()
+        var ordered: [(id: String, name: String)] = []
+        for item in work where seen.insert(item.exerciseID).inserted {
+            ordered.append((item.exerciseID, item.name))
+        }
+        for exercise in (try? context.fetch(FetchDescriptor<RoutineExercise>())) ?? []
+        where seen.insert(exercise.exerciseID).inserted {
+            ordered.append((exercise.exerciseID, exercise.name))
+        }
+
+        var lines: [AIContext.Exercise] = []
+        for entry in ordered {
+            let history = history(exerciseID: entry.id, in: context)
+            guard !history.isEmpty else { continue }
+            let info = ExerciseCatalog.info(id: entry.id, name: entry.name)
+            let target = ProgressionEngine.RepTarget(
+                min: info?.defaultRepMin ?? 8, max: info?.defaultRepMax ?? 12)
+            let advice = ProgressionEngine.advise(history: history, target: target, equipment: info?.equipment,
+                                                  isDeloadWeek: isDeloadWeek(DateUtils.startOfWeek(date), in: context))
+            let trend = StrengthTrend(summaries: history)
+            let last = history.last
+            lines.append(AIContext.Exercise(
+                name: entry.name,
+                muscle: info?.primary.label,
+                lastTopSet: last?.topSetText,
+                estimatedOneRepMax: last?.estimatedOneRepMax,
+                oneRepMaxConfidence: last?.oneRepMaxConfidence?.label,
+                sessionsLogged: history.count,
+                trend: trend.verdict.label,
+                changePercent: trend.changePercent,
+                isStalled: ProgressionEngine.stallReport(history: history).isStalled,
+                suggestedAction: advice.action.label,
+                suggestedReason: advice.reason))
+            if lines.count >= aiExerciseLimit { break }
+        }
+
+        return AIContext(report: report, profile: profile, exercises: lines,
+                         isDeloadWeek: isDeloadWeek(DateUtils.startOfWeek(date), in: context))
+    }
 }

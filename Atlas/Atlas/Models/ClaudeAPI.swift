@@ -349,6 +349,94 @@ enum ClaudeAPI {
         }
     }
 
+    // MARK: Preguntar sobre mis propios datos
+
+    /// Respuesta del entrenador: contesta, dice en qué datos se apoya y separa lo que es
+    /// una suposición. Si propone un cambio, llega como propuesta: la app NO la aplica.
+    struct CoachAnswer: Codable, Equatable {
+        let answer: String
+        /// Los datos concretos del contexto en los que se apoya.
+        let dataUsed: [String]
+        /// Lo que ha dado por supuesto porque no estaba en los datos.
+        let assumptions: [String]
+        /// Propuesta concreta, si la hay. El usuario decide si la aplica a mano.
+        let proposal: String?
+        /// Qué habría que apuntar para poder responder mejor.
+        let missingData: [String]
+
+        enum CodingKeys: String, CodingKey {
+            case answer
+            case dataUsed = "data_used"
+            case assumptions
+            case proposal
+            case missingData = "missing_data"
+        }
+    }
+
+    static let coachSystem = """
+    Eres el entrenador y nutricionista de la app ATLAS. El usuario YA SABE ENTRENAR: trátalo como a alguien
+    con experiencia, no le expliques lo básico ni le des charlas de motivación.
+
+    Responde SIEMPRE en español, directo y concreto, con los números de sus datos.
+
+    Reglas que no puedes romper:
+    - Usa SOLO los datos del contexto. Si algo no está, no lo supongas: dilo en "missing_data".
+    - Distingue siempre dato real, estimación y suposición. El 1RM del contexto es estimado, no medido;
+      si lo usas, dilo.
+    - La sección "LO QUE FALTA" del contexto es información: no la rellenes con medias inventadas
+      ni saques conclusiones de un periodo con pocos días apuntados.
+    - No confundas coincidencia con causa. Si dos cosas se mueven juntas, dilo así.
+    - No diagnostiques ni trates nada. Si aparecen molestias, dolor o síntomas, remite a un
+      profesional sanitario.
+    - No recomiendes dietas extremas, déficits agresivos, ayunos prolongados ni sustancias de uso médico
+      o dopante. Nada de quemar grasa localizada ni promesas de resultados en plazos concretos.
+    - Si lo que pide requiere cambiar su rutina o su plan, ponlo en "proposal" y deja claro que es una
+      propuesta: la app no cambia nada sola.
+    - Si la pregunta no tiene nada que ver con entrenamiento, nutrición, descanso o sus datos, dilo
+      en una frase y no contestes a otra cosa.
+
+    "answer": como máximo 6 frases. Sin rodeos y sin repetir la pregunta.
+    """
+
+    static let coachSchema: [String: Any] = [
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["answer", "data_used", "assumptions", "missing_data"],
+        "properties": [
+            "answer": ["type": "string", "description": "La respuesta, en español, máximo 6 frases."],
+            "data_used": [
+                "type": "array",
+                "description": "Datos concretos del contexto en los que se apoya la respuesta.",
+                "items": ["type": "string"],
+            ],
+            "assumptions": [
+                "type": "array",
+                "description": "Lo que se ha dado por supuesto porque no estaba en los datos.",
+                "items": ["type": "string"],
+            ],
+            "proposal": [
+                "type": ["string", "null"],
+                "description": "Propuesta concreta de cambio, si procede. La app no la aplica sola.",
+            ],
+            "missing_data": [
+                "type": "array",
+                "description": "Qué tendría que apuntar el usuario para poder responder mejor.",
+                "items": ["type": "string"],
+            ],
+        ],
+    ]
+
+    static func coachRequest(question: String, context: String) -> [String: Any] {
+        let user = """
+        DATOS DEL USUARIO (lo único que puedes usar):
+        \(context)
+
+        PREGUNTA:
+        \(question)
+        """
+        return body(system: coachSystem, user: user, schema: coachSchema, effort: "medium")
+    }
+
     // MARK: Petición y respuesta
 
     static func body(system: String, user: String, schema: [String: Any], effort: String) -> [String: Any] {

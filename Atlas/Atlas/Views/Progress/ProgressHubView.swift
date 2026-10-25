@@ -30,6 +30,10 @@ struct ProgressHubView: View {
             .navigationTitle("Progreso")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { CoachView() } label: { Image(systemName: "sparkles") }
+                        .accessibilityLabel("Preguntar a la IA")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink { RecoveryView() } label: { Image(systemName: "moon.stars.fill") }
                         .accessibilityLabel("Recuperación")
                 }

@@ -71,6 +71,12 @@ final class ClaudeService {
         return (ClaudeAPI.apply(result.items, to: ingredients), result.note)
     }
 
+    /// Responde una pregunta sobre los datos del propio usuario.
+    /// Lo que se envía es exactamente el texto de `context`, que la app muestra antes de enviarlo.
+    func ask(question: String, context: String) async throws -> ClaudeAPI.CoachAnswer {
+        try await send(ClaudeAPI.coachRequest(question: question, context: context), as: ClaudeAPI.CoachAnswer.self)
+    }
+
     private func send<T: Decodable>(_ body: [String: Any], as type: T.Type) async throws -> T {
         guard let keyData = KeychainStore.load(account: Self.keyAccount, service: Self.keychainService),
               let key = String(data: keyData, encoding: .utf8), !key.isEmpty else {
