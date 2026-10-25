@@ -190,7 +190,8 @@ enum ExerciseCatalog {
                 "Despegar los omóplatos y perder el pecho alto.",
                 "Codos totalmente abiertos a 90°, que castiga el hombro.",
             ],
-            safety: "Con cargas altas, usa los topes del rack o un compañero. Nunca pongas el agarre por dentro de los cierres.",
+            safety: "Con cargas altas, usa los topes del rack o que alguien te ayude. Agarra con el pulgar "
+            + "rodeando la barra: el agarre sin pulgar es por donde se escapan las barras.",
             trait: "El que más carga total permite. La barra fija las manos, así que el recorrido es menor que con mancuernas."),
 
         ExerciseInfo("incline-db-press", "Press inclinado con mancuernas",
