@@ -216,7 +216,7 @@ final class TrackingTests: XCTestCase {
         file.sessionLogs = [.init(weekStart: cal.startOfDay(for: day(2026, 10, 19)), sessionID: "tue-push-a", isCompleted: true,
                                   completedAt: day(2026, 10, 20), notes: "", lastModified: day(2026, 10, 20),
                                   exercises: [.init(exerciseID: "x", order: 0, isCompleted: true, name: "Press", targetSets: 3,
-                                                    repRange: "8–12", sets: [.init(index: 0, weightKg: 60, reps: 8, isDone: true)])])]
+                                                    repRange: "8–12")])]
         file.photos = [.init(year: 2026, month: 10, viewRaw: "front", fileName: "a.jpg", createdAt: day(2026, 10, 1),
                              updatedAt: day(2026, 10, 1), imageData: Data([0xFF, 0xD8, 0xFF, 0x00]))]
         file.dayMarks = [.init(dayKey: "2026-10-20", date: day(2026, 10, 20, hour: 0), markRaw: "sick")]
