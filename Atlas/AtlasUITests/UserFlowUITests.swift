@@ -383,6 +383,88 @@ final class UserFlowUITests: XCTestCase {
                       || medal.label.contains("Oro"), medal.label)
     }
 
+    /// Recorre las pantallas nuevas de fuerza, recuperación, informes, suplementos e IA.
+    /// Sirve para dos cosas: comprobar que se dibujan sin romperse y dejar capturas de cada una.
+    func test13_NewScreens() {
+        func shoot(_ name: String) {
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = name
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+        func back() {
+            let button = app.navigationBars.buttons.firstMatch
+            if button.exists { button.tap() }
+        }
+
+        // Volumen, progresión y récords.
+        tab("Entrenar")
+        let stats = app.buttons["Volumen, progresión y récords"]
+        assertAppears(scrollTo(stats, maxSwipes: 20), "Botón de estadísticas de fuerza")
+        stats.tap()
+        assertAppears(element(containing: "Cómo se cuenta"), timeout: 15, "Nota de método en estadísticas")
+        XCTAssertTrue(app.buttons["Semana"].firstMatch.exists, "Selector de periodo")
+        shoot("fuerza-estadisticas")
+        back()
+
+        // Biblioteca de ejercicios y la ficha de uno.
+        let library = app.buttons["Biblioteca de ejercicios"]
+        assertAppears(scrollTo(library, maxSwipes: 20), "Botón de la biblioteca")
+        library.tap()
+        assertAppears(element(containing: "ejercicios"), timeout: 15, "Contador de la biblioteca")
+        shoot("biblioteca")
+        let bench = element(containing: "Press de banca con barra")
+        assertAppears(scrollTo(bench), "Press de banca en la biblioteca")
+        bench.tap()
+        assertAppears(element(containing: "Cómo se hace"), timeout: 15, "Instrucciones del ejercicio")
+        XCTAssertTrue(scrollTo(element(containing: "Errores frecuentes")).exists)
+        XCTAssertTrue(scrollTo(element(containing: "Variantes y alternativas")).exists)
+        shoot("ejercicio-ficha")
+        back()
+        back()
+
+        // Recuperación: dos respuestas y ya hay resumen del día.
+        tab("Progreso")
+        let recovery = app.buttons["Recuperación"]
+        assertAppears(recovery, "Botón de recuperación")
+        recovery.tap()
+        let quality = app.buttons.matching(NSPredicate(format: "label == %@", "Calidad del sueño: 4")).firstMatch
+        assertAppears(scrollTo(quality), timeout: 15, "Escala de calidad del sueño")
+        quality.tap()
+        let energy = app.buttons.matching(NSPredicate(format: "label == %@", "Energía: 4")).firstMatch
+        assertAppears(scrollTo(energy), "Escala de energía")
+        energy.tap()
+        app.swipeDown(); app.swipeDown(); app.swipeDown()
+        assertAppears(element(containing: "Calculado con"), timeout: 15, "Resumen del día con las respuestas")
+        shoot("recuperacion")
+        back()
+
+        // Informes.
+        let reports = app.buttons["Informes"]
+        assertAppears(reports, "Botón de informes")
+        reports.tap()
+        assertAppears(element(containing: "Entrenamiento"), timeout: 15, "Sección de entrenamiento del informe")
+        shoot("informes")
+        back()
+
+        // Preguntar a la IA: sin clave lo dice y no inventa respuestas.
+        let coach = app.buttons["Preguntar a la IA"]
+        assertAppears(coach, "Botón de la IA")
+        coach.tap()
+        assertAppears(element(containing: "La IA está apagada"), timeout: 15, "Aviso de que no hay clave")
+        shoot("ia-sin-clave")
+        back()
+
+        // Suplementos.
+        tab("Ajustes")
+        let supplements = app.buttons["Mis suplementos"]
+        assertAppears(scrollTo(supplements, maxSwipes: 20), "Botón de suplementos")
+        supplements.tap()
+        assertAppears(element(containing: "Sin suplementos apuntados"), timeout: 15, "Estado vacío de suplementos")
+        XCTAssertTrue(scrollTo(element(containing: "Evidencia sólida")).exists, "Catálogo por evidencia")
+        shoot("suplementos")
+    }
+
     func testZ_FluidWithLotsOfData() {
         app.terminate()
         app.launchArguments = ["-AtlasSkipOnboarding", "-AtlasDemoData", "-AtlasFakeSteps", "-AtlasClearHangs"]
