@@ -6,6 +6,8 @@
 	<string>ATLAS</string>
 	<key>NSMotionUsageDescription</key>
 	<string>ATLAS cuenta tus pasos con el sensor de movimiento del iPhone para enseñártelos en Hoy. No salen de tu iPhone.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ATLAS usa la cámara para tus fotos mensuales de progreso (frente, lateral y espalda). Se guardan solo en tu iPhone.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>strava</string>
@@ -28,6 +30,14 @@
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>atlas.reminders.refresh</string>
+	</array>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

@@ -3,100 +3,91 @@ import SwiftUI
 
 @main
 struct AtlasApp: App {
-    let container: ModelContainer?
-    let error: String?
-    @State private var app = AppState()
-    @State private var steps = StepCounter()
+    private let container: ModelContainer?
+    private let containerError: String?
+
+    @State private var notifications = NotificationManager()
     @State private var strava = StravaService()
+    @State private var router = AppRouter()
+    @State private var claude = ClaudeService()
+    @State private var steps = StepCounter()
+
+    static let schema = Schema([
+        UserSettings.self,
+        WeightEntry.self,
+        WorkoutSessionLog.self,
+        ExerciseLog.self,
+        RoutineExercise.self,
+        SessionTitle.self,
+        FoodItem.self,
+        MenuPlan.self,
+        MealTemplate.self,
+        MealItem.self,
+        MealRecord.self,
+        DayPlanSelection.self,
+        DayMealChoice.self,
+        CustomMealItem.self,
+        ProgressPhoto.self,
+        StravaActivityRecord.self,
+        DailySteps.self,
+        WaterLog.self,
+        DayMarkRecord.self,
+    ])
 
     init() {
         do {
-            let schema = Schema(AtlasSchema.models)
-            #if DEBUG
-            // Pruebas: datos en memoria para empezar siempre de cero.
-            let inMemory = ProcessInfo.processInfo.arguments.contains("-AtlasInMemory")
-            #else
-            let inMemory = false
-            #endif
-            container = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: inMemory))
-            error = nil
-        } catch let e {
+            // Solo almacenamiento local: sin sincronización con iCloud.
+            let config = ModelConfiguration("Atlas", schema: Self.schema, isStoredInMemoryOnly: false, cloudKitDatabase: .none)
+            container = try ModelContainer(for: Self.schema, configurations: [config])
+            containerError = nil
+        } catch {
+            // No se borra nada automáticamente: se informa del error para no perder el historial.
             container = nil
-            error = e.localizedDescription
+            containerError = error.localizedDescription
         }
     }
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if let container {
-                    RootView()
-                        .modelContainer(container)
-                        .environment(app)
-                        .environment(steps)
-                        .environment(strava)
-                } else {
-                    VStack(spacing: 12) {
-                        Image(systemName: "exclamationmark.triangle.fill").font(.largeTitle).foregroundStyle(DS.warn)
-                        Text("No se pudieron abrir tus datos").font(.headline)
-                        Text(error ?? "").font(.footnote).foregroundStyle(DS.text2).multilineTextAlignment(.center)
-                    }
-                    .padding(32)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(AtlasBackground())
-                }
+            if let container {
+                RootView()
+                    .modelContainer(container)
+                    .environment(notifications)
+                    .environment(strava)
+                    .environment(router)
+                    .environment(claude)
+                    .environment(steps)
+                    .preferredColorScheme(.dark)
+                    .tint(Theme.lime)
+            } else {
+                StorageErrorView(message: containerError ?? "Error desconocido")
+                    .preferredColorScheme(.dark)
             }
-            .preferredColorScheme(.dark)
-            .tint(DS.cyan)
+        }
+        .backgroundTask(.appRefresh(ReminderCoordinator.refreshTaskID)) {
+            guard let container else { return }
+            await ReminderCoordinator.backgroundRefresh(container: container)
         }
     }
 }
 
-enum AppTab: String, CaseIterable, Identifiable {
-    case today, food, train, progress
-    var id: String { rawValue }
-    var title: String {
-        switch self {
-        case .today: return "Hoy"
-        case .food: return "Comer"
-        case .train: return "Entrenar"
-        case .progress: return "Progreso"
+private struct StorageErrorView: View {
+    let message: String
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "externaldrive.badge.exclamationmark")
+                .font(.system(size: 48))
+                .foregroundStyle(Theme.warning)
+            Text("No se pudo abrir la base de datos local")
+                .font(.title3.bold())
+                .multilineTextAlignment(.center)
+            Text("Tus datos no se han borrado. Cierra la app y vuelve a abrirla. Si el problema persiste, actualiza la app.\n\nDetalle: \(message)")
+                .font(.footnote)
+                .foregroundStyle(Theme.textSecondary)
+                .multilineTextAlignment(.center)
         }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Theme.background.ignoresSafeArea())
     }
-    var symbol: String {
-        switch self {
-        case .today: return "sun.max.fill"
-        case .food: return "fork.knife"
-        case .train: return "dumbbell.fill"
-        case .progress: return "chart.xyaxis.line"
-        }
-    }
-}
-
-/// Estado compartido de la interfaz: pestaña, entreno en curso y hojas que se abren desde cualquier sitio.
-@MainActor
-@Observable
-final class AppState {
-    var tab: AppTab = .today
-    /// Entreno en curso (se abre a pantalla completa).
-    var liveWorkout: Workout?
-    var showQuickAdd = false
-    var showProfile = false
-    var foodSheet: FoodSheetRequest?
-    var showWeight = false
-    var runTemplate: RunRequest?
-    /// Día que se ve en Comer.
-    var foodDay = Date()
-}
-
-struct FoodSheetRequest: Identifiable {
-    let id = UUID()
-    let meal: MealType
-    let dayKey: String
-    var startWithMenus = false
-}
-
-struct RunRequest: Identifiable {
-    let id = UUID()
-    let template: WorkoutTemplate?
 }

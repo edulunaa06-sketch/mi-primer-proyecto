@@ -64,13 +64,10 @@ final class StravaService {
     var lastError: String?
 
     private var pendingState: String?
-    private(set) var clientID = UserDefaults.standard.string(forKey: "strava.clientID") ?? ""
-
-    init() { updateStatus() }
+    private var clientID = ""
 
     func configure(clientID: String) {
         self.clientID = clientID.trimmingCharacters(in: .whitespacesAndNewlines)
-        UserDefaults.standard.set(self.clientID, forKey: "strava.clientID")
         updateStatus()
     }
 
@@ -170,7 +167,7 @@ final class StravaService {
     @discardableResult
     func syncRuns(into context: ModelContext, pages: Int = 2) async -> Int {
         guard isConfigured else {
-            lastError = "Strava no está configurado. Pon el ID y el secreto de cliente en Perfil › Strava."
+            lastError = "Strava no está configurado. Pon el ID y el secreto de cliente en Ajustes › Strava."
             return 0
         }
         isWorking = true
@@ -207,25 +204,26 @@ final class StravaService {
         }
     }
 
-    /// Cada carrera de Strava se guarda una sola vez como entreno de carrera (si ya estaba, se actualiza).
     private func upsert(_ a: StravaAPI.Activity, in context: ModelContext) {
         let id = a.id
-        var descriptor = FetchDescriptor<Workout>(predicate: #Predicate { $0.stravaID == id })
+        var descriptor = FetchDescriptor<StravaActivityRecord>(predicate: #Predicate { $0.stravaID == id })
         descriptor.fetchLimit = 1
-        let w: Workout
         if let existing = try? context.fetch(descriptor).first {
-            w = existing
+            existing.name = a.name
+            existing.sportType = a.effectiveType
+            existing.startDate = a.startDate
+            existing.distanceMeters = a.distance
+            existing.movingTimeSeconds = a.movingTime
+            existing.elapsedTimeSeconds = a.elapsedTime
+            existing.elevationGainMeters = a.totalElevationGain
+            existing.importedAt = Date()
         } else {
-            w = Workout(name: a.name, kind: .run, templateID: nil, startedAt: a.startDate)
-            w.stravaID = a.id
-            context.insert(w)
+            context.insert(StravaActivityRecord(
+                stravaID: a.id, name: a.name, sportType: a.effectiveType, startDate: a.startDate,
+                distanceMeters: a.distance, movingTimeSeconds: a.movingTime,
+                elapsedTimeSeconds: a.elapsedTime, elevationGainMeters: a.totalElevationGain
+            ))
         }
-        w.name = a.name
-        w.startedAt = a.startDate
-        w.runMeters = a.distance
-        w.runSeconds = a.movingTime
-        w.finishedAt = a.startDate.addingTimeInterval(TimeInterval(a.elapsedTime))
-        w.note = "Strava"
     }
 
     // MARK: Tokens
@@ -288,7 +286,7 @@ final class StravaService {
             case .unauthorized: return "Strava rechazó la autorización. Vuelve a conectar tu cuenta."
             case .rateLimited: return "Se ha superado el límite de peticiones de Strava. Inténtalo más tarde."
             case .badBackendResponse: return "Strava no devolvió un token válido. Inténtalo de nuevo."
-            case .badCredentials: return "Strava no acepta el ID o el secreto de cliente. Revisa que los has copiado bien (Perfil › Strava)."
+            case .badCredentials: return "Strava no acepta el ID o el secreto de cliente. Revisa que los has copiado bien (Ajustes › Strava)."
             case .http(let code): return "Error de red (HTTP \(code))."
             }
         }

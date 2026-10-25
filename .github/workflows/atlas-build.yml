@@ -10,7 +10,7 @@ on:
 jobs:
   build-and-test:
     runs-on: macos-15
-    timeout-minutes: 45
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: Atlas
@@ -61,26 +61,47 @@ jobs:
           xcrun simctl status_bar "$UDID" override --time "9:41" || true
           APP=build/Build/Products/Debug-iphonesimulator/Atlas.app
           BID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
+          # Sin desinstalar: las capturas muestran los datos que han dejado las pruebas de interfaz.
           xcrun simctl install "$UDID" "$APP"
+          # La intro en vídeo.
           xcrun simctl io "$UDID" recordVideo --codec h264 --force screenshots/intro.mp4 &
           REC=$!
           sleep 1
-          xcrun simctl launch "$UDID" "$BID" -AtlasDemo; sleep 5
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasCurtain; sleep 6
           kill -INT $REC; wait $REC || true
           xcrun simctl terminate "$UDID" "$BID" || true
-          for tab in today food train progress; do
-            xcrun simctl launch "$UDID" "$BID" -AtlasDemo -AtlasSkipIntro -AtlasTab "$tab"; sleep 5
+          # Cada sección.
+          for tab in home nutrition training progress calendar settings; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab "$tab"; sleep 5
             xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
             xcrun simctl terminate "$UDID" "$BID" || true
           done
-          for sheet in quick menus run profile; do
-            xcrun simctl launch "$UDID" "$BID" -AtlasDemo -AtlasSkipIntro -AtlasSheet "$sheet"; sleep 6
-            xcrun simctl io "$UDID" screenshot "screenshots/sheet-$sheet.png"
+          for section in week medals; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab progress -AtlasProgress "$section"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/progress-$section.png"
             xcrun simctl terminate "$UDID" "$BID" || true
           done
-          xcrun simctl launch "$UDID" "$BID" -AtlasDemo -AtlasSkipIntro -AtlasLive; sleep 6
-          xcrun simctl io "$UDID" screenshot screenshots/live.png
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab settings -AtlasProfile; sleep 5
+          xcrun simctl io "$UDID" screenshot screenshots/profile.png
           xcrun simctl terminate "$UDID" "$BID" || true
+          # Entreno: la sesión (sin kilos) y el editor de la rutina.
+          for session in tue-push-a sat-run; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab training -AtlasSession "$session"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab training -AtlasSession tue-push-a -AtlasEditRoutine; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/routine-editor.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          # Comer: asistente, apuntar lo que comes y cambiar una comida.
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab nutrition -AtlasMealBuilder; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/meal-builder.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          for flag in AtlasCustomMeal AtlasSwapMeal; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab nutrition -$flag; sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/$flag.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
 
       - uses: actions/upload-artifact@v4
         if: always()
