@@ -267,7 +267,7 @@ struct SupplementNewView: View {
 
     var body: some View {
         Form {
-            Section("Dosis") {
+            Section {
                 HStack {
                     Text("Por toma")
                     Spacer()
@@ -279,11 +279,13 @@ struct SupplementNewView: View {
                 }
                 Stepper("Tomas al día: \(Int(dosesPerDay))", value: $dosesPerDay, in: 1...6, step: 1)
                 Stepper("Hora: \(hour):00", value: $hour, in: 0...23)
+            } header: {
+                Text("Dosis")
             } footer: {
                 Text("Dosis habitual: \(info.typicalDose)\n\nCuándo: \(info.timing)")
             }
 
-            Section("Coste (opcional)") {
+            Section {
                 HStack {
                     Text("Precio del envase")
                     Spacer()
@@ -294,6 +296,8 @@ struct SupplementNewView: View {
                     Spacer()
                     IntField(placeholder: "días", value: $days, width: 80)
                 }
+            } header: {
+                Text("Coste (opcional)")
             } footer: {
                 Text("Con estos dos datos se calcula el coste al mes.")
             }
