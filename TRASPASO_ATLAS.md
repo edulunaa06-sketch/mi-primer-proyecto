@@ -46,6 +46,21 @@ calendario, medallas, copia de seguridad, Strava, IA opcional):
 - Al terminar en verde: copiar el IPA a `Atlas/dist/Atlas.ipa` con `git add -f` y `[skip ci]`
   en el mensaje, entregarlo con SendUserFile y explicar la instalación.
 
+## Por dónde va (25/10/2026, sesión de Opus 5)
+
+- 15 commits nuevos sobre `819e83f`: +10.478 líneas en `Atlas/`, 25 archivos Swift nuevos.
+  El código de ATLAS pasa de 15.040 a 25.172 líneas.
+- Lo construido está en `Atlas/ESTADO.md`, módulo por módulo y diciendo lo que NO está.
+- El CI ya compila todo y genera el IPA. El run 19 (`9fceee7`) es el definitivo: valida los
+  tres fallos corregidos del run 15, la prueba nueva de pantallas, los plurales y el
+  rendimiento al abrir una sesión.
+- Fallos que encontró el CI y están corregidos: `Section(título) { } footer:` no existe en
+  SwiftUI; autocompletar peleaba con la casilla manual del ejercicio; renumerar series contaba
+  la recién borrada; y dos pruebas mías comparaban structs enteros después de pasar por JSON
+  (las fechas van en milisegundos).
+- Pendiente al terminar en verde: copiar el IPA a `Atlas/dist/Atlas.ipa` con `git add -f` y
+  `[skip ci]`, entregarlo con SendUserFile y recordar que hay que refirmarlo.
+
 ## Lo que NO se puede hacer desde aquí
 El contenedor es Linux: no hay Xcode. La compilación y el IPA salen del runner macOS del CI.
 **La firma para el iPhone del usuario no se puede hacer en ningún servidor**: necesita su Apple ID.
