@@ -10,7 +10,9 @@ on:
 jobs:
   build-and-test:
     runs-on: macos-15
-    timeout-minutes: 60
+    # La suite completa (14 recorridos de interfaz, uno de ellos con 8 meses de datos de prueba)
+    # pasa de la hora en el simulador del runner. 60 minutos la cortaban por tiempo.
+    timeout-minutes: 90
     defaults:
       run:
         working-directory: Atlas
@@ -84,7 +86,7 @@ jobs:
           xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab settings -AtlasProfile; sleep 5
           xcrun simctl io "$UDID" screenshot screenshots/profile.png
           xcrun simctl terminate "$UDID" "$BID" || true
-          # Entreno: la sesión (sin kilos) y el editor de la rutina.
+          # Entreno: la sesión (con sus series) y el editor de la rutina.
           for session in tue-push-a sat-run; do
             xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab training -AtlasSession "$session"; sleep 5
             xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"
