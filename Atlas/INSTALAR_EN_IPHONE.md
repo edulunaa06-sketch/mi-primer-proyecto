@@ -7,6 +7,16 @@ Lo primero, claro y sin rodeos:
 > Para instalarlo hay que **volver a firmarlo con tu propio Apple ID**, y eso lo hace una
 > herramienta en tu ordenador o en el propio móvil. Es gratis, pero tiene condiciones.
 
+## Antes de nada: haz una copia de seguridad
+
+Si ya tienes ATLAS en el iPhone, **exporta tus datos antes de instalar la versión nueva**:
+Ajustes → Copia de seguridad → Exportar, y guárdala en Archivos o en iCloud Drive.
+
+Por qué: esta versión añade tablas y campos a la base de datos (series, récords, recuperación,
+suplementos). La actualización está pensada para hacerse sola y no borrar nada, pero si algo
+fuera mal al abrirla, ATLAS te lo dirá en una pantalla en vez de perder datos en silencio, y con
+esa copia lo recuperas todo. Es un minuto y te ahorra un disgusto.
+
 Las cinco cosas que la gente mezcla y conviene separar:
 
 | Paso | Qué es | ¿Hecho? |
