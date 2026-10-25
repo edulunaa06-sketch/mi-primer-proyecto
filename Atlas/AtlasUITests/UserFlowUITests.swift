@@ -397,10 +397,10 @@ final class UserFlowUITests: XCTestCase {
             if button.exists { button.tap() }
         }
 
-        // Volumen, progresión y récords.
+        // Volumen, progresión y récords (desde el botón de la barra superior).
         tab("Entrenar")
-        let stats = app.buttons["Volumen, progresión y récords"]
-        assertAppears(scrollTo(stats, maxSwipes: 20), "Botón de estadísticas de fuerza")
+        let stats = app.buttons["Volumen, progresión y récords"].firstMatch
+        assertAppears(stats, timeout: 10, "Botón de estadísticas de fuerza")
         stats.tap()
         assertAppears(element(containing: "Cómo se cuenta"), timeout: 15, "Nota de método en estadísticas")
         XCTAssertTrue(app.buttons["Semana"].firstMatch.exists, "Selector de periodo")
@@ -408,8 +408,8 @@ final class UserFlowUITests: XCTestCase {
         back()
 
         // Biblioteca de ejercicios y la ficha de uno.
-        let library = app.buttons["Biblioteca de ejercicios"]
-        assertAppears(scrollTo(library, maxSwipes: 20), "Botón de la biblioteca")
+        let library = app.buttons["Biblioteca de ejercicios"].firstMatch
+        assertAppears(library, timeout: 10, "Botón de la biblioteca")
         library.tap()
         assertAppears(element(containing: "ejercicios"), timeout: 15, "Contador de la biblioteca")
         shoot("biblioteca")

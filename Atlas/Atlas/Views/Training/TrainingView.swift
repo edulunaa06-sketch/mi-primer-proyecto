@@ -74,6 +74,18 @@ struct TrainingView: View {
             }
             .screenBackground()
             .navigationTitle("Entrenamientos")
+            // Arriba además de abajo: el volumen y la biblioteca quedaban enterrados
+            // detrás de las siete tarjetas de los días.
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { ExerciseLibraryView() } label: { Image(systemName: "books.vertical") }
+                        .accessibilityLabel("Biblioteca de ejercicios")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { StrengthStatsView() } label: { Image(systemName: "chart.bar.xaxis") }
+                        .accessibilityLabel("Volumen, progresión y récords")
+                }
+            }
             .navigationDestination(for: String.self) { sessionID in
                 if let session = WeeklyRoutine.session(id: sessionID) {
                     SessionDestination(session: session, weekStart: weekStart)
