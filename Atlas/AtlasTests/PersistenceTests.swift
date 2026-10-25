@@ -127,7 +127,8 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(logs.count, 1)
     }
 
-    /// ATLAS no apunta kilos: de la prescripción solo guarda cuántas series toca, para enseñarlas.
+    /// El registro de la semana guarda una copia de la prescripción (series y rango) para que el
+    /// historial siga siendo legible aunque luego se edite la rutina.
     func testPrescriptionIsStoredWithTheWeekLog() {
         DataStore.seedRoutineIfNeeded(context, defaults: defaults)
         let base = WeeklyRoutine.wednesdayPullA

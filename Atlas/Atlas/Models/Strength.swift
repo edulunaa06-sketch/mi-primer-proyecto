@@ -477,3 +477,64 @@ enum PlateMath {
         return barKg + max(plates, 0)
     }
 }
+
+// MARK: - Reloj de la sesión
+
+/// Cuánto ha durado una sesión, aunque se pause o se cierre la app en medio.
+/// Se guarda lo acumulado y, si está en marcha, desde cuándo: así el tiempo
+/// sobrevive a cerrar la app y nunca se cuenta dos veces.
+struct SessionClock: Equatable {
+    /// Segundos ya contados antes de la última pausa.
+    var accumulatedSeconds: Int
+    /// Momento en que se puso en marcha. nil = está en pausa.
+    var runningSince: Date?
+
+    init(accumulatedSeconds: Int = 0, runningSince: Date? = nil) {
+        self.accumulatedSeconds = max(accumulatedSeconds, 0)
+        self.runningSince = runningSince
+    }
+
+    var isRunning: Bool { runningSince != nil }
+
+    /// Segundos totales a día de hoy. Un reloj del futuro (cambio de hora) no resta tiempo.
+    func elapsed(at now: Date) -> Int {
+        guard let runningSince else { return accumulatedSeconds }
+        return accumulatedSeconds + max(Int(now.timeIntervalSince(runningSince)), 0)
+    }
+
+    func started(at now: Date) -> SessionClock {
+        isRunning ? self : SessionClock(accumulatedSeconds: accumulatedSeconds, runningSince: now)
+    }
+
+    func paused(at now: Date) -> SessionClock {
+        guard isRunning else { return self }
+        return SessionClock(accumulatedSeconds: elapsed(at: now), runningSince: nil)
+    }
+
+    func toggled(at now: Date) -> SessionClock {
+        isRunning ? paused(at: now) : started(at: now)
+    }
+
+    /// Texto «1 h 12 min» o «48 min».
+    static func text(seconds: Int) -> String {
+        let total = max(seconds, 0)
+        let hours = total / 3600
+        let minutes = (total % 3600) / 60
+        if hours > 0 { return "\(hours) h \(minutes) min" }
+        if minutes > 0 { return "\(minutes) min" }
+        return "\(total) s"
+    }
+}
+
+/// Cuánto se suele tardar en una sesión, para enseñar una estimación antes de empezar.
+enum SessionPacing {
+    /// Segundos por serie de trabajo, contando ejecución y descanso.
+    static let secondsPerSet = 150
+    /// Lo que se tarda en llegar, cambiarse y calentar.
+    static let overheadSeconds = 420
+
+    static func estimate(workSets: Int) -> Int {
+        guard workSets > 0 else { return 0 }
+        return overheadSeconds + workSets * secondsPerSet
+    }
+}

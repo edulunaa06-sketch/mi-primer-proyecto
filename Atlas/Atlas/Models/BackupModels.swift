@@ -3,7 +3,7 @@ import Foundation
 /// Formato del archivo de copia de seguridad (JSON). Contiene TODOS los datos de la app,
 /// incluidas las fotos de progreso. No incluye la clave de Claude ni los tokens de Strava (Llavero).
 struct BackupFile: Codable, Equatable {
-    static let currentFormat = 1
+    static let currentFormat = 2
     static let appIdentifier = "Atlas"
 
     var app: String = BackupFile.appIdentifier
@@ -26,6 +26,12 @@ struct BackupFile: Codable, Equatable {
     var runs: [Run] = []
     var dailySteps: [DaySteps] = []
     var dayMarks: [DayMarkEntry] = []
+    /// Añadidos en el formato 2. Opcionales para poder seguir leyendo copias del formato 1.
+    var records: [Record]?
+    var recovery: [Recovery]?
+    var supplements: [Supplement]?
+    var supplementIntakes: [SupplementTaken]?
+    var trainingWeeks: [Week]?
 
     struct Settings: Codable, Equatable {
         var kcalTarget: Double
@@ -92,6 +98,9 @@ struct BackupFile: Codable, Equatable {
         var notes: String
         var lastModified: Date
         var exercises: [ExerciseLog]
+        /// Formato 2: duración de la sesión.
+        var accumulatedSeconds: Int?
+        var finishedAt: Date?
     }
 
     struct ExerciseLog: Codable, Equatable {
@@ -101,6 +110,78 @@ struct BackupFile: Codable, Equatable {
         var name: String
         var targetSets: Int
         var repRange: String
+        /// Formato 2: las series con kilos y repeticiones, la nota y la molestia.
+        var sets: [SetEntry]?
+        var note: String?
+        var hasDiscomfort: Bool?
+    }
+
+    /// Una serie apuntada (formato 2).
+    struct SetEntry: Codable, Equatable {
+        var order: Int
+        var kindRaw: String
+        var weightKg: Double?
+        var reps: Int?
+        var rir: Int?
+        var rpe: Double?
+        var restSeconds: Int?
+        var isCompleted: Bool
+        var note: String
+        var completedAt: Date?
+    }
+
+    struct Record: Codable, Equatable {
+        var exerciseID: String
+        var exerciseName: String
+        var kindRaw: String
+        var value: Double
+        var weightKg: Double?
+        var reps: Int?
+        var date: Date
+        var previousValue: Double?
+    }
+
+    struct Recovery: Codable, Equatable {
+        var dayKey: String
+        var date: Date
+        var sleepHours: Double?
+        var sleepQuality: Int?
+        var energy: Int?
+        var fatigue: Int?
+        var stress: Int?
+        var soreness: Int?
+        var hasDiscomfort: Bool
+        var note: String
+    }
+
+    struct Supplement: Codable, Equatable {
+        var id: UUID
+        var catalogID: String
+        var name: String
+        var ingredient: String
+        var amountPerDose: Double
+        var unitRaw: String
+        var dosesPerDay: Double
+        var hoursRaw: String
+        var packagePrice: Double?
+        var packageDays: Int?
+        var isActive: Bool
+        var note: String
+        var createdAt: Date
+    }
+
+    struct SupplementTaken: Codable, Equatable {
+        var dayKey: String
+        var date: Date
+        var supplementID: UUID
+        var dosesTaken: Double
+    }
+
+    struct Week: Codable, Equatable {
+        var weekKey: String
+        var weekStart: Date
+        var isDeload: Bool
+        var note: String
     }
 
     struct Food: Codable, Equatable {
@@ -265,6 +346,11 @@ struct BackupFile: Codable, Equatable {
         if !runs.isEmpty { parts.append("\(runs.count) carreras") }
         if !dailySteps.isEmpty { parts.append("\(dailySteps.count) días de pasos") }
         if !dayMarks.isEmpty { parts.append("\(dayMarks.count) días marcados") }
+        let setCount = sessionLogs.flatMap(\.exercises).compactMap(\.sets).reduce(0) { $0 + $1.count }
+        if setCount > 0 { parts.append("\(setCount) series") }
+        if let records, !records.isEmpty { parts.append("\(records.count) récords") }
+        if let recovery, !recovery.isEmpty { parts.append("\(recovery.count) días de recuperación") }
+        if let supplements, !supplements.isEmpty { parts.append("\(supplements.count) suplementos") }
         return parts.joined(separator: ", ")
     }
 

@@ -28,6 +28,16 @@ struct ProgressHubView: View {
             }
             .background(Theme.background.ignoresSafeArea())
             .navigationTitle("Progreso")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { RecoveryView() } label: { Image(systemName: "moon.stars.fill") }
+                        .accessibilityLabel("Recuperación")
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { ReportsView() } label: { Image(systemName: "doc.text.magnifyingglass") }
+                        .accessibilityLabel("Informes")
+                }
+            }
             .onChange(of: section) { _, s in HangDetector.shared.screen = "Progreso › \(s.rawValue)" }
             #if DEBUG
             .onAppear {

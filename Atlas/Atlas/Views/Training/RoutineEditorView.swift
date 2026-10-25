@@ -13,7 +13,9 @@ struct RoutineEditorView: View {
 
     @State private var editing: RoutineExercise?
     @State private var substituting: RoutineExercise?
+    @State private var substitutingFromLibrary: RoutineExercise?
     @State private var adding = false
+    @State private var addingFromLibrary = false
     @State private var confirmRestore = false
     @State private var editMode: EditMode = .inactive
 
@@ -44,7 +46,7 @@ struct RoutineEditorView: View {
                         }
                         .swipeActions(edge: .trailing) {
                             Button("Eliminar", role: .destructive) { DataStore.removeExercise(ex, in: context) }
-                            Button("Sustituir") { substituting = ex }.tint(.orange)
+                            Button("Cambiar") { substitutingFromLibrary = ex }.tint(.orange)
                         }
                     }
                     .onMove { from, to in
@@ -53,13 +55,19 @@ struct RoutineEditorView: View {
                 } header: {
                     Text(session.title)
                 } footer: {
-                    Text("Toca un ejercicio para cambiar series y repeticiones. Desliza a la izquierda para sustituir o eliminar. Usa “Ordenar” para cambiar el orden. El historial de semanas anteriores no se modifica.")
+                    Text("Toca un ejercicio para cambiar series y repeticiones. Desliza a la izquierda para cambiarlo por otro o eliminarlo. Usa “Ordenar” para cambiar el orden. El historial de semanas anteriores no se modifica.")
                 }
                 .listRowBackground(Theme.card)
 
                 Section {
+                    Button { addingFromLibrary = true } label: {
+                        Label("Añadir de la biblioteca", systemImage: "books.vertical.fill")
+                    }
                     Button { adding = true } label: { Label("Añadir ejercicio", systemImage: "plus.circle.fill") }
                     Button("Restaurar rutina predeterminada", role: .destructive) { confirmRestore = true }
+                } footer: {
+                    Text("La biblioteca trae 57 ejercicios con su músculo principal, el patrón, el material y los "
+                         + "errores frecuentes. «Añadir ejercicio» es para escribir uno que no esté.")
                 }
                 .listRowBackground(Theme.card)
             }
@@ -89,6 +97,23 @@ struct RoutineEditorView: View {
                                  nameEditable: true,
                                  footer: "El ejercicio nuevo ocupa la misma posición y empieza su propia progresión. El historial del anterior se conserva.") { name, _, _, _ in
                     DataStore.substitute(ex, withName: name, in: context)
+                }
+            }
+            .sheet(item: $substitutingFromLibrary) { ex in
+                NavigationStack {
+                    ExerciseLibraryView(onPick: { info in
+                        StrengthStore.substitute(ex, with: info, in: context)
+                    }, pickHint: "Vas a cambiar «\(ex.name)». El nuevo ejercicio ocupa su sitio y se queda con "
+                       + "\(ex.sets) series de \(ex.repRange) repeticiones, así que el objetivo de la sesión no cambia. "
+                       + "El historial del anterior se conserva y el nuevo empieza su propia progresión.")
+                }
+            }
+            .sheet(isPresented: $addingFromLibrary) {
+                NavigationStack {
+                    ExerciseLibraryView(onPick: { info in
+                        StrengthStore.addExercise(to: session.id, from: info, in: context)
+                    }, pickHint: "Se añade al final de la sesión con su punto de partida de series y repeticiones. "
+                       + "Puedes cambiarlo después.")
                 }
             }
             .sheet(isPresented: $adding) {

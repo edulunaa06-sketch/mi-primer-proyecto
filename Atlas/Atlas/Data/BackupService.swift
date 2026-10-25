@@ -41,8 +41,36 @@ enum BackupService {
                   notes: log.notes, lastModified: log.lastModified,
                   exercises: log.sortedExercises.map { ex in
                       BackupFile.ExerciseLog(exerciseID: ex.exerciseID, order: ex.order, isCompleted: ex.isCompleted, name: ex.name,
-                            targetSets: ex.targetSets, repRange: ex.repRange)
-                  })
+                            targetSets: ex.targetSets, repRange: ex.repRange,
+                            sets: ex.sortedSets.map { set in
+                                BackupFile.SetEntry(order: set.order, kindRaw: set.kindRaw, weightKg: set.weightKg,
+                                      reps: set.reps, rir: set.rir, rpe: set.rpe, restSeconds: set.restSeconds,
+                                      isCompleted: set.isCompleted, note: set.note, completedAt: set.completedAt)
+                            },
+                            note: ex.note, hasDiscomfort: ex.hasDiscomfort)
+                  },
+                  accumulatedSeconds: log.accumulatedSeconds, finishedAt: log.finishedAt)
+        }
+        file.records = try all(PersonalRecordEntry.self).map {
+            BackupFile.Record(exerciseID: $0.exerciseID, exerciseName: $0.exerciseName, kindRaw: $0.kindRaw,
+                  value: $0.value, weightKg: $0.weightKg, reps: $0.reps, date: $0.date, previousValue: $0.previousValue)
+        }
+        file.recovery = try all(RecoveryLogEntry.self).map {
+            BackupFile.Recovery(dayKey: $0.dayKey, date: $0.date, sleepHours: $0.sleepHours, sleepQuality: $0.sleepQuality,
+                  energy: $0.energy, fatigue: $0.fatigue, stress: $0.stress, soreness: $0.soreness,
+                  hasDiscomfort: $0.hasDiscomfort, note: $0.note)
+        }
+        file.supplements = try all(SupplementEntry.self).map {
+            BackupFile.Supplement(id: $0.id, catalogID: $0.catalogID, name: $0.name, ingredient: $0.ingredient,
+                  amountPerDose: $0.amountPerDose, unitRaw: $0.unitRaw, dosesPerDay: $0.dosesPerDay,
+                  hoursRaw: $0.hoursRaw, packagePrice: $0.packagePrice, packageDays: $0.packageDays,
+                  isActive: $0.isActive, note: $0.note, createdAt: $0.createdAt)
+        }
+        file.supplementIntakes = try all(SupplementIntake.self).map {
+            BackupFile.SupplementTaken(dayKey: $0.dayKey, date: $0.date, supplementID: $0.supplementID, dosesTaken: $0.dosesTaken)
+        }
+        file.trainingWeeks = try all(TrainingWeek.self).map {
+            BackupFile.Week(weekKey: $0.weekKey, weekStart: $0.weekStart, isDeload: $0.isDeload, note: $0.note)
         }
         file.foods = try all(FoodItem.self).map {
             BackupFile.Food(id: $0.id, seedKey: $0.seedKey, name: $0.name, kcalPer100: $0.kcalPer100, proteinPer100: $0.proteinPer100,
@@ -123,6 +151,8 @@ enum BackupService {
             log.completedAt = l.completedAt
             log.notes = l.notes
             log.lastModified = l.lastModified
+            log.accumulatedSeconds = l.accumulatedSeconds ?? 0
+            log.finishedAt = l.finishedAt
             context.insert(log)
             for e in l.exercises {
                 let ex = ExerciseLog(exerciseID: e.exerciseID, order: e.order)
@@ -130,9 +160,67 @@ enum BackupService {
                 ex.name = e.name
                 ex.targetSets = e.targetSets
                 ex.repRange = e.repRange
+                ex.note = e.note ?? ""
+                ex.hasDiscomfort = e.hasDiscomfort ?? false
                 context.insert(ex)
                 ex.session = log
+                for entry in e.sets ?? [] {
+                    let set = SetLog(order: entry.order, kind: SetKind(rawValue: entry.kindRaw) ?? .effective)
+                    set.weightKg = entry.weightKg
+                    set.reps = entry.reps
+                    set.rir = entry.rir
+                    set.rpe = entry.rpe
+                    set.restSeconds = entry.restSeconds
+                    set.isCompleted = entry.isCompleted
+                    set.note = entry.note
+                    set.completedAt = entry.completedAt
+                    context.insert(set)
+                    set.exercise = ex
+                }
             }
+        }
+        for r in file.records ?? [] {
+            context.insert(PersonalRecordEntry(exerciseID: r.exerciseID, exerciseName: r.exerciseName,
+                                               kind: RecordKind(rawValue: r.kindRaw) ?? .topWeight, value: r.value,
+                                               weightKg: r.weightKg, reps: r.reps, date: r.date,
+                                               previousValue: r.previousValue))
+        }
+        for r in file.recovery ?? [] {
+            let entry = RecoveryLogEntry(date: r.date)
+            entry.dayKey = r.dayKey
+            entry.sleepHours = r.sleepHours
+            entry.sleepQuality = r.sleepQuality
+            entry.energy = r.energy
+            entry.fatigue = r.fatigue
+            entry.stress = r.stress
+            entry.soreness = r.soreness
+            entry.hasDiscomfort = r.hasDiscomfort
+            entry.note = r.note
+            context.insert(entry)
+        }
+        // Ojo: `s` ya es el registro de ajustes en esta función, así que aquí se llama `saved`.
+        for saved in file.supplements ?? [] {
+            let item = SupplementEntry(catalogID: saved.catalogID, name: saved.name, ingredient: saved.ingredient,
+                                       amountPerDose: saved.amountPerDose, unit: DoseUnit(rawValue: saved.unitRaw) ?? .gram,
+                                       dosesPerDay: saved.dosesPerDay)
+            item.id = saved.id
+            item.hoursRaw = saved.hoursRaw
+            item.packagePrice = saved.packagePrice
+            item.packageDays = saved.packageDays
+            item.isActive = saved.isActive
+            item.note = saved.note
+            item.createdAt = saved.createdAt
+            context.insert(item)
+        }
+        for i in file.supplementIntakes ?? [] {
+            let intake = SupplementIntake(date: i.date, supplementID: i.supplementID, dosesTaken: i.dosesTaken)
+            intake.dayKey = i.dayKey
+            context.insert(intake)
+        }
+        for w in file.trainingWeeks ?? [] {
+            let week = TrainingWeek(weekStart: w.weekStart, isDeload: w.isDeload, note: w.note)
+            week.weekKey = w.weekKey
+            context.insert(week)
         }
         var foodsByID: [UUID: FoodItem] = [:]
         for f in file.foods {
@@ -219,8 +307,14 @@ enum BackupService {
         func wipe<T: PersistentModel>(_ type: T.Type) throws {
             for item in try context.fetch(FetchDescriptor<T>()) { context.delete(item) }
         }
+        try wipe(SetLog.self)
         try wipe(ExerciseLog.self)
         try wipe(WorkoutSessionLog.self)
+        try wipe(PersonalRecordEntry.self)
+        try wipe(RecoveryLogEntry.self)
+        try wipe(SupplementIntake.self)
+        try wipe(SupplementEntry.self)
+        try wipe(TrainingWeek.self)
         try wipe(MealItem.self)
         try wipe(MealTemplate.self)
         try wipe(MenuPlan.self)

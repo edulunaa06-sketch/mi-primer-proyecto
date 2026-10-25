@@ -51,6 +51,7 @@ private struct SettingsForm: View {
             goalsSection
             StepGoalSection(settings: settings)
             SmartRemindersSection(settings: settings)
+            supplementsSection
             creatineSection
             photoSection
             notificationsStatusSection
@@ -262,6 +263,23 @@ private struct SettingsForm: View {
         case .provisional: return "Provisional"
         case .ephemeral: return "Temporal"
         @unknown default: return "Desconocido"
+        }
+    }
+
+    // MARK: Suplementos
+
+    private var supplementsSection: some View {
+        Section {
+            NavigationLink {
+                SupplementsView()
+            } label: {
+                Label("Mis suplementos", systemImage: "pills.fill")
+            }
+        } header: {
+            Text("Suplementación")
+        } footer: {
+            Text("Dosis, horarios, coste al mes y qué dice la evidencia de cada uno. "
+                 + "Avisa si llevas el mismo principio activo dos veces o si te pasas con la cafeína.")
         }
     }
 

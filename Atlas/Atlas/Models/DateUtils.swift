@@ -69,6 +69,11 @@ enum DateUtils {
         date.formatted(.dateTime.day().month(.abbreviated).year().locale(Locale(identifier: "es_ES")))
     }
 
+    /// Hora y minutos: «19:42».
+    static func time(_ date: Date) -> String {
+        date.formatted(.dateTime.hour().minute().locale(Locale(identifier: "es_ES")))
+    }
+
     static func dayMonth(_ date: Date) -> String {
         date.formatted(.dateTime.day().month(.abbreviated).locale(Locale(identifier: "es_ES")))
     }

@@ -179,6 +179,13 @@ final class WorkoutSessionLog {
     var notes: String = ""
     var lastModified: Date = Date()
 
+    /// Cronómetro de la sesión. Se guarda lo acumulado y, si está en marcha, desde cuándo,
+    /// de modo que la duración sobrevive a cerrar la app en medio del entreno.
+    var accumulatedSeconds: Int = 0
+    var runningSince: Date?
+    /// Cuándo se dio por terminada.
+    var finishedAt: Date?
+
     @Relationship(deleteRule: .cascade, inverse: \ExerciseLog.session)
     var exercises: [ExerciseLog] = []
 
@@ -194,10 +201,59 @@ final class WorkoutSessionLog {
 
     var sortedExercises: [ExerciseLog] { exercises.sorted { $0.order < $1.order } }
 
-    /// Tiene algún dato real introducido por el usuario.
+    /// Tiene algún dato real introducido por el usuario: la sesión marcada, un ejercicio
+    /// marcado o cualquier serie con kilos, repeticiones o RIR apuntados.
     var hasUserData: Bool {
-        isCompleted || exercises.contains(where: \.isCompleted)
+        isCompleted || exercises.contains { $0.isCompleted || $0.hasLoggedData }
     }
+
+    // MARK: Cronómetro
+
+    var clock: SessionClock {
+        get { SessionClock(accumulatedSeconds: accumulatedSeconds, runningSince: runningSince) }
+        set {
+            accumulatedSeconds = newValue.accumulatedSeconds
+            runningSince = newValue.runningSince
+        }
+    }
+
+    var isRunning: Bool { runningSince != nil }
+
+    func elapsedSeconds(at now: Date = Date()) -> Int { clock.elapsed(at: now) }
+
+    func startOrResume(at now: Date = Date()) {
+        clock = clock.started(at: now)
+        lastModified = now
+    }
+
+    func pause(at now: Date = Date()) {
+        clock = clock.paused(at: now)
+        lastModified = now
+    }
+
+    /// Da la sesión por terminada: para el reloj y guarda la hora de fin.
+    func finish(at now: Date = Date()) {
+        clock = clock.paused(at: now)
+        finishedAt = now
+        lastModified = now
+    }
+
+    // MARK: Totales de la sesión
+
+    /// Series de trabajo con repeticiones apuntadas.
+    var workSets: Int { exercises.reduce(0) { $0 + $1.workSets } }
+
+    /// Kilos movidos en toda la sesión.
+    var tonnageKg: Double { exercises.reduce(0) { $0 + $1.volumeKg } }
+
+    /// Resumen por ejercicio de esta sesión, para los cálculos y los récords.
+    func summaries(on date: Date? = nil) -> [ExerciseSessionSummary] {
+        let when = date ?? completedAt ?? finishedAt ?? weekStart
+        return exercises.compactMap { $0.summary(on: when) }
+    }
+
+    /// El usuario ha apuntado alguna molestia en esta sesión.
+    var hasDiscomfort: Bool { exercises.contains(where: \.hasDiscomfort) }
 }
 
 @Model
@@ -212,6 +268,14 @@ final class ExerciseLog {
     var repRange: String = ""
     var session: WorkoutSessionLog?
 
+    /// Nota del usuario sobre este ejercicio en esta sesión.
+    var note: String = ""
+    /// Molestia apuntada. La progresión nunca sube el peso si esto está marcado.
+    var hasDiscomfort: Bool = false
+
+    @Relationship(deleteRule: .cascade, inverse: \SetLog.exercise)
+    var sets: [SetLog] = []
+
     init(exerciseID: String, order: Int) {
         self.exerciseID = exerciseID
         self.order = order
@@ -221,6 +285,35 @@ final class ExerciseLog {
         if !name.isEmpty { return name }
         return WeeklyRoutine.defaultExercise(id: exerciseID)?.name ?? "Ejercicio"
     }
+
+    // MARK: Series
+
+    var sortedSets: [SetLog] { sets.sorted { $0.order < $1.order } }
+
+    /// Las series como valores puros, que es lo que usan los cálculos.
+    var loggedSets: [LoggedSet] { sortedSets.map(\.logged) }
+
+    /// Alguna serie con algo apuntado.
+    var hasLoggedData: Bool { sets.contains(where: \.hasData) }
+
+    /// Series de trabajo con repeticiones (sin calentamientos ni filas vacías).
+    var workSets: Int { loggedSets.filter { $0.kind.countsAsWork && $0.hasReps }.count }
+
+    var volumeKg: Double { loggedSets.reduce(0) { $0 + $1.volumeKg } }
+
+    /// Resumen del ejercicio en esta sesión. nil si no hay ni una serie con repeticiones.
+    func summary(on date: Date) -> ExerciseSessionSummary? {
+        ExerciseSessionSummary(date: date, exerciseID: exerciseID, sets: loggedSets)
+    }
+
+    /// Rango de repeticiones de la prescripción guardada esa semana.
+    var repTarget: ProgressionEngine.RepTarget {
+        let parsed = ExerciseDefinition.parseRange(repRange) ?? (8, 12)
+        return ProgressionEngine.RepTarget(min: parsed.min, max: parsed.max)
+    }
+
+    /// Material del ejercicio según la biblioteca (para el salto de peso de la progresión).
+    var equipment: Equipment? { ExerciseCatalog.info(id: exerciseID, name: name)?.equipment }
 }
 
 // MARK: - Nutrición

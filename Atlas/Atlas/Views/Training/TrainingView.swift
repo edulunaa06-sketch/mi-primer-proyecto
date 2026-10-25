@@ -43,6 +43,18 @@ struct TrainingView: View {
                         dayCard(weekday)
                     }
                     NavigationLink {
+                        StrengthStatsView()
+                    } label: {
+                        Label("Volumen, progresión y récords", systemImage: "chart.bar.xaxis")
+                    }
+                    .buttonStyle(LimeButtonStyle())
+                    NavigationLink {
+                        ExerciseLibraryView()
+                    } label: {
+                        Label("Biblioteca de ejercicios", systemImage: "books.vertical")
+                    }
+                    .buttonStyle(LimeButtonStyle(filled: false))
+                    NavigationLink {
                         TrainingHistoryView()
                     } label: {
                         Label("Historial de semanas anteriores", systemImage: "clock.arrow.circlepath")

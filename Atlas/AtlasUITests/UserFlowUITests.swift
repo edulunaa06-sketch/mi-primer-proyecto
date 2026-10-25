@@ -110,7 +110,7 @@ final class UserFlowUITests: XCTestCase {
         XCTAssertTrue(goal.waitForExistence(timeout: 5), "Objetivo de 2550 kcal en Inicio")
     }
 
-    func test2_EditRoutineAndTickExercises() {
+    func test2_EditRoutineAndLogSets() {
         tab("Entrenar")
         let push = element(containing: "Push A")
         XCTAssertTrue(push.waitForExistence(timeout: 10))
@@ -131,11 +131,30 @@ final class UserFlowUITests: XCTestCase {
         // El ejercicio nuevo aparece en la sesión.
         XCTAssertTrue(scrollTo(element(containing: "Fondos en paralelas")).exists)
 
-        // ATLAS no pide kilos: basta con marcar el ejercicio.
+        // Apuntar una serie de verdad: 80 kg × 10.
         app.swipeDown(); app.swipeDown(); app.swipeDown()
-        XCTAssertFalse(app.buttons["Marcar serie terminada"].firstMatch.exists, "Ya no se marcan series sueltas")
-        app.buttons["Marcar ejercicio completado"].firstMatch.tap()
-        XCTAssertTrue(element(containing: "1 de 7 ejercicios").waitForExistence(timeout: 5))
+        let weight = app.textFields.matching(NSPredicate(format: "label BEGINSWITH %@", "Kilos de la serie")).firstMatch
+        assertAppears(weight, "Campo de kilos de la primera serie")
+        scrollTo(weight).tap()
+        weight.typeText("80")
+        dismissKeyboard()
+
+        let reps = app.textFields.matching(NSPredicate(format: "label BEGINSWITH %@", "Repeticiones de la serie")).firstMatch
+        assertAppears(reps, "Campo de repeticiones de la primera serie")
+        scrollTo(reps).tap()
+        reps.typeText("10")
+        dismissKeyboard()
+
+        // 80 × 10 = 800 kg movidos, y la cuenta sale de las series, no de un total escrito a mano.
+        app.swipeDown(); app.swipeDown(); app.swipeDown()
+        assertAppears(element(containing: "800"), "Kilos movidos en la cabecera de la sesión")
+
+        // La serie se marca como hecha y el ejercicio se completa solo.
+        let markSet = app.buttons["Marcar serie hecha"].firstMatch
+        assertAppears(markSet, "Botón de marcar la serie")
+        scrollTo(markSet).tap()
+        app.swipeDown(); app.swipeDown(); app.swipeDown()
+        assertAppears(element(containing: "de 7 ejercicios"), "Progreso de la sesión")
     }
 
     func test3_MarkMealCompleted() {
