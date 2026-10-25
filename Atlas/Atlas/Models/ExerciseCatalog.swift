@@ -192,7 +192,8 @@ enum ExerciseCatalog {
             ],
             safety: "Con cargas altas, usa los topes del rack o que alguien te ayude. Agarra con el pulgar "
             + "rodeando la barra: el agarre sin pulgar es por donde se escapan las barras.",
-            trait: "El que más carga total permite. La barra fija las manos, así que el recorrido es menor que con mancuernas."),
+            trait: "Es el empuje donde más peso vas a mover. La barra fija las manos, así que el recorrido "
+            + "es menor que con mancuernas y el pecho trabaja en un rango algo más corto."),
 
         ExerciseInfo("incline-db-press", "Press inclinado con mancuernas",
             primary: .chest, secondary: [.frontDelts, .triceps],

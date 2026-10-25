@@ -330,8 +330,10 @@ enum ReportBuilder {
             if nutrition.daysLogged == 0 {
                 out.append("No hay comidas apuntadas: no se puede decir nada de calorías ni de macros.")
             } else {
-                out.append("Solo hay " + NumberFormat.plural(nutrition.daysLogged, "día", "días")
-                           + " de comidas apuntados de \(nutrition.daysInPeriod). "
+                out.append("Solo hay " + NumberFormat.plural(nutrition.daysLogged,
+                                                             "día de comidas apuntado",
+                                                             "días de comidas apuntados")
+                           + " de \(nutrition.daysInPeriod). "
                            + "Una media con tan pocos días no representa lo que comes de verdad.")
             }
         } else if let coverage = nutrition.coverage, coverage < 0.7 {
@@ -344,8 +346,10 @@ enum ReportBuilder {
         }
 
         if !recovery.hasEnoughData {
-            out.append("Con " + NumberFormat.plural(recovery.averages.daysLogged, "día", "días")
-                       + " de recuperación apuntados no hay base para una media.")
+            out.append("Con " + NumberFormat.plural(recovery.averages.daysLogged,
+                                                    "día de recuperación apuntado",
+                                                    "días de recuperación apuntados")
+                       + " no hay base para una media.")
         }
 
         if training.hasEnoughData && nutrition.hasEnoughData && body.hasEnoughData {
