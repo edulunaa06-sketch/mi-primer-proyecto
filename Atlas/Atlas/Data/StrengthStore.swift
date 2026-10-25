@@ -51,11 +51,13 @@ enum StrengthStore {
 
     @MainActor
     static func removeSet(_ set: SetLog, in context: ModelContext) {
-        let exerciseLog = set.exercise
+        // Los supervivientes se anotan ANTES de borrar: justo después del delete, la serie
+        // borrada sigue en la relación hasta que se guarda, y renumerar contándola dejaba
+        // los números empezando en 1 en vez de en 0.
+        let survivors = (set.exercise?.sortedSets ?? []).filter { $0.id != set.id }
+        set.exercise = nil
         context.delete(set)
-        if let exerciseLog {
-            for (index, remaining) in exerciseLog.sortedSets.enumerated() { remaining.order = index }
-        }
+        for (index, remaining) in survivors.enumerated() { remaining.order = index }
         try? context.save()
     }
 

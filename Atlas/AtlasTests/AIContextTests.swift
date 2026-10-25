@@ -133,7 +133,10 @@ final class AIContextTests: XCTestCase {
         input.sessionsCompleted = 3
         input.work = [VolumeAnalytics.ExerciseWork(exerciseID: "tue-bench-barbell", name: "Press de banca con barra",
                                                    date: day(-1), workSets: 3, volumeKg: 2400)]
-        let context = AIContext(report: report(input), profile: sampleProfile, exercises: [], isDeloadWeek: false)
+        // La fecha va en milisegundos redondos: con un Date() de ahora, los microsegundos no
+        // volverían idénticos y la comparación fallaría por el formato, no por los datos.
+        let context = AIContext(report: report(input), profile: sampleProfile, exercises: [],
+                                isDeloadWeek: false, generatedAt: Date(timeIntervalSince1970: 1_700_000_000))
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .millisecondsSince1970
         let decoder = JSONDecoder()

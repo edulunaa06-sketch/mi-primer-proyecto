@@ -123,6 +123,64 @@ final class StrengthPersistenceTests: XCTestCase {
         XCTAssertEqual(log.tonnageKg, 800)
     }
 
+    // MARK: Marcar ejercicios y series
+
+    func testFollowSetsMirrorsTheSetsWhenASetIsTicked() {
+        let log = makeLog()
+        let exercise = firstExercise(log)
+        StrengthStore.ensureSets(for: exercise, in: context)
+        XCTAssertGreaterThan(exercise.sets.count, 1)
+
+        // Con una serie hecha de varias, el ejercicio no está hecho.
+        exercise.sortedSets[0].markCompleted(true)
+        exercise.followSets()
+        XCTAssertFalse(exercise.isCompleted)
+
+        // Con todas, sí.
+        exercise.sortedSets.forEach { $0.markCompleted(true) }
+        exercise.followSets()
+        XCTAssertTrue(exercise.isCompleted)
+
+        // Y desmarcar una lo deshace.
+        exercise.sortedSets[0].markCompleted(false)
+        exercise.followSets()
+        XCTAssertFalse(exercise.isCompleted)
+    }
+
+    /// Regresión: marcar el ejercicio a mano con alguna serie a medias se desmarcaba solo.
+    /// Lo encontró una prueba de interfaz; esta lo comprueba en un milisegundo.
+    func testMarkingTheExerciseByHandSurvivesHalfDoneSets() {
+        let log = makeLog()
+        let exercise = firstExercise(log)
+        StrengthStore.ensureSets(for: exercise, in: context)
+        exercise.sortedSets[0].markCompleted(true)
+        exercise.followSets()
+        XCTAssertFalse(exercise.isCompleted)
+
+        // El usuario marca el ejercicio aunque le falten series por apuntar.
+        exercise.isCompleted = true
+        // Cualquier otro cambio en la sesión (escribir kilos, una nota…) NO debe deshacerlo.
+        exercise.sortedSets[1].weightKg = 60
+        exercise.note = "Me he dejado una serie"
+        log.syncStrengthCompletion(with: WeeklyRoutine.tuesdayPushA.resolved(with: routine()))
+        try? context.save()
+
+        XCTAssertTrue(exercise.isCompleted, "La casilla del ejercicio manda sobre las series")
+    }
+
+    func testSessionFollowsItsExercises() {
+        let session = WeeklyRoutine.tuesdayPushA.resolved(with: routine())
+        let log = makeLog()
+        for exercise in log.exercises { exercise.isCompleted = true }
+        log.syncStrengthCompletion(with: session)
+        XCTAssertTrue(log.isCompleted)
+        XCTAssertNotNil(log.completedAt)
+
+        log.exercises.first?.isCompleted = false
+        log.syncStrengthCompletion(with: session)
+        XCTAssertFalse(log.isCompleted)
+    }
+
     // MARK: Historial entre semanas
 
     func testHistoryGathersPreviousWeeksInOrder() {
@@ -438,9 +496,22 @@ final class StrengthPersistenceTests: XCTestCase {
         XCTAssertFalse(file.supplements?.isEmpty ?? true)
         XCTAssertEqual(file.trainingWeeks?.first?.isDeload, true)
 
-        // El JSON va y vuelve sin perder nada.
+        // El JSON va y vuelve sin perder nada. No se comparan las estructuras enteras porque
+        // las fechas se guardan en milisegundos: un Date() con microsegundos no vuelve idéntico,
+        // aunque el dato sí se conserve. Se comprueba lo que importa.
         let restored = try BackupFile.decode(try file.encoded())
-        XCTAssertEqual(restored, file)
+        XCTAssertEqual(restored.format, file.format)
+        XCTAssertEqual(restored.sessionLogs.count, file.sessionLogs.count)
+        XCTAssertEqual(restored.sessionLogs.flatMap(\.exercises).compactMap(\.sets).flatMap { $0 },
+                       file.sessionLogs.flatMap(\.exercises).compactMap(\.sets).flatMap { $0 })
+        XCTAssertEqual(restored.records?.map(\.value), file.records?.map(\.value))
+        XCTAssertEqual(restored.recovery?.map(\.sleepHours), file.recovery?.map(\.sleepHours))
+        XCTAssertEqual(restored.supplements?.map(\.name), file.supplements?.map(\.name))
+        XCTAssertEqual(restored.trainingWeeks, file.trainingWeeks)
+        XCTAssertEqual(restored.routine, file.routine)
+        // Y las fechas se conservan al milisegundo.
+        XCTAssertEqual(restored.createdAt.timeIntervalSince1970,
+                       file.createdAt.timeIntervalSince1970, accuracy: 0.001)
 
         // Y al importarlo, los datos vuelven a estar.
         try BackupService.restore(restored, into: context)

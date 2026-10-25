@@ -129,14 +129,12 @@ struct StrengthSessionView: View {
 
     // MARK: Cambios
 
-    /// Cada cambio guarda. Un ejercicio se marca solo cuando todas sus series de trabajo están hechas.
+    /// Cada cambio guarda. La sesión sigue a los ejercicios mientras no se haya terminado.
+    /// Lo que NO se hace aquí: tocar el estado de los ejercicios. Eso solo cambia cuando el
+    /// usuario marca una serie o el propio ejercicio, para que la app no deshaga lo que marca.
     private func touch() {
         guard let log else { return }
         withAnimation {
-            for exerciseLog in log.exercises {
-                exerciseLog.syncCompletionFromSets()
-            }
-            // Mientras el entreno no se haya terminado, la sesión sigue a los ejercicios.
             if log.finishedAt == nil {
                 log.syncStrengthCompletion(with: current)
             }
@@ -417,7 +415,11 @@ struct ExerciseSetsCard: View {
         VStack(spacing: 6) {
             SetRowHeader()
             ForEach(log.sortedSets) { set in
-                SetRow(set: set, onChange: onChange, onDelete: {
+                SetRow(set: set, onChange: onChange, onSetCompleted: {
+                    // Marcar o desmarcar una serie SÍ arrastra al ejercicio: es lo que se espera.
+                    log.followSets()
+                    onChange()
+                }, onDelete: {
                     StrengthStore.removeSet(set, in: context)
                     onChange()
                 })
@@ -485,6 +487,8 @@ struct SetRowHeader: View {
 struct SetRow: View {
     @Bindable var set: SetLog
     let onChange: () -> Void
+    /// Se llama solo al marcar o desmarcar la serie (no al escribir kilos o repeticiones).
+    let onSetCompleted: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
@@ -520,7 +524,7 @@ struct SetRow: View {
 
             Button {
                 set.markCompleted(!set.isCompleted)
-                onChange()
+                onSetCompleted()
                 DS.haptic()
             } label: {
                 CheckCircle(isOn: set.isCompleted, size: 24)
@@ -620,17 +624,14 @@ struct NewRecordsSheet: View {
 // MARK: - Completar un ejercicio desde sus series
 
 extension ExerciseLog {
-    /// Un ejercicio se marca solo cuando todas sus series de trabajo están hechas.
-    /// Si no hay ninguna serie marcada, no se desmarca lo que el usuario puso a mano.
-    func syncCompletionFromSets() {
+    /// Pone el ejercicio como hecho exactamente cuando todas sus series de trabajo lo están.
+    ///
+    /// Se llama SOLO al marcar o desmarcar una serie. Antes se llamaba en cada cambio, y eso
+    /// hacía imposible marcar un ejercicio a mano si tenía alguna serie a medias: la app lo
+    /// desmarcaba al instante. La casilla del ejercicio manda siempre.
+    func followSets() {
         let work = sets.filter { $0.kind.countsAsWork }
         guard !work.isEmpty else { return }
-        let done = work.allSatisfy(\.isCompleted)
-        if done && !isCompleted {
-            isCompleted = true
-        } else if !done, isCompleted, work.contains(where: \.isCompleted) {
-            // Se ha desmarcado alguna serie de un ejercicio que estaba completo.
-            isCompleted = false
-        }
+        isCompleted = work.allSatisfy(\.isCompleted)
     }
 }
