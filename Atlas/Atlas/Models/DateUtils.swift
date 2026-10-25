@@ -92,6 +92,15 @@ enum NumberFormat {
         value.formatted(.number.locale(Locale(identifier: "es_ES")))
     }
 
+    /// Peso de un disco o una carga, con hasta dos decimales: 80 → «80», 2,5 → «2,5», 1,25 → «1,25».
+    /// Un decimal no basta: los discos de 1,25 kg se quedarían en «1,2».
+    static func plate(_ value: Double) -> String {
+        value.formatted(.number.precision(.fractionLength(0...2)).locale(Locale(identifier: "es_ES")))
+    }
+
+    /// Peso con su unidad y sin decimales de adorno: 80 → «80 kg», 1,25 → «1,25 kg».
+    static func weight(_ value: Double) -> String { plate(value) + " kg" }
+
     static func oneDecimal(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0...1)).locale(Locale(identifier: "es_ES")))
     }
