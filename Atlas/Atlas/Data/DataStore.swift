@@ -556,6 +556,96 @@ enum DataStore {
         return targets
     }
 
+    // MARK: Recetas y menús propios
+
+    /// Crea una receta propia: una sola comida, vacía, lista para añadirle ingredientes.
+    /// Va a la biblioteca de ideas y queda marcada como NO de ejemplo, porque es tuya.
+    @MainActor
+    @discardableResult
+    static func createRecipe(name: String, mealType: MealType, servings: Int = 1,
+                             in context: ModelContext) -> MenuPlan {
+        let existing = (try? context.fetch(FetchDescriptor<MenuPlan>())) ?? []
+        let number = (existing.filter(\.isLibrary).map(\.number).max() ?? 99) + 1
+        let plan = MenuPlan(number: number, name: String(name.prefix(60)), note: "", isExample: false)
+        plan.isLibrary = true
+        plan.servings = max(servings, 1)
+        context.insert(plan)
+        let template = MealTemplate(mealType: mealType)
+        context.insert(template)
+        template.plan = plan
+        try? context.save()
+        return plan
+    }
+
+    /// Crea un menú del día propio, con sus cuatro comidas vacías.
+    @MainActor
+    @discardableResult
+    static func createMenu(name: String, in context: ModelContext) -> MenuPlan {
+        let existing = (try? context.fetch(FetchDescriptor<MenuPlan>())) ?? []
+        let number = (existing.filter { !$0.isLibrary }.map(\.number).max() ?? 0) + 1
+        let plan = MenuPlan(number: number, name: String(name.prefix(60)), note: "", isExample: false)
+        context.insert(plan)
+        for type in MealType.allCases {
+            let template = MealTemplate(mealType: type)
+            context.insert(template)
+            template.plan = plan
+        }
+        try? context.save()
+        return plan
+    }
+
+    /// Copia una receta o un menú con todos sus ingredientes. La copia es tuya (no de ejemplo),
+    /// así que puedes cambiarla sin miedo a perder el original.
+    @MainActor
+    @discardableResult
+    static func duplicate(_ plan: MenuPlan, in context: ModelContext) -> MenuPlan {
+        let existing = (try? context.fetch(FetchDescriptor<MenuPlan>())) ?? []
+        let sameKind = existing.filter { $0.isLibrary == plan.isLibrary }
+        let number = (sameKind.map(\.number).max() ?? (plan.isLibrary ? 99 : 0)) + 1
+        let copy = MenuPlan(number: number, name: String("\(plan.name) (copia)".prefix(60)),
+                            note: plan.note, isExample: false)
+        copy.isLibrary = plan.isLibrary
+        copy.servings = plan.servings
+        copy.cookedWeightGrams = plan.cookedWeightGrams
+        context.insert(copy)
+        for meal in plan.sortedMeals {
+            let template = MealTemplate(mealType: meal.mealType)
+            context.insert(template)
+            template.plan = copy
+            for item in meal.sortedItems {
+                let line = MealItem(grams: item.grams, order: item.order, food: item.food)
+                context.insert(line)
+                line.meal = template
+            }
+        }
+        try? context.save()
+        return copy
+    }
+
+    /// Borra una receta o un menú. Si era el menú predeterminado, se deja de usar como tal.
+    /// Lo ya registrado en el historial no se toca: `MealRecord` guarda su propia copia.
+    @MainActor
+    static func delete(_ plan: MenuPlan, in context: ModelContext) {
+        let id = plan.id
+        let s = settings(context)
+        if s.defaultPlanID == id { s.defaultPlanID = nil }
+        // Las elecciones de día que apuntaban a este menú dejan de tener sentido.
+        let choices = (try? context.fetch(FetchDescriptor<DayMealChoice>(predicate: #Predicate { $0.planID == id }))) ?? []
+        choices.forEach { context.delete($0) }
+        let selections = (try? context.fetch(FetchDescriptor<DayPlanSelection>(predicate: #Predicate { $0.planID == id }))) ?? []
+        selections.forEach { context.delete($0) }
+        context.delete(plan)
+        try? context.save()
+    }
+
+    @MainActor
+    static func rename(_ plan: MenuPlan, to name: String, in context: ModelContext) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        plan.name = String(trimmed.prefix(60))
+        try? context.save()
+    }
+
     // MARK: Ajuste de menús
 
     /// Escala proporcionalmente los gramos de un menú para acercar su total a `targetKcal`.

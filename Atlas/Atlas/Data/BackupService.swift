@@ -82,7 +82,8 @@ enum BackupService {
                   meals: plan.sortedMeals.map { meal in
                       BackupFile.Meal(mealTypeRaw: meal.mealTypeRaw,
                             items: meal.sortedItems.map { BackupFile.MealItem(grams: $0.grams, order: $0.order, foodID: $0.food?.id) })
-                  })
+                  },
+                  servings: plan.servings, cookedWeightGrams: plan.cookedWeightGrams)
         }
         file.mealRecords = try all(MealRecord.self).map {
             BackupFile.MealRecord(dayKey: $0.dayKey, date: $0.date, mealTypeRaw: $0.mealTypeRaw, planName: $0.planName,
@@ -237,6 +238,8 @@ enum BackupService {
             let plan = MenuPlan(number: p.number, name: p.name, note: p.note, isExample: p.isExample)
             plan.id = p.id
             plan.isLibrary = p.isLibrary
+            plan.servings = max(p.servings ?? 1, 1)
+            plan.cookedWeightGrams = p.cookedWeightGrams
             context.insert(plan)
             for m in p.meals {
                 guard let type = MealType(rawValue: m.mealTypeRaw) else { continue }

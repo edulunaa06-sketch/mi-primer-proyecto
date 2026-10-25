@@ -127,3 +127,58 @@ final class ComplianceTests: XCTestCase {
         XCTAssertNil(WeightStats.change(points: points, days: 30))
     }
 }
+
+/// Pruebas de las cuentas de una receta: por ración y por 100 g cocinados.
+final class RecipeMathTests: XCTestCase {
+    private let total = NutritionValues(kcal: 1200, protein: 90, carbs: 120, fat: 30)
+
+    func testPerServingSplitsTheTotal() {
+        let perServing = RecipeMath.perServing(total, servings: 4)!
+        XCTAssertEqual(perServing.kcal, 300, accuracy: 0.0001)
+        XCTAssertEqual(perServing.protein, 22.5, accuracy: 0.0001)
+        XCTAssertEqual(perServing.carbs, 30, accuracy: 0.0001)
+        XCTAssertEqual(perServing.fat, 7.5, accuracy: 0.0001)
+    }
+
+    func testOneServingHasNothingToSplit() {
+        XCTAssertNil(RecipeMath.perServing(total, servings: 1))
+        XCTAssertNil(RecipeMath.perServing(total, servings: 0))
+        XCTAssertNil(RecipeMath.perServing(total, servings: -3))
+    }
+
+    func testPer100gCookedNeedsTheCookedWeight() {
+        // 1200 kcal en 800 g cocinados = 150 kcal / 100 g.
+        let per100 = RecipeMath.per100gCooked(total, cookedGrams: 800)!
+        XCTAssertEqual(per100.kcal, 150, accuracy: 0.0001)
+        XCTAssertEqual(per100.protein, 11.25, accuracy: 0.0001)
+        // Sin peso cocinado no se calcula nada: no se inventa.
+        XCTAssertNil(RecipeMath.per100gCooked(total, cookedGrams: 0))
+        XCTAssertNil(RecipeMath.per100gCooked(total, cookedGrams: -200))
+    }
+
+    func testYieldFactorAndItsExplanation() {
+        // La carne pierde agua.
+        let meat = RecipeMath.yieldFactor(rawGrams: 1000, cookedGrams: 750)!
+        XCTAssertEqual(meat, 0.75, accuracy: 0.0001)
+        XCTAssertTrue(RecipeMath.yieldText(meat).contains("Pierde agua"))
+        // El arroz la absorbe.
+        let rice = RecipeMath.yieldFactor(rawGrams: 100, cookedGrams: 250)!
+        XCTAssertEqual(rice, 2.5, accuracy: 0.0001)
+        XCTAssertTrue(RecipeMath.yieldText(rice).contains("Absorbe agua"))
+        // Y hay platos que pesan casi lo mismo.
+        XCTAssertTrue(RecipeMath.yieldText(1.0).contains("prácticamente lo mismo"))
+        XCTAssertNil(RecipeMath.yieldFactor(rawGrams: 0, cookedGrams: 100))
+    }
+
+    func testGramsPerServing() {
+        XCTAssertEqual(RecipeMath.gramsPerServing(cookedGrams: 800, servings: 4)!, 200, accuracy: 0.0001)
+        XCTAssertNil(RecipeMath.gramsPerServing(cookedGrams: nil, servings: 4))
+        XCTAssertNil(RecipeMath.gramsPerServing(cookedGrams: 800, servings: 0))
+    }
+
+    func testTheTotalIsNeverInventedFromTheCookedWeightAlone() {
+        // Con un total de cero, las cuentas dan cero, no un número cualquiera.
+        let zero = RecipeMath.per100gCooked(.zero, cookedGrams: 500)!
+        XCTAssertEqual(zero.kcal, 0)
+    }
+}

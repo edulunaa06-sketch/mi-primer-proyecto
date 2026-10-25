@@ -207,6 +207,9 @@ struct BackupFile: Codable, Equatable {
         var isExample: Bool
         var isLibrary: Bool
         var meals: [Meal]
+        /// Formato 2: raciones y peso final cocinado de una receta.
+        var servings: Int?
+        var cookedWeightGrams: Double?
     }
 
     struct Meal: Codable, Equatable {

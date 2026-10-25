@@ -374,6 +374,11 @@ final class MenuPlan {
     var isExample: Bool = true
     /// true = idea suelta de la biblioteca (una sola comida); no aparece como "menú del día".
     var isLibrary: Bool = false
+    /// En cuántas raciones sale lo que se cocina. 1 = lo que hay es una ración.
+    var servings: Int = 1
+    /// Peso del plato YA COCINADO, si se ha pesado. Permite dar valores por 100 g cocinados,
+    /// que es lo que de verdad se puede volver a pesar otro día.
+    var cookedWeightGrams: Double?
 
     @Relationship(deleteRule: .cascade, inverse: \MealTemplate.plan)
     var meals: [MealTemplate] = []
@@ -395,6 +400,28 @@ final class MenuPlan {
     var hasProvisionalValues: Bool { meals.contains { $0.hasProvisionalValues } }
 
     var displayName: String { isLibrary ? "Idea · \(name)" : "Menú \(number) · \(name)" }
+
+    /// Gramos crudos sumados de todos los ingredientes.
+    var rawGrams: Double {
+        meals.flatMap(\.items).reduce(0) { $0 + $1.grams }
+    }
+
+    /// Valores de UNA ración. nil si no tiene sentido repartir (una sola ración).
+    var perServing: NutritionValues? {
+        RecipeMath.perServing(totals, servings: servings)
+    }
+
+    /// Valores por 100 g del plato cocinado. nil si no se ha pesado el resultado.
+    var per100gCooked: NutritionValues? {
+        guard let cookedWeightGrams else { return nil }
+        return RecipeMath.per100gCooked(totals, cookedGrams: cookedWeightGrams)
+    }
+
+    /// Cuánto peso se pierde al cocinar (0,8 = se queda en el 80 %).
+    var yieldFactor: Double? {
+        guard let cookedWeightGrams else { return nil }
+        return RecipeMath.yieldFactor(rawGrams: rawGrams, cookedGrams: cookedWeightGrams)
+    }
 }
 
 @Model

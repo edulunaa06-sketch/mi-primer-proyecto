@@ -110,3 +110,54 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
         }
     }
 }
+
+// MARK: - Recetas
+
+/// Cuentas de una receta: por ración y por 100 g del plato ya cocinado.
+/// Lógica pura: ni inventa pesos ni rellena lo que no se ha pesado.
+enum RecipeMath {
+    /// Valores de una ración. nil si solo hay una ración (no hay nada que repartir)
+    /// o si el número de raciones no tiene sentido.
+    static func perServing(_ total: NutritionValues, servings: Int) -> NutritionValues? {
+        guard servings > 1 else { return nil }
+        return NutritionValues(kcal: total.kcal / Double(servings),
+                               protein: total.protein / Double(servings),
+                               carbs: total.carbs / Double(servings),
+                               fat: total.fat / Double(servings))
+    }
+
+    /// Valores por 100 g del plato cocinado. Es lo único que permite volver a pesar
+    /// una ración otro día y saber lo que llevas.
+    static func per100gCooked(_ total: NutritionValues, cookedGrams: Double) -> NutritionValues? {
+        guard cookedGrams > 0 else { return nil }
+        let factor = 100 / cookedGrams
+        return NutritionValues(kcal: total.kcal * factor,
+                               protein: total.protein * factor,
+                               carbs: total.carbs * factor,
+                               fat: total.fat * factor)
+    }
+
+    /// Cuánto peso queda después de cocinar: 0,8 = se queda en el 80 % del peso crudo.
+    /// Mayor que 1 si el alimento absorbe agua (arroz, pasta, legumbres).
+    static func yieldFactor(rawGrams: Double, cookedGrams: Double) -> Double? {
+        guard rawGrams > 0, cookedGrams > 0 else { return nil }
+        return cookedGrams / rawGrams
+    }
+
+    /// Frase que explica el rendimiento, para no dejar un número suelto sin contexto.
+    static func yieldText(_ factor: Double) -> String {
+        if factor < 0.98 {
+            return "Pierde agua al cocinarse: se queda en el \(NumberFormat.percent(factor)) del peso crudo."
+        }
+        if factor > 1.02 {
+            return "Absorbe agua al cocinarse: pesa el \(NumberFormat.percent(factor)) del peso crudo."
+        }
+        return "Pesa prácticamente lo mismo cocinado que crudo."
+    }
+
+    /// Gramos de una ración del plato cocinado, si se ha pesado el total.
+    static func gramsPerServing(cookedGrams: Double?, servings: Int) -> Double? {
+        guard let cookedGrams, cookedGrams > 0, servings > 0 else { return nil }
+        return cookedGrams / Double(servings)
+    }
+}
