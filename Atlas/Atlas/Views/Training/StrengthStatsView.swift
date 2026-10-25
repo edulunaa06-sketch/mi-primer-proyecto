@@ -169,7 +169,7 @@ struct StrengthStatsView: View {
                 HStack {
                     Text(item.group.label).font(.subheadline)
                     Spacer()
-                    Text("\(item.frequency) día(s)")
+                    Text(NumberFormat.plural(item.frequency, "día", "días"))
                         .font(.subheadline.monospacedDigit()).foregroundStyle(Theme.textSecondary)
                     Text(item.verdict.label)
                         .font(.caption2.weight(.semibold))

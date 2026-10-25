@@ -441,7 +441,7 @@ struct ExerciseSetsCard: View {
             Spacer()
 
             if log.workSets > 0 {
-                Text("\(log.workSets) series · \(NumberFormat.integer(log.volumeKg)) kg")
+                Text(NumberFormat.plural(log.workSets, "serie", "series") + " · \(NumberFormat.integer(log.volumeKg)) kg")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(Theme.textSecondary)
             }

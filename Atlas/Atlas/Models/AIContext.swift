@@ -190,7 +190,7 @@ struct AIContext: Codable, Equatable {
             for muscle in training.muscles {
                 lines.append("· \(muscle.muscle): \(NumberFormat.oneDecimal(muscle.directSets))"
                              + "/\(NumberFormat.oneDecimal(muscle.totalSets)), "
-                             + "\(muscle.frequency) día(s), \(muscle.verdict)")
+                             + NumberFormat.plural(muscle.frequency, "día", "días") + ", \(muscle.verdict)")
             }
         }
         if !training.unclassifiedExercises.isEmpty {
@@ -208,7 +208,8 @@ struct AIContext: Codable, Equatable {
                     line += ", 1RM estimado \(NumberFormat.weight(max1))"
                     if let confidence = exercise.oneRepMaxConfidence { line += " (\(confidence))" }
                 }
-                line += ". \(exercise.sessionsLogged) sesión(es), tendencia \(exercise.trend)"
+                line += ". " + NumberFormat.plural(exercise.sessionsLogged, "sesión", "sesiones")
+                    + ", tendencia \(exercise.trend)"
                 if let change = exercise.changePercent { line += " (\(NumberFormat.oneDecimal(change)) %)" }
                 if exercise.isStalled { line += ", ESTANCADO" }
                 line += ". Propuesta de la app: \(exercise.suggestedAction) — \(exercise.suggestedReason)"
@@ -232,15 +233,17 @@ struct AIContext: Codable, Equatable {
                          + (body.changePerWeekKg.map { " (\(NumberFormat.signedKg($0))/semana)" } ?? "")
                          + (body.lastWeightKg.map { ", media actual \(NumberFormat.weight($0))" } ?? "") + ".")
         } else {
-            lines.append("PESO: \(body.weighIns) pesaje(s); no hay tendencia fiable.")
+            lines.append("PESO: " + NumberFormat.plural(body.weighIns, "pesaje", "pesajes") + "; no hay tendencia fiable.")
         }
 
         if recovery.daysLogged > 0 {
-            var line = "RECUPERACIÓN: \(recovery.daysLogged) día(s) apuntados"
+            var line = "RECUPERACIÓN: " + NumberFormat.plural(recovery.daysLogged, "día apuntado", "días apuntados")
             if let sleep = recovery.averageSleepHours { line += ", sueño \(NumberFormat.oneDecimal(sleep)) h" }
             if let fatigue = recovery.averageFatigue { line += ", fatiga \(NumberFormat.oneDecimal(fatigue))/5" }
             if let stress = recovery.averageStress { line += ", estrés \(NumberFormat.oneDecimal(stress))/5" }
-            if recovery.daysWithDiscomfort > 0 { line += ", \(recovery.daysWithDiscomfort) día(s) con molestias" }
+            if recovery.daysWithDiscomfort > 0 {
+                line += ", " + NumberFormat.plural(recovery.daysWithDiscomfort, "día con molestias", "días con molestias")
+            }
             lines.append(line + ".")
         } else {
             lines.append("RECUPERACIÓN: sin datos apuntados.")

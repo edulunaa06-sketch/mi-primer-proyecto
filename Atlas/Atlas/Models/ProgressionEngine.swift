@@ -241,7 +241,8 @@ enum ProgressionEngine {
         }
         return StallReport(isStalled: false, sessionsWithoutProgress: withoutProgress,
                            message: withoutProgress == 0 ? "La última sesión mejoró." :
-                            "\(withoutProgress) sesión(es) sin mejorar: todavía es pronto para hablar de estancamiento.")
+                            NumberFormat.plural(withoutProgress, "sesión sin mejorar", "sesiones sin mejorar")
+                            + ": todavía es pronto para hablar de estancamiento.")
     }
 
     // MARK: Descarga

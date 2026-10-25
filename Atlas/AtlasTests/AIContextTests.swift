@@ -60,7 +60,7 @@ final class AIContextTests: XCTestCase {
         let context = AIContext(report: report(input), profile: nil, exercises: [], isDeloadWeek: false)
         XCTAssertNil(context.body.changeKg)
         XCTAssertEqual(context.body.weighIns, 2)
-        XCTAssertTrue(context.compactText.contains("2 pesaje(s)"))
+        XCTAssertTrue(context.compactText.contains("2 pesajes"))
     }
 
     // MARK: Con datos

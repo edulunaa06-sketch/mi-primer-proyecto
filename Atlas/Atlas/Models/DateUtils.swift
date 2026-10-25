@@ -97,6 +97,11 @@ enum NumberFormat {
         value.formatted(.number.locale(Locale(identifier: "es_ES")))
     }
 
+    /// «1 serie», «3 series». En castellano el plural se nota: «1 series» canta.
+    static func plural(_ count: Int, _ singular: String, _ plural: String) -> String {
+        "\(integer(count)) \(count == 1 ? singular : plural)"
+    }
+
     /// Peso de un disco o una carga, con hasta dos decimales: 80 → «80», 2,5 → «2,5», 1,25 → «1,25».
     /// Un decimal no basta: los discos de 1,25 kg se quedarían en «1,2».
     static func plate(_ value: Double) -> String {

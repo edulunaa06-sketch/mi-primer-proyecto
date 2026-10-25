@@ -259,7 +259,8 @@ struct MenuPlansView: View {
                                     Text("≈ \(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.integer(t.protein)) · C \(NumberFormat.integer(t.carbs)) · G \(NumberFormat.integer(t.fat))")
                                         .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
                                     if idea.servings > 1, let perServing = idea.perServing {
-                                        Text("\(idea.servings) raciones · \(NumberFormat.integer(perServing.kcal)) kcal por ración")
+                                        Text(NumberFormat.plural(idea.servings, "ración", "raciones")
+                                             + " · \(NumberFormat.integer(perServing.kcal)) kcal por ración")
                                             .font(.caption2).foregroundStyle(Theme.lime)
                                     }
                                 }
@@ -382,7 +383,7 @@ struct MenuPlanDetailView: View {
     private var recipeCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "Raciones y peso cocinado")
-            Stepper("Sale en \(plan.servings) ración(es)", value: $plan.servings, in: 1...20)
+            Stepper("Sale en " + NumberFormat.plural(plan.servings, "ración", "raciones"), value: $plan.servings, in: 1...20)
                 .font(.subheadline)
                 .onChange(of: plan.servings) { _, _ in try? context.save() }
 

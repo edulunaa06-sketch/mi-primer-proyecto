@@ -97,7 +97,7 @@ struct ReportsView: View {
                     MetricTile(title: "Kilos", value: NumberFormat.integer(training.tonnageKg), symbol: "scalemass")
                 }
                 if training.newRecords > 0 {
-                    Label("\(training.newRecords) récord(s) batido(s)", systemImage: "rosette")
+                    Label(NumberFormat.plural(training.newRecords, "récord batido", "récords batidos"), systemImage: "rosette")
                         .font(.caption.weight(.semibold)).foregroundStyle(Theme.gold)
                 }
                 if !training.muscles.isEmpty {
@@ -129,8 +129,8 @@ struct ReportsView: View {
             if !nutrition.hasEnoughData {
                 Text(nutrition.daysLogged == 0
                      ? "Sin comidas apuntadas en este periodo."
-                     : "Solo \(nutrition.daysLogged) día(s) apuntados de \(nutrition.daysInPeriod): "
-                     + "una media con tan pocos días no representa lo que comes.")
+                     : "Solo " + NumberFormat.plural(nutrition.daysLogged, "día apuntado", "días apuntados")
+                     + " de \(nutrition.daysInPeriod): una media con tan pocos días no representa lo que comes.")
                     .font(.footnote).foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -167,7 +167,8 @@ struct ReportsView: View {
             if !body.hasEnoughData {
                 Text(body.weighIns == 0
                      ? "Sin pesajes en este periodo."
-                     : "Hay \(body.weighIns) pesaje(s), pero hacen falta en dos semanas distintas para ver una tendencia.")
+                     : "Hay " + NumberFormat.plural(body.weighIns, "pesaje", "pesajes")
+                     + ", pero hacen falta en dos semanas distintas para ver una tendencia.")
                     .font(.footnote).foregroundStyle(Theme.textSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             } else {
@@ -190,7 +191,8 @@ struct ReportsView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "Recuperación")
             if !recovery.hasEnoughData {
-                Text("Con \(recovery.averages.daysLogged) día(s) apuntados no hay base para una media.")
+                Text("Con " + NumberFormat.plural(recovery.averages.daysLogged, "día apuntado", "días apuntados")
+                     + " no hay base para una media.")
                     .font(.footnote).foregroundStyle(Theme.textSecondary)
             } else {
                 HStack(spacing: 10) {

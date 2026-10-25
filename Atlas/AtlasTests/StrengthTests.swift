@@ -313,3 +313,18 @@ final class PlateMathTests: XCTestCase {
         XCTAssertEqual(PlateMath.rounded(15), 15)
     }
 }
+
+/// El plural en castellano: «1 serie», «3 series». Lo pequeño también se nota.
+final class PluralTests: XCTestCase {
+    func testSingularAndPlural() {
+        XCTAssertEqual(NumberFormat.plural(1, "serie", "series"), "1 serie")
+        XCTAssertEqual(NumberFormat.plural(2, "serie", "series"), "2 series")
+        XCTAssertEqual(NumberFormat.plural(0, "serie", "series"), "0 series")
+        XCTAssertEqual(NumberFormat.plural(1, "día apuntado", "días apuntados"), "1 día apuntado")
+        // El número pasa por el formateador de la app. El separador de miles depende de los
+        // datos de idioma del sistema (en iOS es «1.500»), así que aquí solo se comprueba
+        // que el número va delante y la palabra detrás.
+        XCTAssertTrue(NumberFormat.plural(1500, "serie", "series").hasSuffix(" series"))
+        XCTAssertEqual(NumberFormat.plural(1500, "serie", "series"), NumberFormat.integer(1500) + " series")
+    }
+}

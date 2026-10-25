@@ -268,14 +268,15 @@ enum ReportBuilder {
                 out.append("Cumplimiento de la rutina: \(NumberFormat.percent(fraction)) de las series programadas.")
             }
             if training.newRecords > 0 {
-                out.append("\(training.newRecords) récord(s) personal(es) batido(s).")
+                out.append(NumberFormat.plural(training.newRecords, "récord personal batido", "récords personales batidos") + ".")
             }
             if let top = training.muscles.max(by: { $0.directSets < $1.directSets }) {
                 out.append("El grupo con más trabajo directo ha sido \(top.group.label.lowercased()) "
                            + "con \(NumberFormat.oneDecimal(top.directSets)) series.")
             }
             if training.runKilometers > 0 {
-                out.append("\(NumberFormat.oneDecimal(training.runKilometers)) km corridos en \(training.runs) salida(s).")
+                out.append("\(NumberFormat.oneDecimal(training.runKilometers)) km corridos en "
+                       + NumberFormat.plural(training.runs, "salida", "salidas") + ".")
             }
         }
 
@@ -305,7 +306,9 @@ enum ReportBuilder {
                 out.append("Has dormido \(NumberFormat.oneDecimal(sleep)) horas de media.")
             }
             if recovery.averages.daysWithDiscomfort > 0 {
-                out.append("\(recovery.averages.daysWithDiscomfort) día(s) con alguna molestia apuntada.")
+                out.append(NumberFormat.plural(recovery.averages.daysWithDiscomfort,
+                                       "día con alguna molestia apuntada",
+                                       "días con alguna molestia apuntada") + ".")
             }
         }
 
@@ -327,7 +330,8 @@ enum ReportBuilder {
             if nutrition.daysLogged == 0 {
                 out.append("No hay comidas apuntadas: no se puede decir nada de calorías ni de macros.")
             } else {
-                out.append("Solo hay \(nutrition.daysLogged) día(s) de comidas apuntados de \(nutrition.daysInPeriod). "
+                out.append("Solo hay " + NumberFormat.plural(nutrition.daysLogged, "día", "días")
+                           + " de comidas apuntados de \(nutrition.daysInPeriod). "
                            + "Una media con tan pocos días no representa lo que comes de verdad.")
             }
         } else if let coverage = nutrition.coverage, coverage < 0.7 {
@@ -340,7 +344,8 @@ enum ReportBuilder {
         }
 
         if !recovery.hasEnoughData {
-            out.append("Con \(recovery.averages.daysLogged) día(s) de recuperación apuntados no hay base para una media.")
+            out.append("Con " + NumberFormat.plural(recovery.averages.daysLogged, "día", "días")
+                       + " de recuperación apuntados no hay base para una media.")
         }
 
         if training.hasEnoughData && nutrition.hasEnoughData && body.hasEnoughData {
