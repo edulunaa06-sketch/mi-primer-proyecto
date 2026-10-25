@@ -75,10 +75,12 @@ struct ProfileForm: View {
             Section {
                 Toggle("Escribirlos yo", isOn: $profile.manualTargets)
                 if profile.manualTargets {
-                    targetRow("Calorías", $profile.kcalTarget, "kcal")
+                    targetRow("Calorías", manualKcal, "kcal")
                     targetRow("Proteína", $profile.proteinTarget, "g")
                     targetRow("Hidratos", $profile.carbsTarget, "g")
                     targetRow("Grasa", $profile.fatTarget, "g")
+                    LabeledContent("Suman", value: "\(NumberFormat.integer(macroKcal)) kcal")
+                        .foregroundStyle(abs(macroKcal - profile.kcalTarget) <= 20 ? DS.text2 : DS.warn)
                 } else {
                     LabeledContent("Calorías", value: "\(NumberFormat.integer(profile.kcalTarget)) kcal")
                     LabeledContent("Proteína · Hidratos · Grasa",
@@ -88,7 +90,9 @@ struct ProfileForm: View {
                     ForEach([50.0, 100, 150, 200], id: \.self) { Text("± \(Int($0)) kcal").tag($0) }
                 }
             } header: { Text("Calorías y macros") } footer: {
-                Text("Dentro del margen, el día cuenta como objetivo cumplido.")
+                Text(profile.manualTargets
+                     ? "Al cambiar las calorías, los macros se reparten solos según tu objetivo y tu peso. Puedes retocar cualquiera a mano después. Dentro del margen, el día cuenta como objetivo cumplido."
+                     : "Dentro del margen, el día cuenta como objetivo cumplido.")
             }
             Section("Metas diarias") {
                 Stepper("Pasos: \(NumberFormat.integer(profile.stepGoal))", value: $profile.stepGoal, in: 2000...30000, step: 500)
@@ -104,6 +108,23 @@ struct ProfileForm: View {
         }
         .scrollContentBackground(.hidden)
         .background(AtlasBackground())
+    }
+
+    /// Lo que suman los tres macros escritos a mano (4 kcal/g proteína e hidratos, 9 kcal/g grasa).
+    private var macroKcal: Double {
+        NutritionMath.kcalFromMacros(NutritionValues(kcal: 0, protein: profile.proteinTarget,
+                                                     carbs: profile.carbsTarget, fat: profile.fatTarget))
+    }
+
+    /// Al escribir las calorías, reparte los macros con la misma fórmula que el cálculo automático.
+    private var manualKcal: Binding<Double> {
+        Binding(get: { profile.kcalTarget }, set: { kcal in
+            profile.kcalTarget = kcal
+            let m = EnergyCalculator.macros(forKcal: kcal, weightKg: weight, goal: profile.goal)
+            profile.proteinTarget = m.protein
+            profile.carbsTarget = m.carbs
+            profile.fatTarget = m.fat
+        })
     }
 
     private func targetRow(_ title: String, _ value: Binding<Double>, _ unit: String) -> some View {
@@ -175,7 +196,7 @@ struct OnboardingView: View {
             Text("ATLAS").font(.display(40, .black)).tracking(8)
             VStack(alignment: .leading, spacing: 14) {
                 bullet("flame.fill", "Calorías y macros", "Apunta en segundos y elige platos ajustados a lo que te queda.")
-                bullet("dumbbell.fill", "Entrenos con coach", "Te dice qué peso tocar, cronometra el descanso y celebra cada récord.")
+                bullet("dumbbell.fill", "Entrenos con coach", "Te dice qué peso tocar hoy y celebra cada récord que haces.")
                 bullet("chart.xyaxis.line", "Progreso de verdad", "Peso de tendencia, tu gasto real y tu fuerza en cada ejercicio.")
             }
             .padding(.horizontal, 28)

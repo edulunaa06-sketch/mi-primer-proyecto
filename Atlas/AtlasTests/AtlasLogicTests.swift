@@ -4,6 +4,24 @@ import XCTest
 final class AtlasLogicTests: XCTestCase {
     private let day = 86400.0
 
+    /// Al escribir las calorías a mano, los macros se reparten solos y cuadran con esas kcal.
+    func testManualCaloriesResplitTheMacros() {
+        for kcal in [1600.0, 2000, 2400, 3000] {
+            let m = EnergyCalculator.macros(forKcal: kcal, weightKg: 80, goal: .recomposition)
+            let sum = m.protein * 4 + m.carbs * 4 + m.fat * 9
+            XCTAssertEqual(sum, kcal, accuracy: 20, "Los macros suman las kcal pedidas (\(kcal))")
+            XCTAssertGreaterThan(m.protein, 0)
+            XCTAssertGreaterThan(m.carbs, 0)
+            XCTAssertGreaterThan(m.fat, 0)
+        }
+        // Menos calorías → menos de cada macro.
+        let low = EnergyCalculator.macros(forKcal: 1800, weightKg: 80, goal: .recomposition)
+        let high = EnergyCalculator.macros(forKcal: 2600, weightKg: 80, goal: .recomposition)
+        XCTAssertLessThan(low.carbs, high.carbs)
+        XCTAssertLessThanOrEqual(low.protein, high.protein)
+        XCTAssertEqual(EnergyCalculator.macros(forKcal: 0, weightKg: 80, goal: .loseFat).carbs, 0)
+    }
+
     func testCalorieStatus() {
         XCTAssertEqual(CalorieStatus.evaluate(consumed: 800, target: 2000), .plenty(left: 1200))
         XCTAssertEqual(CalorieStatus.evaluate(consumed: 1700, target: 2000), .approaching(left: 300))

@@ -77,6 +77,16 @@ final class AtlasStoreTests: XCTestCase {
         XCTAssertEqual(Store.finishedWorkouts(in: context).count, 1)
     }
 
+    func testWaterAddsAndSubtractsWithoutGoingNegative() {
+        let day = DateUtils.dayKey(Date())
+        XCTAssertEqual(Store.changeWater(250, dayKey: day, in: context), 250)
+        XCTAssertEqual(Store.changeWater(250, dayKey: day, in: context), 500)
+        XCTAssertEqual(Store.changeWater(-250, dayKey: day, in: context), 250, "Restar deshace un toque sin querer")
+        XCTAssertEqual(Store.changeWater(-250, dayKey: day, in: context), 0)
+        XCTAssertEqual(Store.changeWater(-250, dayKey: day, in: context), 0, "Nunca baja de 0")
+        XCTAssertEqual(Store.water(day, in: context).ml, 0, "Se guarda un único registro por día")
+    }
+
     func testQuickCompleteAndRuns() {
         Store.seedTemplatesIfNeeded(context)
         let run = Store.templates(context).first { $0.kind == .run }!

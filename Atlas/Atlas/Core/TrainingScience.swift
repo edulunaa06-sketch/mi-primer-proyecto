@@ -69,11 +69,13 @@ enum PersonalRecords {
     }
 }
 
-// MARK: - Descanso entre series
+// MARK: - Ritmo de la sesión
 
-enum RestTimerLogic {
-    /// Descanso recomendado según las repeticiones: pesado → más descanso.
-    static func defaultSeconds(repRange: String) -> Int {
+/// ATLAS no cronometra el descanso: cada uno descansa lo que le pide el cuerpo. Estos segundos se usan
+/// solo para estimar cuánto dura una sesión en la pantalla de Entrenar.
+enum SessionPacing {
+    /// Descanso típico según las repeticiones: pesado → más descanso.
+    static func restSeconds(repRange: String) -> Int {
         guard let r = ExerciseDefinition.parseRange(repRange) else { return 90 }
         switch r.max {
         case ...6: return 180
@@ -81,11 +83,6 @@ enum RestTimerLogic {
         case ...15: return 90
         default: return 60
         }
-    }
-
-    static func format(_ seconds: Int) -> String {
-        let s = max(seconds, 0)
-        return String(format: "%d:%02d", s / 60, s % 60)
     }
 }
 

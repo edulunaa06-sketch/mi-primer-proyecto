@@ -133,9 +133,9 @@ enum WorkoutMath {
         return m >= 60 ? String(format: "%d h %02d min", m / 60, m % 60) : "\(m) min"
     }
 
-    /// Estimación de duración de una sesión: (series × (45 s de trabajo + descanso recomendado)).
+    /// Estimación de duración de una sesión: (series × (45 s de trabajo + descanso típico)).
     static func estimatedMinutes(_ exercises: [(sets: Int, repRange: String)]) -> Int {
-        let seconds = exercises.reduce(0) { $0 + $1.sets * (45 + RestTimerLogic.defaultSeconds(repRange: $1.repRange)) }
+        let seconds = exercises.reduce(0) { $0 + $1.sets * (45 + SessionPacing.restSeconds(repRange: $1.repRange)) }
         return max(5, Int((Double(seconds) / 60 / 5).rounded()) * 5)
     }
 }

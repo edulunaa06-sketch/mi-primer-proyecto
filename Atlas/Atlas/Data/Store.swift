@@ -158,6 +158,15 @@ enum Store {
         return w
     }
 
+    /// Suma o resta agua del día. Nunca baja de 0, así que un toque sin querer se deshace restando.
+    @discardableResult
+    static func changeWater(_ ml: Int, dayKey: String = DateUtils.dayKey(Date()), in context: ModelContext) -> Int {
+        let w = water(dayKey, in: context)
+        w.ml = max(w.ml + ml, 0)
+        try? context.save()
+        return w.ml
+    }
+
     // MARK: Rutina
 
     /// La primera vez se crea tu rutina de siempre (la de Now or Never) como plantillas editables.

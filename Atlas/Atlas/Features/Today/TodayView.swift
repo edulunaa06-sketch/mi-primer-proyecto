@@ -37,10 +37,8 @@ struct TodayView: View {
                     todayTraining
                     HStack(spacing: 12) {
                         StepsTile(goal: profile?.stepGoal ?? 8000)
-                        WaterTile(ml: waterToday.first?.ml ?? 0, goal: profile?.waterGoalMl ?? 2500) {
-                            let w = Store.water(todayKey, in: context)
-                            w.ml += 250
-                            try? context.save()
+                        WaterTile(ml: waterToday.first?.ml ?? 0, goal: profile?.waterGoalMl ?? 2500) { delta in
+                            Store.changeWater(delta, dayKey: todayKey, in: context)
                             DS.haptic(.light)
                         }
                     }
@@ -257,27 +255,23 @@ struct StepsTile: View {
 struct WaterTile: View {
     let ml: Int
     let goal: Int
-    let onAdd: () -> Void
+    let onChange: (Int) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack {
+            HStack(spacing: 6) {
                 Image(systemName: "drop.fill").font(.system(size: 14, weight: .bold)).foregroundStyle(DS.water)
-                Spacer()
-                Button(action: onAdd) {
-                    Image(systemName: "plus").font(.system(size: 12, weight: .heavy))
-                        .frame(width: 26, height: 26).background(Circle().fill(DS.water.opacity(0.25)))
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Beber 250 ml")
-                .accessibilityIdentifier("water.add")
+                Spacer(minLength: 0)
+                // Restar deshace un toque sin querer; a 0 no hay nada que quitar.
+                roundButton("minus", label: "Quitar 250 ml", id: "water.remove", enabled: ml > 0) { onChange(-250) }
+                roundButton("plus", label: "Beber 250 ml", id: "water.add", enabled: true) { onChange(250) }
             }
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(String(format: "%.2f", Double(ml) / 1000).replacingOccurrences(of: ".", with: ","))
                     .font(.number(24)).contentTransition(.numericText())
+                    .accessibilityIdentifier("water.today")
                 Text("L").font(.system(size: 12, weight: .semibold)).foregroundStyle(DS.text3)
             }
-            .accessibilityIdentifier("water.today")
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(DS.water.opacity(0.15))
@@ -288,6 +282,19 @@ struct WaterTile: View {
             .frame(height: 6)
         }
         .glass(padding: 14)
+    }
+
+    private func roundButton(_ symbol: String, label: String, id: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol).font(.system(size: 12, weight: .heavy))
+                .frame(width: 26, height: 26)
+                .background(Circle().fill(DS.water.opacity(enabled ? 0.25 : 0.08)))
+                .foregroundStyle(enabled ? DS.text : DS.text3)
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+        .accessibilityLabel(label)
+        .accessibilityIdentifier(id)
     }
 }
 

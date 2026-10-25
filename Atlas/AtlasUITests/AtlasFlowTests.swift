@@ -106,21 +106,18 @@ final class AtlasFlowTests: XCTestCase {
         XCTAssertTrue(el("kcal.left").waitForExistence(timeout: 8))
     }
 
-    func test4_LiveWorkoutWithCoachRestAndRecords() {
+    func test4_LiveWorkoutWithCoachAndRecords() {
         launch(["-AtlasDemo", "-AtlasLive"])
         let check = el("set.check")
         XCTAssertTrue(check.waitForExistence(timeout: 20), "Entreno en curso")
         XCTAssertTrue(el("coach.suggestion").exists, "El coach sugiere el peso de hoy")
         shot("live")
         check.tap()
-        XCTAssertTrue(el("rest.time").waitForExistence(timeout: 5), "Empieza el descanso")
-        shot("live-rest")
+        Thread.sleep(forTimeInterval: 0.8)
+        XCTAssertFalse(el("rest.time").exists, "Ya no hay cuenta atrás de descanso")
+        shot("live-set-done")
         let finish = el("live.finish")
         scrollTo(finish)
-        // Hasta el final, como haría una persona, para que la barra del descanso no lo tape.
-        app.swipeUp(velocity: .slow)
-        app.swipeUp(velocity: .slow)
-        Thread.sleep(forTimeInterval: 0.8)
         finish.tap()
         let done = el("summary.done")
         XCTAssertTrue(done.waitForExistence(timeout: 8), "Resumen del entreno")
@@ -128,7 +125,7 @@ final class AtlasFlowTests: XCTestCase {
         done.tap()
     }
 
-    func test5_WeightAndProgress() {
+    func test5_WaterWeightAndProgress() {
         launch(["-AtlasDemo"])
         tab("Progreso")
         XCTAssertTrue(el("expenditure").waitForExistence(timeout: 10))
@@ -140,6 +137,17 @@ final class AtlasFlowTests: XCTestCase {
         }
         XCTAssertTrue(el("heatmap").exists)
         tab("Hoy")
+        let addWater = el("water.add")
+        scrollTo(addWater)
+        let water = el("water.today")
+        let beforeWater = water.label
+        addWater.tap()
+        Thread.sleep(forTimeInterval: 0.6)
+        XCTAssertNotEqual(water.label, beforeWater, "Beber suma 250 ml")
+        shot("water")
+        el("water.remove").tap()
+        Thread.sleep(forTimeInterval: 0.6)
+        XCTAssertEqual(water.label, beforeWater, "Restar deshace el toque sin querer")
         let tile = el("weight.tile")
         scrollTo(tile).tap()
         let field = el("weight.field")

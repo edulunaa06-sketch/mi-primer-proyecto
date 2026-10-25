@@ -3,13 +3,13 @@ import SwiftUI
 import UIKit
 
 /// Entreno en vivo, a pantalla completa. Cada serie muestra lo que hiciste la última vez; el coach te dice
-/// qué peso tocar hoy; al marcar una serie empieza el descanso y, si es récord, lo celebras al momento.
+/// qué peso tocar hoy y, si marcas un récord, lo celebras al momento. Sin cuenta atrás: descansas lo que
+/// te pida el cuerpo.
 struct LiveWorkoutView: View {
     @Bindable var workout: Workout
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var app
-    @State private var timer = RestTimer()
     @State private var history: [String: [SetSample]] = [:]
     @State private var bests: [String: Double] = [:]
     @State private var addingExercise = false
@@ -48,7 +48,7 @@ struct LiveWorkoutView: View {
                     }
                     ForEach(workout.exerciseGroups) { group in
                         ExerciseBlock(group: group, last: history[group.key] ?? [], best: bests[group.key] ?? 0,
-                                      onSetDone: { set in setDone(set, repRange: group.repRange) },
+                                      onSetDone: { set in setDone(set) },
                                       onAddSet: { Store.addSet(toExercise: group.key, in: workout, context: context); try? context.save() },
                                       onPlates: { kg in plates = PlatesRequest(kg: kg) })
                     }
@@ -61,7 +61,6 @@ struct LiveWorkoutView: View {
                     Button {
                         Store.finish(workout, in: context)
                         UINotificationFeedbackGenerator().notificationOccurred(.success)
-                        timer.stop()
                         withAnimation(.easeInOut(duration: 0.3)) { summary = workout }
                     } label: { Label("Terminar entreno", systemImage: "flag.checkered") }
                     .buttonStyle(.primary)
@@ -71,13 +70,10 @@ struct LiveWorkoutView: View {
                         .padding(.top, 4)
                 }
                 .padding(16)
-                // Hueco para la barra del descanso: el botón «Terminar» siempre queda a la vista.
-                .padding(.bottom, 170)
                 .animation(.spring(response: 0.4, dampingFraction: 0.75), value: recordFlash)
             }
             .scrollDismissesKeyboard(.interactively)
             .background(AtlasBackground())
-            .overlay(alignment: .bottom) { RestTimerBar(timer: timer).animation(.snappy, value: timer.isRunning) }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { dismiss() } label: { Image(systemName: "chevron.down") }
@@ -99,7 +95,6 @@ struct LiveWorkoutView: View {
             .sheet(item: $plates) { PlateCalculatorSheet(target: $0.kg) }
             .confirmationDialog("¿Descartar este entreno?", isPresented: $confirmDiscard, titleVisibility: .visible) {
                 Button("Descartar", role: .destructive) {
-                    timer.stop()
                     Store.discard(workout, in: context)
                     app.liveWorkout = nil
                 }
@@ -133,7 +128,7 @@ struct LiveWorkoutView: View {
         }
     }
 
-    private func setDone(_ set: WorkoutSet, repRange: String) {
+    private func setDone(_ set: WorkoutSet) {
         try? context.save()
         guard set.done else { set.isRecord = false; return }
         if let s = set.sample, PersonalRecords.isRecord(s, previousBest: bests[set.exerciseKey] ?? 0) {
@@ -148,7 +143,6 @@ struct LiveWorkoutView: View {
         } else {
             DS.haptic(.medium)
         }
-        timer.start(seconds: RestTimerLogic.defaultSeconds(repRange: repRange))
     }
 }
 

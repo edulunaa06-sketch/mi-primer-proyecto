@@ -35,13 +35,13 @@ final class TrainingScienceTests: XCTestCase {
         XCTAssertFalse(PersonalRecords.isRecord(.init(kg: 200, reps: 5), previousBest: 0), "La primera vez no es récord")
     }
 
-    func testRestTimer() {
-        XCTAssertEqual(RestTimerLogic.defaultSeconds(repRange: "3–5"), 180)
-        XCTAssertEqual(RestTimerLogic.defaultSeconds(repRange: "6–10"), 120)
-        XCTAssertEqual(RestTimerLogic.defaultSeconds(repRange: "10–15"), 90)
-        XCTAssertEqual(RestTimerLogic.defaultSeconds(repRange: "12–20"), 60)
-        XCTAssertEqual(RestTimerLogic.format(95), "1:35")
-        XCTAssertEqual(RestTimerLogic.format(-3), "0:00")
+    func testSessionPacing() {
+        XCTAssertEqual(SessionPacing.restSeconds(repRange: "3–5"), 180)
+        XCTAssertEqual(SessionPacing.restSeconds(repRange: "6–10"), 120)
+        XCTAssertEqual(SessionPacing.restSeconds(repRange: "10–15"), 90)
+        XCTAssertEqual(SessionPacing.restSeconds(repRange: "12–20"), 60)
+        // Solo sirve para estimar la duración: 4 × 8 repeticiones ≈ 4 × (45 s + 120 s).
+        XCTAssertEqual(WorkoutMath.estimatedMinutes([(sets: 4, repRange: "6–10")]), 10)
     }
 
     func testPlates() {

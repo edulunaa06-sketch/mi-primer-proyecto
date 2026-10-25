@@ -175,9 +175,7 @@ struct QuickAddSheet: View {
                 tile("Peso", "scalemass.fill", DS.cyan) { open { app.showWeight = true } }
                 tile("Carrera", "figure.run", DS.good) { open { app.runTemplate = RunRequest(template: nil) } }
                 tile("Agua +250 ml", "drop.fill", DS.water) {
-                    let w = Store.water(DateUtils.dayKey(Date()), in: context)
-                    w.ml += 250
-                    try? context.save()
+                    Store.changeWater(250, in: context)
                     DS.haptic(.light)
                     dismiss()
                 }
