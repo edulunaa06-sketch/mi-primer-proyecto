@@ -502,8 +502,21 @@ final class StrengthPersistenceTests: XCTestCase {
         let restored = try BackupFile.decode(try file.encoded())
         XCTAssertEqual(restored.format, file.format)
         XCTAssertEqual(restored.sessionLogs.count, file.sessionLogs.count)
-        XCTAssertEqual(restored.sessionLogs.flatMap(\.exercises).compactMap(\.sets).flatMap { $0 },
-                       file.sessionLogs.flatMap(\.exercises).compactMap(\.sets).flatMap { $0 })
+        // Las series, campo a campo: la hora de marcado también es un Date y tiene el mismo
+        // detalle de los milisegundos, así que se compara aparte con su margen.
+        let restoredSets = restored.sessionLogs.flatMap(\.exercises).compactMap(\.sets).flatMap { $0 }
+        let originalSets = file.sessionLogs.flatMap(\.exercises).compactMap(\.sets).flatMap { $0 }
+        XCTAssertEqual(restoredSets.count, originalSets.count)
+        XCTAssertEqual(restoredSets.map(\.order), originalSets.map(\.order))
+        XCTAssertEqual(restoredSets.map(\.kindRaw), originalSets.map(\.kindRaw))
+        XCTAssertEqual(restoredSets.map(\.weightKg), originalSets.map(\.weightKg))
+        XCTAssertEqual(restoredSets.map(\.reps), originalSets.map(\.reps))
+        XCTAssertEqual(restoredSets.map(\.rir), originalSets.map(\.rir))
+        XCTAssertEqual(restoredSets.map(\.isCompleted), originalSets.map(\.isCompleted))
+        for (restoredSet, originalSet) in zip(restoredSets, originalSets) {
+            XCTAssertEqual(restoredSet.completedAt?.timeIntervalSince1970 ?? 0,
+                           originalSet.completedAt?.timeIntervalSince1970 ?? 0, accuracy: 0.001)
+        }
         XCTAssertEqual(restored.records?.map(\.value), file.records?.map(\.value))
         XCTAssertEqual(restored.recovery?.map(\.sleepHours), file.recovery?.map(\.sleepHours))
         XCTAssertEqual(restored.supplements?.map(\.name), file.supplements?.map(\.name))
