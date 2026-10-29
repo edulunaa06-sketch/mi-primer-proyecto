@@ -92,7 +92,7 @@ private struct SettingsForm: View {
         Section {
             Button { showProfile = true } label: {
                 HStack {
-                    Image(systemName: "person.crop.circle.fill").font(.title2).foregroundStyle(Theme.lime)
+                    Image(systemName: "person.crop.circle.fill").font(.title2).foregroundStyle(Theme.accent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Perfil personal").foregroundStyle(Theme.textPrimary)
                         Text(profileSummary).font(.caption).foregroundStyle(Theme.textSecondary)
@@ -294,7 +294,7 @@ private struct SettingsForm: View {
             case .disconnected:
                 Label("Configurado · falta conectar tu cuenta", systemImage: "link")
             case .connected:
-                Label("Conectado · las carreras se importan solas", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.lime)
+                Label("Conectado · las carreras se importan solas", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.accent)
             }
             NavigationLink {
                 StravaSetupGuide()
@@ -363,7 +363,7 @@ private struct SettingsForm: View {
     private var claudeSection: some View {
         Section {
             if claude.isConfigured {
-                Label("Clave guardada en el Llavero", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.lime)
+                Label("Clave guardada en el Llavero", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.accent)
                 Button("Borrar clave", role: .destructive) { claude.deleteKey() }
             } else {
                 SecureField("Clave de la API (sk-ant-…)", text: $claudeKey)
@@ -485,7 +485,7 @@ private struct DiagnosticsSection: View {
     var body: some View {
         Section {
             if hangs.isEmpty {
-                Label("Sin bloqueos detectados", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.lime)
+                Label("Sin bloqueos detectados", systemImage: "checkmark.seal.fill").foregroundStyle(Theme.accent)
             } else {
                 ForEach(hangs.prefix(15)) { hang in
                     HStack {

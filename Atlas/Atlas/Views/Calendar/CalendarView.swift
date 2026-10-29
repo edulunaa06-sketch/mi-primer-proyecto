@@ -59,7 +59,7 @@ struct CalendarView: View {
                     }
                     legend
                     InfoBanner(text: "Un día está cumplido con el \(Int(DayEvaluator.doneThreshold * 100)) % o más del cumplimiento diario (comidas, entreno del día y pasos). Descanso, enfermo y trabajando no cuentan como fallo ni rompen la racha; entrenado cuenta como día cumplido. Los viernes son descanso salvo que lo cambies.",
-                               symbol: "info.circle.fill", color: Theme.lime)
+                               symbol: "info.circle.fill", color: Theme.accent)
                 }
                 .padding(16)
                 .padding(.bottom, 24)
@@ -107,7 +107,7 @@ struct CalendarView: View {
                     .disabled(isCurrentMonth)
                     .accessibilityLabel("Mes siguiente")
             }
-            .foregroundStyle(Theme.lime)
+            .foregroundStyle(Theme.accent)
 
             let columns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 7)
             LazyVGrid(columns: columns, spacing: 6) {
@@ -129,7 +129,7 @@ struct CalendarView: View {
             }
 
             HStack {
-                countLabel(outcomes.filter(\.isDone).count, "cumplidos", Theme.lime)
+                countLabel(outcomes.filter(\.isDone).count, "cumplidos", Theme.accent)
                 Spacer()
                 countLabel(outcomes.filter(\.isExcused).count, "descanso/libres", Theme.textSecondary)
                 Spacer()
@@ -191,11 +191,11 @@ struct DayCell: View {
 
     static func color(for outcome: DayOutcome) -> Color {
         switch outcome {
-        case .trained: return Theme.lime
+        case .trained: return Theme.accent
         case .done(let f):
             let t = min(max((f - DayEvaluator.doneThreshold) / (1 - DayEvaluator.doneThreshold), 0), 1)
-            return Theme.lime.opacity(0.45 + 0.55 * t)
-        case .today(let f): return Theme.lime.opacity(0.08 + 0.25 * f)
+            return Theme.accent.opacity(0.45 + 0.55 * t)
+        case .today(let f): return Theme.accent.opacity(0.08 + 0.25 * f)
         case .missed(let f): return Theme.danger.opacity(0.18 + 0.3 * (1 - f))
         case .excused: return Theme.rest.opacity(0.30)
         case .future, .beforeStart: return Theme.card
@@ -224,19 +224,19 @@ struct DayCell: View {
                 .fill(outcome == .future || outcome == .beforeStart ? Theme.cardRaised.opacity(0.5) : Self.color(for: outcome))
             Text("\(DateUtils.calendar.component(.day, from: date))")
                 .font(.footnote.weight(isToday ? .heavy : .semibold).monospacedDigit())
-                .foregroundStyle(isBright ? Theme.onLime : (outcome == .future ? Theme.textTertiary : Theme.textPrimary))
+                .foregroundStyle(isBright ? Theme.onAccent : (outcome == .future ? Theme.textTertiary : Theme.textPrimary))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             if let symbol {
                 Image(systemName: symbol)
                     .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(isBright ? Theme.onLime : Theme.textSecondary)
+                    .foregroundStyle(isBright ? Theme.onAccent : Theme.textSecondary)
                     .padding(3)
             }
         }
         .frame(height: height)
         .overlay {
             if isToday {
-                RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.lime, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 8, style: .continuous).stroke(Theme.accent, lineWidth: 2)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -287,14 +287,14 @@ struct DayMarkSheet: View {
                     ForEach(DayMark.allCases) { mark in
                         Button { choice = mark } label: {
                             HStack(spacing: 12) {
-                                Image(systemName: mark.symbol).foregroundStyle(Theme.lime).frame(width: 24)
+                                Image(systemName: mark.symbol).foregroundStyle(Theme.accent).frame(width: 24)
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(mark.label).foregroundStyle(Theme.textPrimary)
                                     Text(description(mark)).font(.caption).foregroundStyle(Theme.textSecondary)
                                 }
                                 Spacer()
                                 if choice == mark {
-                                    Image(systemName: "checkmark").foregroundStyle(Theme.lime)
+                                    Image(systemName: "checkmark").foregroundStyle(Theme.accent)
                                 }
                             }
                         }

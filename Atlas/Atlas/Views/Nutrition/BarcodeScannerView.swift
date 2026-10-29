@@ -109,14 +109,14 @@ struct BarcodeScannerView: View {
                 case .unavailable:
                     scannerMessage("Este dispositivo no tiene cámara disponible (por ejemplo, el simulador). Escribe el código a mano aquí abajo.")
                 case .starting:
-                    ProgressView().tint(Theme.lime).frame(maxWidth: .infinity, minHeight: 180)
+                    ProgressView().tint(Theme.accent).frame(maxWidth: .infinity, minHeight: 180)
                 case .running:
                     BarcodePreview(session: scanner.session)
                         .frame(height: 230)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                         .overlay(
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .strokeBorder(Theme.lime, lineWidth: 3)
+                                .strokeBorder(Theme.accent, lineWidth: 3)
                                 .frame(height: 110)
                                 .padding(.horizontal, 24)
                         )
@@ -146,7 +146,7 @@ struct BarcodeScannerView: View {
                     .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .accessibilityIdentifier("barcode.field")
                 Button("Buscar") { Task { await resolve(typed) } }
-                    .buttonStyle(LimeButtonStyle())
+                    .buttonStyle(GoldButtonStyle())
                     .disabled(!OpenFoodFacts.isPlausible(typed))
             }
             Divider().overlay(Theme.separator)
@@ -154,7 +154,7 @@ struct BarcodeScannerView: View {
                  + "queda guardado en tus alimentos y la próxima vez solo pones los gramos.")
                 .font(.caption).foregroundStyle(Theme.textSecondary)
             Button("Apuntarlo a mano y guardarlo") { startManualEntry(barcode: typed) }
-                .buttonStyle(LimeButtonStyle(filled: false))
+                .buttonStyle(GoldButtonStyle(filled: false))
                 .accessibilityIdentifier("barcode.manual")
         }
         .card()
@@ -162,7 +162,7 @@ struct BarcodeScannerView: View {
 
     private func searchingCard(_ code: String) -> some View {
         VStack(spacing: 10) {
-            ProgressView().tint(Theme.lime)
+            ProgressView().tint(Theme.accent)
             Text("Buscando \(code)…").font(.subheadline).foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity)
@@ -199,7 +199,7 @@ struct BarcodeScannerView: View {
                     Text("Por 100 g").font(.subheadline.weight(.semibold))
                     Spacer()
                     Text("\(NumberFormat.integer(per100.kcal)) kcal")
-                        .font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(Theme.lime)
+                        .font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(Theme.accent)
                 }
                 Text("P \(NumberFormat.oneDecimal(per100.protein)) g · C \(NumberFormat.oneDecimal(per100.carbs)) g · G \(NumberFormat.oneDecimal(per100.fat)) g")
                     .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
@@ -216,10 +216,10 @@ struct BarcodeScannerView: View {
                 DecimalField(placeholder: "g", value: $grams, width: 90)
             }
             Text("≈ \(NumberFormat.integer(total.kcal)) kcal · P \(NumberFormat.oneDecimal(total.protein)) · C \(NumberFormat.oneDecimal(total.carbs)) · G \(NumberFormat.oneDecimal(total.fat))")
-                .font(.subheadline.weight(.semibold).monospacedDigit()).foregroundStyle(Theme.lime)
+                .font(.subheadline.weight(.semibold).monospacedDigit()).foregroundStyle(Theme.accent)
 
             Button("Añadir a mi \(type.label.lowercased())") { add(food, per100: per100) }
-                .buttonStyle(LimeButtonStyle())
+                .buttonStyle(GoldButtonStyle())
                 .disabled((grams ?? 0) <= 0 || !hasUsableName(food) || per100.kcal <= 0)
                 .accessibilityIdentifier("barcode.add")
             if editing && !hasUsableName(food) {
@@ -259,9 +259,9 @@ struct BarcodeScannerView: View {
                    : "Apuntarlo a mano y guardarlo") {
                 startManualEntry(barcode: barcode)
             }
-            .buttonStyle(LimeButtonStyle())
+            .buttonStyle(GoldButtonStyle())
             Button("Volver a escanear") { reset() }
-                .buttonStyle(LimeButtonStyle(filled: false))
+                .buttonStyle(GoldButtonStyle(filled: false))
         }
         .card()
     }

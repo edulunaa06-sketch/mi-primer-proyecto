@@ -26,7 +26,7 @@ struct CaloriesLeftCard: View {
                         Label("Cambiar", systemImage: "pencil").font(.caption.weight(.semibold))
                     }
                     .buttonStyle(.borderless)
-                    .tint(Theme.lime)
+                    .tint(Theme.accent)
                     .accessibilityIdentifier("kcal.edit")
                 }
             }

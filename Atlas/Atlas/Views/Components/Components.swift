@@ -8,7 +8,7 @@ struct SectionHeader: View {
             Text(title.uppercased())
                 .font(.caption.weight(.bold))
                 .tracking(1.2)
-                .foregroundStyle(Theme.lime)
+                .foregroundStyle(Theme.accent)
             if let subtitle {
                 Text(subtitle)
                     .font(.footnote)
@@ -24,7 +24,7 @@ struct ProgressRing: View {
     var lineWidth: CGFloat = 10
     var size: CGFloat = 84
     var label: String?
-    var color: Color = Theme.lime
+    var color: Color = Theme.accent
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -47,7 +47,7 @@ struct ProgressRing: View {
 struct ProgressBar: View {
     let fraction: Double
     var height: CGFloat = 8
-    var color: Color = Theme.lime
+    var color: Color = Theme.accent
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -72,7 +72,7 @@ struct MacroRow: View {
     let consumed: Double
     let target: Double
     var unit = "g"
-    var color: Color = Theme.lime
+    var color: Color = Theme.accent
 
     var body: some View {
         let left = target - consumed
@@ -132,7 +132,7 @@ struct MetricTile: View {
     let value: String
     var detail: String?
     var symbol: String?
-    var symbolColor: Color = Theme.lime
+    var symbolColor: Color = Theme.accent
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -187,7 +187,7 @@ struct CheckCircle: View {
     var body: some View {
         Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
             .font(.system(size: size))
-            .foregroundStyle(isOn ? Theme.lime : Theme.textSecondary)
+            .foregroundStyle(isOn ? Theme.accent : Theme.textSecondary)
             .contentTransition(.symbolEffect(.replace))
     }
 }

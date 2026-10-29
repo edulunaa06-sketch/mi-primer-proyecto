@@ -47,19 +47,19 @@ struct TrainingView: View {
                     } label: {
                         Label("Volumen, progresión y récords", systemImage: "chart.bar.xaxis")
                     }
-                    .buttonStyle(LimeButtonStyle())
+                    .buttonStyle(GoldButtonStyle())
                     NavigationLink {
                         ExerciseLibraryView()
                     } label: {
                         Label("Biblioteca de ejercicios", systemImage: "books.vertical")
                     }
-                    .buttonStyle(LimeButtonStyle(filled: false))
+                    .buttonStyle(GoldButtonStyle(filled: false))
                     NavigationLink {
                         TrainingHistoryView()
                     } label: {
                         Label("Historial de semanas anteriores", systemImage: "clock.arrow.circlepath")
                     }
-                    .buttonStyle(LimeButtonStyle(filled: false))
+                    .buttonStyle(GoldButtonStyle(filled: false))
                     Menu {
                         Button("Empezar mi rutina desde cero", role: .destructive) { confirmScratch = true }
                         Button("Volver a la rutina predeterminada") { confirmDefaults = true }
@@ -151,7 +151,7 @@ struct TrainingView: View {
             HStack {
                 Text(WeeklyRoutine.weekdayName(weekday))
                     .font(.headline)
-                    .foregroundStyle(weekday == todayWeekday ? Theme.lime : Theme.textPrimary)
+                    .foregroundStyle(weekday == todayWeekday ? Theme.accent : Theme.textPrimary)
                 Text(DateUtils.dayMonth(date))
                     .font(.caption)
                     .foregroundStyle(Theme.textTertiary)
@@ -160,13 +160,13 @@ struct TrainingView: View {
                     Text("HOY")
                         .font(.caption2.weight(.heavy))
                         .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(Theme.lime, in: Capsule())
-                        .foregroundStyle(Theme.onLime)
+                        .background(Theme.accent, in: Capsule())
+                        .foregroundStyle(Theme.onAccent)
                 }
                 if sessions.count > 1 {
                     Text("\(sessions.count) sesiones")
                         .font(.caption2.weight(.bold))
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.accent)
                 }
             }
             ForEach(sessions) { session in
@@ -182,12 +182,12 @@ struct TrainingView: View {
         let log = log(for: session)
         let progress = SessionProgress(session: session, log: log)
         let done = session.kind != .rest && log?.isCompleted == true
-        let tint = done ? Theme.lime : session.kind == .rest ? Theme.rest : Theme.textSecondary
+        let tint = done ? Theme.accent : session.kind == .rest ? Theme.rest : Theme.textSecondary
         return HStack(spacing: 12) {
             Image(systemName: session.kind == .run ? "figure.run" : session.kind == .rest ? "bed.double.fill" : "dumbbell.fill")
                 .foregroundStyle(tint)
                 .frame(width: 28, height: 28)
-                .background(done ? Theme.limeDim : tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
+                .background(done ? Theme.accentDim : tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
             VStack(alignment: .leading, spacing: 2) {
                 Text(session.title).font(.subheadline.weight(.semibold))
                 Text(subtitle(session, progress: progress))
@@ -196,7 +196,7 @@ struct TrainingView: View {
             }
             Spacer()
             if done {
-                Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(Theme.lime)
+                Image(systemName: "checkmark.circle.fill").font(.title3).foregroundStyle(Theme.accent)
                     .transition(reduceMotion ? .opacity : .scale(scale: 0.3).combined(with: .opacity))
                     .accessibilityHidden(true)
             } else if session.kind != .rest {
@@ -207,12 +207,12 @@ struct TrainingView: View {
         .padding(10)
         .background {
             RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.cardRaised)
-                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.lime.opacity(done ? 0.07 : 0)))
+                .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Theme.accent.opacity(done ? 0.07 : 0)))
         }
         // Completada: borde lima fino.
         .overlay {
             if done {
-                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.lime.opacity(0.55), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Theme.accent.opacity(0.55), lineWidth: 1)
             }
         }
     }
@@ -350,7 +350,7 @@ struct RestDayView: View {
             VStack(spacing: 16) {
                 Image(systemName: "bed.double.fill")
                     .font(.system(size: 54))
-                    .foregroundStyle(Theme.lime)
+                    .foregroundStyle(Theme.accent)
                     .padding(.top, 24)
                 Text("Día de descanso").font(.title.bold())
                 Text(session.detail)
@@ -433,7 +433,7 @@ struct SwipeToComplete<Content: View>: View {
     }
 
     private var reveal: some View {
-        let color = isDone ? Theme.textTertiary : Theme.lime
+        let color = isDone ? Theme.textTertiary : Theme.accent
         return RoundedRectangle(cornerRadius: 12, style: .continuous)
             .fill(color.opacity(armed ? 1 : 0.35 + 0.5 * min(offset / Self.threshold, 1)))
             .frame(width: max(offset, 0))
@@ -441,7 +441,7 @@ struct SwipeToComplete<Content: View>: View {
                 Label(isDone ? "Desmarcar" : "Hecho", systemImage: isDone ? "arrow.uturn.backward.circle.fill" : "checkmark.circle.fill")
                     .labelStyle(.iconOnly)
                     .font(.title2.weight(.bold))
-                    .foregroundStyle(isDone ? Theme.textPrimary : Theme.onLime)
+                    .foregroundStyle(isDone ? Theme.textPrimary : Theme.onAccent)
                     .scaleEffect(armed ? 1.15 : 0.9)
                     .padding(.leading, 16)
                     .opacity(offset > 28 ? 1 : 0)

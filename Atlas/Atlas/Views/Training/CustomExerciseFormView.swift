@@ -78,7 +78,7 @@ struct CustomExerciseFormView: View {
                                 Text(group.label).foregroundStyle(Theme.textPrimary)
                                 Spacer()
                                 if secondary.contains(group) {
-                                    Image(systemName: "checkmark").foregroundStyle(Theme.lime)
+                                    Image(systemName: "checkmark").foregroundStyle(Theme.accent)
                                 }
                             }
                         }

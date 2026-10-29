@@ -49,7 +49,7 @@ struct SupplementsView: View {
         Button { adding = true } label: {
             Label("Añadir un suplemento", systemImage: "plus.circle.fill")
         }
-        .buttonStyle(LimeButtonStyle(filled: supplements.isEmpty))
+        .buttonStyle(GoldButtonStyle(filled: supplements.isEmpty))
     }
 
     private var costCard: some View {
@@ -153,7 +153,7 @@ struct SupplementsView: View {
 
 func evidenceColor(_ level: EvidenceLevel) -> Color {
     switch level {
-    case .strong: return Theme.lime
+    case .strong: return Theme.accent
     case .moderate: return Theme.carbs
     case .limited: return Theme.warning
     case .insufficient: return Theme.textSecondary
@@ -404,7 +404,7 @@ struct SupplementInfoView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .card()
 
-                list("Para qué sirve", info.benefits, symbol: "checkmark.circle.fill", tint: Theme.lime)
+                list("Para qué sirve", info.benefits, symbol: "checkmark.circle.fill", tint: Theme.accent)
                 list("Lo que no hace", info.limits, symbol: "minus.circle.fill", tint: Theme.textSecondary)
                 if !info.risks.isEmpty {
                     list("A tener en cuenta", info.risks, symbol: "exclamationmark.triangle.fill", tint: Theme.warning)

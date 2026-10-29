@@ -103,7 +103,7 @@ struct CoachView: View {
                           subtitle: "Medias y totales de los últimos \(context.periodDays) días. Nada más.")
             ForEach(AIDataScope.allCases) { scope in
                 HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill").font(.caption2).foregroundStyle(Theme.lime)
+                    Image(systemName: "checkmark.circle.fill").font(.caption2).foregroundStyle(Theme.accent)
                     VStack(alignment: .leading, spacing: 1) {
                         Text(scope.label).font(.caption.weight(.semibold))
                         Text(scope.detail).font(.caption2).foregroundStyle(Theme.textSecondary)
@@ -137,7 +137,7 @@ struct CoachView: View {
             } label: {
                 Label("Preguntar", systemImage: "sparkles")
             }
-            .buttonStyle(LimeButtonStyle())
+            .buttonStyle(GoldButtonStyle())
             .disabled(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || claude.isWorking)
 
             Text("Ejemplos").font(.caption.weight(.bold)).foregroundStyle(Theme.textSecondary)
@@ -196,7 +196,7 @@ struct CoachView: View {
 
             if !answer.dataUsed.isEmpty {
                 block(title: "En qué datos se apoya", items: answer.dataUsed,
-                      symbol: "number.circle.fill", tint: Theme.lime)
+                      symbol: "number.circle.fill", tint: Theme.accent)
             }
             if !answer.assumptions.isEmpty {
                 block(title: "Lo que ha supuesto", items: answer.assumptions,
@@ -213,7 +213,7 @@ struct CoachView: View {
                 }
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Theme.limeDim, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .background(Theme.accentDim, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             if !answer.missingData.isEmpty {
                 block(title: "Para responder mejor, apunta", items: answer.missingData,

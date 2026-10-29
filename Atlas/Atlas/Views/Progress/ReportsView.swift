@@ -62,7 +62,7 @@ struct ReportsView: View {
     private func periodHeader(_ report: PeriodReport) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(report.period.label.uppercased())
-                .font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(Theme.lime)
+                .font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(Theme.accent)
             Text(report.period.text).font(.headline)
             Text("\(report.period.dayCount) días").font(.caption).foregroundStyle(Theme.textSecondary)
         }
@@ -74,7 +74,7 @@ struct ReportsView: View {
             SectionHeader(title: "Lo que ha pasado")
             ForEach(Array(report.highlights.enumerated()), id: \.offset) { _, line in
                 HStack(alignment: .top, spacing: 8) {
-                    Circle().fill(Theme.lime).frame(width: 5, height: 5).padding(.top, 6)
+                    Circle().fill(Theme.accent).frame(width: 5, height: 5).padding(.top, 6)
                     Text(line).font(.footnote).foregroundStyle(Theme.textSecondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -247,7 +247,7 @@ struct ReportsView: View {
     private func deltaColor(_ delta: ReportComparison.Delta) -> Color {
         guard let better = delta.higherIsBetter, abs(delta.difference) > 0.001 else { return Theme.textSecondary }
         let isGood = better ? delta.difference > 0 : delta.difference < 0
-        return isGood ? Theme.lime : Theme.warning
+        return isGood ? Theme.accent : Theme.warning
     }
 
     private func caveatsCard(_ report: PeriodReport) -> some View {

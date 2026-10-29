@@ -70,7 +70,7 @@ struct WeightProgressView: View {
         ScrollView {
             VStack(spacing: 16) {
                 Button { showSheet = true } label: { Label("Registrar peso", systemImage: "plus") }
-                    .buttonStyle(LimeButtonStyle())
+                    .buttonStyle(GoldButtonStyle())
 
                 if entries.isEmpty {
                     EmptyStateView(symbol: "scalemass", title: "Sin pesajes", message: "Registra tu primer peso para ver la evolución. Si configuraste un peso inicial en el onboarding aparecerá aquí.")
@@ -165,7 +165,7 @@ struct WeightProgressView: View {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(NumberFormat.signedKg(change))
                         .font(.system(.title, design: .rounded).weight(.heavy))
-                        .foregroundStyle(change < 0 ? Theme.lime : Theme.textPrimary)
+                        .foregroundStyle(change < 0 ? Theme.accent : Theme.textPrimary)
                     Text("tendencia desde el \(DateUtils.dayMonth(first.date))")
                         .font(.footnote).foregroundStyle(Theme.textSecondary)
                 }
@@ -197,7 +197,7 @@ struct WeightProgressView: View {
                 }
                 .chartForegroundStyleScale([
                     "Peso diario": Theme.textSecondary,
-                    "Tendencia 7 días": Theme.lime,
+                    "Tendencia 7 días": Theme.accent,
                     "Media del mes": Theme.textPrimary,
                 ])
                 .chartLegend(position: .bottom, alignment: .leading)
@@ -230,7 +230,7 @@ struct WeightProgressView: View {
                             Text("\(NumberFormat.kg(m.averageKg)) kg").font(.headline.monospacedDigit())
                             Text(previous.map { NumberFormat.signedKg(m.averageKg - $0.averageKg) + " vs mes anterior" } ?? "Primer mes")
                                 .font(.caption2.monospacedDigit())
-                                .foregroundStyle(previous.map { m.averageKg < $0.averageKg ? Theme.lime : Theme.textSecondary } ?? Theme.textSecondary)
+                                .foregroundStyle(previous.map { m.averageKg < $0.averageKg ? Theme.accent : Theme.textSecondary } ?? Theme.textSecondary)
                         }
                     }
                     .padding(.vertical, 4)

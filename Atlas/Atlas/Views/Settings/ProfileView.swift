@@ -73,7 +73,7 @@ struct ProfileView: View {
                     LabeledContent("Metabolismo basal", value: "\(NumberFormat.integer(t.bmr)) kcal")
                     LabeledContent("Gasto diario estimado", value: "\(NumberFormat.integer(t.tdee)) kcal")
                     LabeledContent("Calorías objetivo", value: "\(NumberFormat.integer(t.kcal)) kcal")
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.accent)
                     LabeledContent("Proteínas", value: "\(NumberFormat.integer(t.protein)) g")
                     LabeledContent("Carbohidratos", value: "\(NumberFormat.integer(t.carbs)) g")
                     LabeledContent("Grasas", value: "\(NumberFormat.integer(t.fat)) g")
@@ -92,7 +92,7 @@ struct ProfileView: View {
                 Button("Guardar perfil") { save() }
                     .disabled(weight == nil && height == nil && age == nil && sex == nil)
                 if let message {
-                    Text(message).font(.footnote).foregroundStyle(messageIsError ? Theme.danger : Theme.lime)
+                    Text(message).font(.footnote).foregroundStyle(messageIsError ? Theme.danger : Theme.accent)
                 }
                 NavigationLink("Ajustar los menús a mis calorías") { MenuPlansView() }
             } footer: {

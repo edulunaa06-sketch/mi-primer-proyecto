@@ -71,7 +71,7 @@ struct WeeklySummaryView: View {
                 }
                 .card()
                 InfoBanner(text: "Pasos: sensor del iPhone (solo hay datos de los días que abriste la app o de los 7 días anteriores a abrirla). Km: carreras importadas de Strava o apuntadas a mano en Entreno.",
-                           symbol: "info.circle.fill", color: Theme.lime)
+                           symbol: "info.circle.fill", color: Theme.accent)
             }
             .padding(16)
             .padding(.bottom, 24)
@@ -99,7 +99,7 @@ struct WeeklySummaryView: View {
                 .disabled(isCurrentWeek)
                 .accessibilityLabel("Semana siguiente")
         }
-        .foregroundStyle(Theme.lime)
+        .foregroundStyle(Theme.accent)
         .card(padding: 12)
     }
 

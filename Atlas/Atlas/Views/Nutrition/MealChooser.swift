@@ -24,8 +24,8 @@ struct MealOptionCard: View {
                 Text("Encaja \(NumberFormat.percent(option.fit))")
                     .font(.caption.weight(.heavy))
                     .padding(.horizontal, 8).padding(.vertical, 4)
-                    .background(option.fit >= 0.85 ? Theme.lime : Theme.limeDim, in: Capsule())
-                    .foregroundStyle(option.fit >= 0.85 ? Theme.onLime : Theme.lime)
+                    .background(option.fit >= 0.85 ? Theme.accent : Theme.accentDim, in: Capsule())
+                    .foregroundStyle(option.fit >= 0.85 ? Theme.onAccent : Theme.accent)
             }
             ForEach(scaled.lines, id: \.item.persistentModelID) { line in
                 HStack {
@@ -41,14 +41,14 @@ struct MealOptionCard: View {
                 macroLine("Día completo", dayTotal, target: daily)
             }
             Button("Elegir esta opción", action: onPick)
-                .buttonStyle(LimeButtonStyle())
+                .buttonStyle(GoldButtonStyle())
         }
         .card()
     }
 
     private func macroLine(_ title: String, _ v: NutritionValues, target t: NutritionValues) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(title).font(.caption2.weight(.bold)).foregroundStyle(Theme.lime)
+            Text(title).font(.caption2.weight(.bold)).foregroundStyle(Theme.accent)
             Text("\(NumberFormat.integer(v.kcal))/\(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.integer(v.protein))/\(NumberFormat.integer(t.protein)) · C \(NumberFormat.integer(v.carbs))/\(NumberFormat.integer(t.carbs)) · G \(NumberFormat.integer(v.fat))/\(NumberFormat.integer(t.fat))")
                 .font(.caption2.monospacedDigit()).foregroundStyle(Theme.textSecondary)
         }
@@ -86,7 +86,7 @@ struct MealChooserSheet: View {
                     }
                     if !showAll && candidates.count > 4 {
                         Button("Ver las \(candidates.count) opciones") { showAll = true }
-                            .buttonStyle(LimeButtonStyle(filled: false))
+                            .buttonStyle(GoldButtonStyle(filled: false))
                     }
                 }
                 .padding(16)
@@ -179,7 +179,7 @@ struct DayBuilderSheet: View {
                 ForEach(Array(order.enumerated()), id: \.offset) { index, type in
                     VStack(spacing: 4) {
                         Image(systemName: fixed[type] != nil ? "checkmark.circle.fill" : type.symbol)
-                            .foregroundStyle(index == step ? Theme.lime : (fixed[type] != nil ? Theme.lime : Theme.textTertiary))
+                            .foregroundStyle(index == step ? Theme.accent : (fixed[type] != nil ? Theme.accent : Theme.textTertiary))
                         Text(type.label).font(.caption2)
                             .foregroundStyle(index == step ? Theme.textPrimary : Theme.textSecondary)
                     }
@@ -210,7 +210,7 @@ struct DayBuilderSheet: View {
         } label: {
             Label("Voy a comer otra cosa: apuntarla", systemImage: "square.and.pencil")
         }
-        .buttonStyle(LimeButtonStyle(filled: false))
+        .buttonStyle(GoldButtonStyle(filled: false))
         ForEach(options, id: \.id) { option in
             if let meal = byID[option.id] {
                 MealOptionCard(meal: meal, option: option, target: target) {
@@ -225,7 +225,7 @@ struct DayBuilderSheet: View {
         }
         if !showAll && candidates.count > 4 {
             Button("Ver las \(candidates.count) opciones") { showAll = true }
-                .buttonStyle(LimeButtonStyle(filled: false))
+                .buttonStyle(GoldButtonStyle(filled: false))
         }
     }
 
@@ -243,7 +243,7 @@ struct DayBuilderSheet: View {
                          Set(order.filter { !customPicks.contains($0) }))
                 dismiss()
             }
-            .buttonStyle(LimeButtonStyle())
+            .buttonStyle(GoldButtonStyle())
             Text("Después puedes marcar cada comida como hecha o cambiar cualquiera con «Cambiar».")
                 .font(.caption).foregroundStyle(Theme.textSecondary)
         }

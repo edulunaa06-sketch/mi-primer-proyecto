@@ -179,7 +179,7 @@ struct StrengthSessionView: View {
             } label: {
                 Label(log.finishedAt == nil ? "Terminar entreno" : "Volver a guardar", systemImage: "checkmark.seal.fill")
             }
-            .buttonStyle(LimeButtonStyle())
+            .buttonStyle(GoldButtonStyle())
             .accessibilityIdentifier("session.finish")
 
             if let finished = log.finishedAt {
@@ -213,7 +213,7 @@ struct SessionSummaryCard: View {
                     if log.isCompleted {
                         Label("Sesión completada", systemImage: "checkmark.seal.fill")
                             .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Theme.lime)
+                            .foregroundStyle(Theme.accent)
                     } else {
                         Text(session.detail).font(.caption).foregroundStyle(Theme.textSecondary)
                     }
@@ -245,7 +245,7 @@ struct SessionSummaryCard: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 5) {
                     Image(systemName: log.isRunning ? "pause.circle.fill" : "play.circle.fill")
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.accent)
                     if log.isRunning {
                         TimelineView(.periodic(from: .now, by: 1)) { context in
                             Text(SessionClock.text(seconds: log.elapsedSeconds(at: context.date)))
@@ -313,8 +313,8 @@ struct ExerciseSetsCard: View {
             Text("\(number)")
                 .font(.caption.weight(.heavy))
                 .frame(width: 24, height: 24)
-                .background(Theme.limeDim, in: Circle())
-                .foregroundStyle(Theme.lime)
+                .background(Theme.accentDim, in: Circle())
+                .foregroundStyle(Theme.accent)
             VStack(alignment: .leading, spacing: 3) {
                 Text(definition.name).font(.headline)
                 HStack(spacing: 6) {
@@ -324,7 +324,7 @@ struct ExerciseSetsCard: View {
                         Text("·").foregroundStyle(Theme.textTertiary)
                         Text(info.primary.shortLabel)
                             .font(.caption2.weight(.semibold))
-                            .foregroundStyle(Theme.lime)
+                            .foregroundStyle(Theme.accent)
                     }
                     if log.hasDiscomfort {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -376,7 +376,7 @@ struct ExerciseSetsCard: View {
 
     private var adviceColor: Color {
         switch advice.action {
-        case .increaseLoad: return Theme.lime
+        case .increaseLoad: return Theme.accent
         case .reduceLoad, .deload: return Theme.warning
         case .needMoreData: return Theme.textSecondary
         default: return Theme.textSecondary
@@ -569,7 +569,7 @@ struct NewRecordsSheet: View {
                     }
 
                     Button("Seguir") { dismiss() }
-                        .buttonStyle(LimeButtonStyle())
+                        .buttonStyle(GoldButtonStyle())
                         .padding(.top, 8)
                 }
                 .padding(16)
@@ -602,7 +602,7 @@ struct NewRecordsSheet: View {
                 if let improvement = record.improvement {
                     Text("+\(NumberFormat.plate(improvement))")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.accent)
                 } else {
                     Text("primera vez").font(.caption2).foregroundStyle(Theme.textTertiary)
                 }

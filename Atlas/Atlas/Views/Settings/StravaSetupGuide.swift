@@ -7,7 +7,7 @@ struct StravaSetupGuide: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 InfoBanner(text: "Strava solo deja leer tus carreras a apps que tú mismo autorizas. Para eso creas una «aplicación de API» con tu cuenta, gratis, una sola vez. No hace falta saber programar ni ningún servidor.",
-                           symbol: "info.circle.fill", color: Theme.lime)
+                           symbol: "info.circle.fill", color: Theme.accent)
 
                 step(1, "Abre la página de Strava",
                      "Pulsa el botón e inicia sesión con tu cuenta de Strava si te lo pide.") {
@@ -16,7 +16,7 @@ struct StravaSetupGuide: View {
                     } label: {
                         Label("Abrir strava.com/settings/api", systemImage: "safari")
                     }
-                    .buttonStyle(LimeButtonStyle(filled: false))
+                    .buttonStyle(GoldButtonStyle(filled: false))
                 }
 
                 step(2, "Rellena el formulario así", nil) {
@@ -59,8 +59,8 @@ struct StravaSetupGuide: View {
                 Text("\(n)")
                     .font(.caption.weight(.heavy))
                     .frame(width: 26, height: 26)
-                    .background(Theme.lime, in: Circle())
-                    .foregroundStyle(Theme.onLime)
+                    .background(Theme.accent, in: Circle())
+                    .foregroundStyle(Theme.onAccent)
                 Text(title).font(.headline)
             }
             if let text {
@@ -76,12 +76,12 @@ struct StravaSetupGuide: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(name).font(.caption).foregroundStyle(Theme.textTertiary)
             HStack {
-                Text(value).font(.subheadline.weight(.semibold)).foregroundStyle(important ? Theme.lime : Theme.textPrimary)
+                Text(value).font(.subheadline.weight(.semibold)).foregroundStyle(important ? Theme.accent : Theme.textPrimary)
                     .textSelection(.enabled)
                 if important {
-                    Text("IMPORTANTE").font(.caption2.weight(.heavy)).foregroundStyle(Theme.onLime)
+                    Text("IMPORTANTE").font(.caption2.weight(.heavy)).foregroundStyle(Theme.onAccent)
                         .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Theme.lime, in: Capsule())
+                        .background(Theme.accent, in: Capsule())
                 }
             }
         }

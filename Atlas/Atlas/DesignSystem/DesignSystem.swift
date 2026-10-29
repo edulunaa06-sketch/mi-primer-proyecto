@@ -1,14 +1,25 @@
 import SwiftUI
 import UIKit
 
-/// Lenguaje visual de Now or Never: negro profundo con un resplandor índigo, tarjetas de cristal,
-/// degradado índigo → cian para las acciones y tipografía ancha para los títulos.
+/// Lenguaje visual de Now or Never: negro cálido, oro y grafito.
+///
+/// La idea es la de un objeto caro: fondo casi negro con una temperatura cálida, tarjetas de
+/// grafito con un filo de oro de un píxel, y el oro guardado para lo que de verdad importa
+/// (la acción principal, los récords, el rango que has conseguido). Si el oro está en todas
+/// partes deja de valer nada, así que el resto de la pantalla vive en blancos y grises.
+///
+/// Los colores que SIGNIFICAN algo no se tocan: los macros, el agua, el verde de «vas bien» y
+/// el rojo de «te has pasado» siguen siendo los mismos, porque ahí el color es información.
 enum DS {
-    // Fondo y superficies
-    static let bg = Color(red: 0.024, green: 0.027, blue: 0.039)
-    static let surface = Color.white.opacity(0.045)
-    static let surfaceHi = Color.white.opacity(0.08)
-    static let stroke = Color.white.opacity(0.08)
+    // Fondo y superficies. El negro lleva una pizca de marrón: al lado del oro, un negro azulado
+    // se ve sucio.
+    static let bg = Color(red: 0.035, green: 0.031, blue: 0.027)
+    /// Blanco cálido: el mismo gris, pero sin el tono azulado del blanco puro.
+    private static let warmWhite = Color(red: 1.0, green: 0.96, blue: 0.90)
+    static let surface = warmWhite.opacity(0.05)
+    static let surfaceHi = warmWhite.opacity(0.09)
+    /// Filo de las tarjetas: un hilo de oro muy bajado. Es lo que hace que se vean «montadas».
+    static let stroke = Color(red: 0.90, green: 0.78, blue: 0.52).opacity(0.14)
 
     // Barra flotante de pestañas (medidas reales de TabBar, para que nada quede debajo)
     static let tabBarButton: CGFloat = 56
@@ -25,19 +36,35 @@ enum DS {
     static let text2 = Color.white.opacity(0.62)
     static let text3 = Color.white.opacity(0.38)
 
-    // Marca
-    static let indigo = Color(red: 0.45, green: 0.38, blue: 1.0)
-    static let cyan = Color(red: 0.16, green: 0.83, blue: 0.95)
-    static let accent = indigo
-    static let brand = LinearGradient(colors: [indigo, cyan], startPoint: .leading, endPoint: .trailing)
-    static let brandDiagonal = LinearGradient(colors: [indigo, cyan], startPoint: .topLeading, endPoint: .bottomTrailing)
+    // MARK: La marca: oro
 
-    // Estados
+    /// Oro en sombra. Para bordes, resplandores y el arranque de los degradados.
+    static let bronze = Color(red: 0.42, green: 0.30, blue: 0.09)
+    /// Oro oscuro: el lado del degradado donde «no da la luz».
+    static let goldDark = Color(red: 0.72, green: 0.54, blue: 0.18)
+    /// El oro de la marca.
+    static let gold = Color(red: 0.87, green: 0.71, blue: 0.33)
+    /// Oro claro, casi champán: el lado iluminado y el brillo que cruza el logo.
+    static let champagne = Color(red: 0.97, green: 0.90, blue: 0.73)
+    /// Platino: el acompañante frío del oro. Para lo que todavía no has ganado.
+    static let steel = Color(red: 0.64, green: 0.67, blue: 0.72)
+
+    static let accent = gold
+    /// Lo que va ENCIMA del oro. Negro, siempre: es lo que hace que se vea caro y legible.
+    static let onGold = Color(red: 0.07, green: 0.06, blue: 0.04)
+    /// Degradado de la marca: de oro oscuro a champán, como la luz cruzando un metal.
+    /// Ningún tramo es tan oscuro como para que el texto negro de encima deje de leerse.
+    static let brand = LinearGradient(colors: [goldDark, gold, champagne],
+                                      startPoint: .leading, endPoint: .trailing)
+    static let brandDiagonal = LinearGradient(colors: [goldDark, gold, champagne],
+                                              startPoint: .topLeading, endPoint: .bottomTrailing)
+
+    // Estados. Siguen significando lo mismo: aquí el color es información, no decoración.
     static let good = Color(red: 0.20, green: 0.83, blue: 0.55)
     static let warn = Color(red: 0.99, green: 0.75, blue: 0.20)
     static let bad = Color(red: 0.98, green: 0.40, blue: 0.43)
-    static let gold = Color(red: 0.97, green: 0.78, blue: 0.32)
-    static let goldGradient = LinearGradient(colors: [Color(red: 1, green: 0.9, blue: 0.55), gold, Color(red: 0.8, green: 0.55, blue: 0.12)],
+    /// Medallas y récords: el mismo oro, pero con más recorrido para que brille más que un botón.
+    static let goldGradient = LinearGradient(colors: [champagne, gold, bronze],
                                              startPoint: .topLeading, endPoint: .bottomTrailing)
     static let fire = LinearGradient(colors: [Color(red: 1, green: 0.78, blue: 0.2), Color(red: 1, green: 0.38, blue: 0.12)],
                                      startPoint: .top, endPoint: .bottom)
@@ -50,9 +77,12 @@ enum DS {
 
     static let radius: CGFloat = 22
 
+    /// Los mismos cuatro colores que `Theme.color`, para que el anillo de calorías y las barras
+    /// no digan cosas distintas en pantallas distintas.
     static func color(_ status: CalorieStatus) -> AnyShapeStyle {
         switch status {
-        case .plenty, .approaching: return AnyShapeStyle(brandDiagonal)
+        case .plenty: return AnyShapeStyle(steel)
+        case .approaching: return AnyShapeStyle(warn)
         case .onTarget: return AnyShapeStyle(good)
         case .over: return AnyShapeStyle(bad)
         }
@@ -78,15 +108,27 @@ extension Font {
 
 // MARK: - Fondo
 
-/// Fondo con dos resplandores suaves (índigo arriba, cian abajo). Estático: no cuesta nada dibujarlo.
-struct AtlasBackground: View {
+/// El fondo, sin extenderlo a los bordes de la pantalla. Aparte porque el telón de entrada
+/// necesita cortarlo por la mitad y para eso no puede ignorar el área segura.
+///
+/// Dos luces cálidas muy bajas sobre el negro: una arriba a la izquierda, como la lámpara que
+/// cae sobre una vitrina, y un reflejo de oro abajo a la derecha. Estático: no cuesta nada.
+struct AtlasBackdrop: View {
     var body: some View {
         ZStack {
             DS.bg
-            RadialGradient(colors: [DS.indigo.opacity(0.28), .clear], center: .init(x: 0.15, y: -0.05), startRadius: 0, endRadius: 420)
-            RadialGradient(colors: [DS.cyan.opacity(0.10), .clear], center: .init(x: 1.0, y: 1.0), startRadius: 0, endRadius: 380)
+            RadialGradient(colors: [DS.bronze.opacity(0.30), .clear],
+                           center: .init(x: 0.15, y: -0.05), startRadius: 0, endRadius: 420)
+            RadialGradient(colors: [DS.goldDark.opacity(0.08), .clear],
+                           center: .init(x: 1.0, y: 1.0), startRadius: 0, endRadius: 380)
         }
-        .ignoresSafeArea()
+    }
+}
+
+/// El fondo de todas las pantallas.
+struct AtlasBackground: View {
+    var body: some View {
+        AtlasBackdrop().ignoresSafeArea()
     }
 }
 
@@ -122,13 +164,14 @@ struct PrimaryButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: compact ? 15 : 17, weight: .bold))
-            .foregroundStyle(.white)
+            // Negro sobre el oro: el blanco encima de un amarillo claro no se lee.
+            .foregroundStyle(DS.onGold)
             .padding(.vertical, compact ? 10 : 15)
             .padding(.horizontal, compact ? 16 : 20)
             .frame(maxWidth: compact ? nil : .infinity)
             .background(Capsule().fill(DS.brand))
-            .overlay(Capsule().strokeBorder(.white.opacity(0.25), lineWidth: 1))
-            .shadow(color: DS.indigo.opacity(configuration.isPressed ? 0.2 : 0.45), radius: configuration.isPressed ? 6 : 14, y: 6)
+            .overlay(Capsule().strokeBorder(DS.champagne.opacity(0.45), lineWidth: 1))
+            .shadow(color: DS.gold.opacity(configuration.isPressed ? 0.15 : 0.35), radius: configuration.isPressed ? 6 : 14, y: 6)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
@@ -176,7 +219,7 @@ struct SectionTitle: View {
             if let trailing, let action {
                 Button(trailing, action: action)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DS.cyan)
+                    .foregroundStyle(DS.gold)
             }
         }
     }
@@ -248,7 +291,7 @@ struct StatTile: View {
     let value: String
     var unit: String = ""
     var symbol: String
-    var tint: Color = DS.cyan
+    var tint: Color = DS.gold
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -298,7 +341,7 @@ struct NumberField: View {
             .padding(.vertical, 9).padding(.horizontal, 6)
             .frame(width: width)
             .background(DS.surfaceHi, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(focused ? DS.cyan.opacity(0.7) : .clear, lineWidth: 1.5))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(focused ? DS.gold.opacity(0.7) : .clear, lineWidth: 1.5))
             .focused($focused)
             .onAppear { text = Self.format(value, decimals: decimals) }
             .onChange(of: value) { _, v in if !focused { text = Self.format(v, decimals: decimals) } }

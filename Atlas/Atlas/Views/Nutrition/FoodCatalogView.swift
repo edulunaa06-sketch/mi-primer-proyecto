@@ -28,7 +28,7 @@ struct FoodCatalogView: View {
                             HStack(spacing: 4) {
                                 Text(food.name)
                                 if food.isProvisional { Text("⚠︎").foregroundStyle(Theme.warning) }
-                                if food.isUserEdited { Image(systemName: "pencil.circle.fill").font(.caption).foregroundStyle(Theme.lime) }
+                                if food.isUserEdited { Image(systemName: "pencil.circle.fill").font(.caption).foregroundStyle(Theme.accent) }
                             }
                             Text("\(NumberFormat.integer(food.kcalPer100)) kcal · P \(NumberFormat.oneDecimal(food.proteinPer100)) · C \(NumberFormat.oneDecimal(food.carbsPer100)) · G \(NumberFormat.oneDecimal(food.fatPer100)) · \(food.basis.label.lowercased())")
                                 .font(.caption.monospacedDigit())
@@ -224,7 +224,7 @@ struct NutritionHistoryView: View {
                         Text("Total").bold()
                         Spacer()
                         Text("≈ \(NumberFormat.integer(total.kcal)) kcal · \(NumberFormat.percent(NutritionMath.progress(consumed: total.kcal, target: target)))")
-                            .monospacedDigit().foregroundStyle(Theme.lime)
+                            .monospacedDigit().foregroundStyle(Theme.accent)
                     }
                     Text("P \(NumberFormat.integer(total.protein)) g · C \(NumberFormat.integer(total.carbs)) g · G \(NumberFormat.integer(total.fat)) g")
                         .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)

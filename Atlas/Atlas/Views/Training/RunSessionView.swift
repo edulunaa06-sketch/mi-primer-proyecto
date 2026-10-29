@@ -61,8 +61,8 @@ struct RunSessionView: View {
             Text("\(n)")
                 .font(.caption.weight(.heavy))
                 .frame(width: 22, height: 22)
-                .background(Theme.limeDim, in: Circle())
-                .foregroundStyle(Theme.lime)
+                .background(Theme.accentDim, in: Circle())
+                .foregroundStyle(Theme.accent)
             Text(text).font(.subheadline)
         }
     }
@@ -80,7 +80,7 @@ struct RunSessionView: View {
                 Label(log.isCompleted ? "Carrera completada · Deshacer" : "Marcar carrera completada",
                       systemImage: log.isCompleted ? "checkmark.seal.fill" : "flag.checkered")
             }
-            .buttonStyle(LimeButtonStyle(filled: !log.isCompleted))
+            .buttonStyle(GoldButtonStyle(filled: !log.isCompleted))
             Text("Esta sesión tiene su propio estado, independiente de cualquier otra sesión del día.")
                 .font(.caption)
                 .foregroundStyle(Theme.textTertiary)
@@ -94,7 +94,7 @@ struct RunSessionView: View {
             Button { showManualRun = true } label: {
                 Label("Apuntar carrera a mano", systemImage: "square.and.pencil")
             }
-            .buttonStyle(LimeButtonStyle(filled: false))
+            .buttonStyle(GoldButtonStyle(filled: false))
             switch strava.status {
             case .notConfigured:
                 InfoBanner(text: "Para importar tus carreras de Strava, configúralo una vez en Ajustes › Strava (hay una guía paso a paso). Mientras, puedes apuntarlas a mano.")

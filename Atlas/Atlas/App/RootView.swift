@@ -191,11 +191,11 @@ struct RootView: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 22, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(DS.onGold)
                     .frame(width: DS.tabBarButton, height: DS.tabBarButton)
                     .background(Circle().fill(DS.brandDiagonal))
-                    .overlay(Circle().strokeBorder(.white.opacity(0.3), lineWidth: 1))
-                    .shadow(color: DS.indigo.opacity(0.6), radius: 14, y: 4)
+                    .overlay(Circle().strokeBorder(DS.champagne.opacity(0.5), lineWidth: 1))
+                    .shadow(color: DS.gold.opacity(0.45), radius: 16, y: 4)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Apuntar")

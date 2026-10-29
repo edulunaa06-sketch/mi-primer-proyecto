@@ -118,7 +118,7 @@ struct BodyMapView: View {
             if status.strengthBonus > 0 {
                 Label("Tus pesos han subido: +\(NumberFormat.percent(status.strengthBonus)) de puntos.",
                       systemImage: "arrow.up.right")
-                    .font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+                    .font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
             }
             Text(status.advice).font(.caption).foregroundStyle(Theme.textSecondary)
             NavigationLink {
@@ -191,15 +191,16 @@ struct BodyMapView: View {
         .card()
     }
 
-    /// Color de cada rango: del gris apagado del que no se ha tocado al dorado del máximo.
+    /// Color de cada rango: del grafito del músculo que no has tocado al champán del máximo,
+    /// pasando por el platino y el oro. La idea es que se vea de un vistazo lo que te falta.
     private func rankColor(_ rank: MuscleLevel.Rank?) -> Color {
         switch rank {
-        case .none, .some(.novato): return Color(red: 0.17, green: 0.18, blue: 0.22)
-        case .some(.iniciado): return DS.indigo.opacity(0.45)
-        case .some(.intermedio): return DS.indigo
-        case .some(.avanzado): return DS.cyan
+        case .none, .some(.novato): return Color(red: 0.16, green: 0.15, blue: 0.14)
+        case .some(.iniciado): return DS.steel.opacity(0.40)
+        case .some(.intermedio): return DS.steel
+        case .some(.avanzado): return DS.goldDark
         case .some(.veterano): return DS.gold
-        case .some(.elite): return Color(red: 1.0, green: 0.88, blue: 0.5)
+        case .some(.elite): return DS.champagne
         }
     }
 }

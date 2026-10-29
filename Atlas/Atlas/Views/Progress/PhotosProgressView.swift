@@ -47,7 +47,7 @@ struct PhotosProgressView: View {
                     } label: {
                         Label("Antes / después", systemImage: "square.split.2x1")
                     }
-                    .buttonStyle(LimeButtonStyle(filled: false))
+                    .buttonStyle(GoldButtonStyle(filled: false))
                 }
                 pastMonthsCard
                 privacyCard
@@ -129,14 +129,14 @@ struct PhotosProgressView: View {
                         Image(uiImage: image).resizable().scaledToFill()
                             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     } else {
-                        Image(systemName: "plus.viewfinder").font(.title2).foregroundStyle(Theme.lime)
+                        Image(systemName: "plus.viewfinder").font(.title2).foregroundStyle(Theme.accent)
                     }
                 }
                 .frame(height: 140)
                 .clipped()
                 HStack(spacing: 4) {
                     Image(systemName: photo == nil ? "circle.dashed" : "checkmark.circle.fill")
-                        .foregroundStyle(photo == nil ? Theme.textTertiary : Theme.lime)
+                        .foregroundStyle(photo == nil ? Theme.textTertiary : Theme.accent)
                     Text(view.label).font(.caption.weight(.semibold))
                 }
             }
@@ -159,7 +159,7 @@ struct PhotosProgressView: View {
                         Text(DateUtils.monthTitle(year: ym.year, month: ym.month))
                         Spacer()
                         let count = photos.filter { $0.year == ym.year && $0.month == ym.month }.count
-                        Text("\(count)/3").foregroundStyle(count == 3 ? Theme.lime : Theme.textSecondary)
+                        Text("\(count)/3").foregroundStyle(count == 3 ? Theme.accent : Theme.textSecondary)
                         Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
                     }
                     .padding(.vertical, 6)
@@ -351,7 +351,7 @@ struct PhotoCompareView: View {
 
     private func monthPicker(_ title: String, selection: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption.weight(.bold)).foregroundStyle(Theme.lime)
+            Text(title).font(.caption.weight(.bold)).foregroundStyle(Theme.accent)
             Picker(title, selection: selection) {
                 ForEach(months, id: \.key) { m in
                     Text(DateUtils.monthTitle(year: m.year, month: m.month)).tag(m.key)
@@ -390,10 +390,10 @@ struct PhotoCompareView: View {
                         Image(uiImage: before).resizable().scaledToFit()
                             .frame(width: width, height: geo.size.height)
                             .mask(alignment: .leading) { Rectangle().frame(width: width * split) }
-                        Rectangle().fill(Theme.lime).frame(width: 3)
+                        Rectangle().fill(Theme.accent).frame(width: 3)
                             .offset(x: width * split - 1.5)
-                        Circle().fill(Theme.lime).frame(width: 34, height: 34)
-                            .overlay(Image(systemName: "arrow.left.and.right").font(.caption.weight(.heavy)).foregroundStyle(Theme.onLime))
+                        Circle().fill(Theme.accent).frame(width: 34, height: 34)
+                            .overlay(Image(systemName: "arrow.left.and.right").font(.caption.weight(.heavy)).foregroundStyle(Theme.onAccent))
                             .offset(x: width * split - 17)
                     }
                     .overlay(alignment: .topLeading) { tag("ANTES").padding(8) }
@@ -405,7 +405,7 @@ struct PhotoCompareView: View {
                 }
                 .frame(height: 480)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                Slider(value: $split, in: 0...1).tint(Theme.lime)
+                Slider(value: $split, in: 0...1).tint(Theme.accent)
                     .accessibilityLabel("Deslizador antes y después")
                 Text("Arrastra sobre la foto: a la izquierda, «Antes»; a la derecha, «Después».")
                     .font(.caption).foregroundStyle(Theme.textSecondary)
@@ -420,6 +420,6 @@ struct PhotoCompareView: View {
         Text(text).font(.caption2.weight(.heavy)).tracking(1)
             .padding(.horizontal, 8).padding(.vertical, 4)
             .background(.black.opacity(0.6), in: Capsule())
-            .foregroundStyle(Theme.lime)
+            .foregroundStyle(Theme.accent)
     }
 }

@@ -15,7 +15,7 @@ struct CustomMealCard: View {
         let totals = NutritionMath.sum(items.map(\.values))
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: type.symbol).foregroundStyle(Theme.lime)
+                Image(systemName: type.symbol).foregroundStyle(Theme.accent)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(type.label).font(.headline)
                     Text("Apuntado por ti").font(.caption2).foregroundStyle(Theme.textSecondary)
@@ -26,7 +26,7 @@ struct CustomMealCard: View {
                         Text(isCompleted ? "Hecha" : "Marcar").font(.caption.weight(.bold))
                         CheckCircle(isOn: isCompleted, size: 24)
                     }
-                    .foregroundStyle(isCompleted ? Theme.lime : Theme.textSecondary)
+                    .foregroundStyle(isCompleted ? Theme.accent : Theme.textSecondary)
                 }
                 .buttonStyle(.plain)
             }
@@ -38,13 +38,13 @@ struct CustomMealCard: View {
                 Text("Subtotal").font(.subheadline.weight(.semibold))
                 Spacer()
                 Text("≈ \(NumberFormat.integer(totals.kcal)) kcal")
-                    .font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(Theme.lime)
+                    .font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(Theme.accent)
             }
             Text("P \(NumberFormat.oneDecimal(totals.protein)) g · C \(NumberFormat.oneDecimal(totals.carbs)) g · G \(NumberFormat.oneDecimal(totals.fat)) g")
                 .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
             HStack(spacing: 10) {
                 Button(action: onEdit) { Label("Editar", systemImage: "square.and.pencil") }
-                    .buttonStyle(LimeButtonStyle(filled: false))
+                    .buttonStyle(GoldButtonStyle(filled: false))
                 Button("Volver al menú", action: onRemove).font(.caption.weight(.semibold))
             }
         }
@@ -85,7 +85,7 @@ struct ExtrasCard: View {
         let totals = NutritionMath.sum(items.map(\.values))
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: MealType.extra.symbol).foregroundStyle(Theme.lime)
+                Image(systemName: MealType.extra.symbol).foregroundStyle(Theme.accent)
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Extras").font(.headline)
                     Text("Lo que cae fuera de las cuatro comidas")
@@ -94,7 +94,7 @@ struct ExtrasCard: View {
                 Spacer()
                 if !items.isEmpty {
                     Text("≈ \(NumberFormat.integer(totals.kcal)) kcal")
-                        .font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(Theme.lime)
+                        .font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(Theme.accent)
                 }
             }
             if items.isEmpty {
@@ -116,9 +116,9 @@ struct ExtrasCard: View {
             }
             HStack(spacing: 10) {
                 Button(action: onAdd) { Label("Añadir un extra", systemImage: "plus") }
-                    .buttonStyle(LimeButtonStyle())
+                    .buttonStyle(GoldButtonStyle())
                 Button(action: onScan) { Label("Escanear", systemImage: "barcode.viewfinder") }
-                    .buttonStyle(LimeButtonStyle(filled: false))
+                    .buttonStyle(GoldButtonStyle(filled: false))
             }
         }
         .card()
@@ -247,7 +247,7 @@ struct CustomMealSheet: View {
                 Button { onScan() } label: {
                     Label("Escanear un código de barras", systemImage: "barcode.viewfinder")
                 }
-                .buttonStyle(LimeButtonStyle())
+                .buttonStyle(GoldButtonStyle())
                 .accessibilityIdentifier("custom.scan")
             }
             // Solo mientras no hayas apuntado nada todavía: así no se repite dos veces sin querer.
@@ -256,7 +256,7 @@ struct CustomMealSheet: View {
                     Label(previous.date.map { "Repetir lo del \(DateUtils.shortDate($0))" }
                           ?? "Repetir la última vez", systemImage: "arrow.counterclockwise")
                 }
-                .buttonStyle(LimeButtonStyle(filled: false))
+                .buttonStyle(GoldButtonStyle(filled: false))
                 Text(previous.items.map(\.name).joined(separator: ", "))
                     .font(.caption2).foregroundStyle(Theme.textTertiary).lineLimit(2)
             }
@@ -325,7 +325,7 @@ struct CustomMealSheet: View {
                     Text(abs(diff) < 50 ? "Encaja con tu objetivo para esta comida."
                          : diff > 0 ? "\(NumberFormat.integer(diff)) kcal por encima del objetivo: el resto del día se puede reajustar."
                                     : "\(NumberFormat.integer(-diff)) kcal por debajo del objetivo.")
-                        .font(.caption).foregroundStyle(abs(diff) < 50 ? Theme.lime : Theme.warning)
+                        .font(.caption).foregroundStyle(abs(diff) < 50 ? Theme.accent : Theme.warning)
                 }
                 if items.contains(where: { $0.source == .claude }) {
                     Text("Los alimentos marcados como «Estimación de Claude (IA)» son aproximados.")
@@ -351,9 +351,9 @@ struct CustomMealSheet: View {
             Button {
                 Task { await runEstimate() }
             } label: {
-                if claude.isWorking { ProgressView().tint(Theme.onLime) } else { Label("Calcular con Claude", systemImage: "sparkles") }
+                if claude.isWorking { ProgressView().tint(Theme.onAccent) } else { Label("Calcular con Claude", systemImage: "sparkles") }
             }
-            .buttonStyle(LimeButtonStyle())
+            .buttonStyle(GoldButtonStyle())
             .disabled(description.trimmingCharacters(in: .whitespaces).isEmpty || claude.isWorking || !claude.isConfigured)
             if let claudeError { Text(claudeError).font(.footnote).foregroundStyle(Theme.danger) }
             if let estimate {
@@ -370,7 +370,7 @@ struct CustomMealSheet: View {
                 }
                 let t = NutritionMath.sum(estimate.items.map(\.values))
                 Text("Total estimado: \(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.integer(t.protein)) g · C \(NumberFormat.integer(t.carbs)) g · G \(NumberFormat.integer(t.fat)) g")
-                    .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.lime)
+                    .font(.subheadline.weight(.semibold)).foregroundStyle(Theme.accent)
                 if !estimate.note.isEmpty {
                     Text(estimate.note).font(.caption).foregroundStyle(Theme.textSecondary)
                 }
@@ -382,7 +382,7 @@ struct CustomMealSheet: View {
                     self.estimate = nil
                     description = ""
                 }
-                .buttonStyle(LimeButtonStyle(filled: false))
+                .buttonStyle(GoldButtonStyle(filled: false))
                 .disabled(estimate.items.isEmpty)
             }
         }
@@ -407,7 +407,7 @@ struct CustomMealSheet: View {
             } label: {
                 if claude.isWorking { ProgressView() } else { Label("Pedir ideas a Claude", systemImage: "leaf.fill") }
             }
-            .buttonStyle(LimeButtonStyle(filled: false))
+            .buttonStyle(GoldButtonStyle(filled: false))
             .disabled(claude.isWorking || !claude.isConfigured)
             ForEach(Array(suggestions.enumerated()), id: \.offset) { _, suggestion in
                 let values = NutritionMath.sum(suggestion.lines.map { $0.entry.per100.scaled(toGrams: $0.grams) })
@@ -416,7 +416,7 @@ struct CustomMealSheet: View {
                         Text(suggestion.meal.name).font(.subheadline.weight(.semibold))
                         Spacer()
                         Text("Encaja \(NumberFormat.percent(MealPlanner.fit(values, to: target)))")
-                            .font(.caption.weight(.bold)).foregroundStyle(Theme.lime)
+                            .font(.caption.weight(.bold)).foregroundStyle(Theme.accent)
                     }
                     Text(suggestion.meal.why).font(.caption).foregroundStyle(Theme.textSecondary)
                     ForEach(Array(suggestion.lines.enumerated()), id: \.offset) { _, line in
@@ -430,7 +430,7 @@ struct CustomMealSheet: View {
                     Text("\(NumberFormat.integer(values.kcal)) kcal · P \(NumberFormat.integer(values.protein)) · C \(NumberFormat.integer(values.carbs)) · G \(NumberFormat.integer(values.fat))")
                         .font(.caption.weight(.semibold).monospacedDigit())
                     Button("Usar esta comida") { use(suggestion.lines) }
-                        .buttonStyle(LimeButtonStyle())
+                        .buttonStyle(GoldButtonStyle())
                 }
                 .padding(12)
                 .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -496,7 +496,7 @@ struct CustomMealSheet: View {
                 }
                 let v = NutritionMath.values(per100: food.per100, grams: catalogGrams ?? 0)
                 Text("≈ \(NumberFormat.integer(v.kcal)) kcal · P \(NumberFormat.oneDecimal(v.protein)) · C \(NumberFormat.oneDecimal(v.carbs)) · G \(NumberFormat.oneDecimal(v.fat))")
-                    .font(.caption.monospacedDigit()).foregroundStyle(Theme.lime)
+                    .font(.caption.monospacedDigit()).foregroundStyle(Theme.accent)
                 Button("Añadir") {
                     guard let g = catalogGrams, g > 0 else { return }
                     DataStore.addCustomItem(type, name: food.displayName, grams: g, per100: food.per100,
@@ -504,7 +504,7 @@ struct CustomMealSheet: View {
                     DataStore.recordUse(of: food, grams: g, in: context)
                     selectedFood = nil
                 }
-                .buttonStyle(LimeButtonStyle())
+                .buttonStyle(GoldButtonStyle())
                 .disabled((catalogGrams ?? 0) <= 0)
             }
             ForEach(filtered.prefix(30)) { food in
@@ -514,9 +514,9 @@ struct CustomMealSheet: View {
                 } label: {
                     HStack {
                         if food.isScanned {
-                            Image(systemName: "barcode").font(.caption2).foregroundStyle(DS.cyan)
+                            Image(systemName: "barcode").font(.caption2).foregroundStyle(DS.gold)
                         } else if food.isMine {
-                            Image(systemName: "pencil").font(.caption2).foregroundStyle(DS.cyan)
+                            Image(systemName: "pencil").font(.caption2).foregroundStyle(DS.gold)
                         }
                         Text(food.displayName).foregroundStyle(Theme.textPrimary)
                         Spacer()
@@ -544,7 +544,7 @@ struct CustomMealSheet: View {
             VStack(alignment: .leading, spacing: 4) {
                 Toggle("Guardarlo en mis alimentos", isOn: $manualSave)
                     .font(.subheadline)
-                    .tint(Theme.lime)
+                    .tint(Theme.accent)
                     .accessibilityIdentifier("manual.save")
                 Text(manualSave
                      ? "Se guarda con sus calorías por 100 g. Otro día lo buscas en «Míos» y solo pones los gramos."
@@ -552,7 +552,7 @@ struct CustomMealSheet: View {
                     .font(.caption2).foregroundStyle(Theme.textTertiary)
             }
             Button("Añadir") { addManual() }
-                .buttonStyle(LimeButtonStyle())
+                .buttonStyle(GoldButtonStyle())
                 .disabled(manualName.trimmingCharacters(in: .whitespaces).isEmpty || (manualGrams ?? 0) <= 0 || manualKcal == nil)
         }
         .card()

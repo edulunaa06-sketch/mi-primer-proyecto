@@ -26,7 +26,7 @@ struct OnboardingView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("NOW OR NEVER")
-                            .font(.caption.weight(.heavy)).tracking(2).foregroundStyle(Theme.lime)
+                            .font(.caption.weight(.heavy)).tracking(2).foregroundStyle(Theme.accent)
                         Text("Configura tu punto de partida")
                             .font(.system(.largeTitle, design: .rounded).weight(.heavy))
                         Text("Introduce tu peso inicial y la fecha en la que empieza el seguimiento. Puedes cambiarlo más tarde en Ajustes.")
@@ -63,17 +63,17 @@ struct OnboardingView: View {
                     .card()
 
                     if !weights.isEmpty {
-                        InfoBanner(text: "Ya tienes \(weights.count) pesaje(s) guardado(s). Si ya existe un pesaje con el mismo peso en esa fecha no se volverá a crear.", symbol: "checkmark.shield.fill", color: Theme.lime)
+                        InfoBanner(text: "Ya tienes \(weights.count) pesaje(s) guardado(s). Si ya existe un pesaje con el mismo peso en esa fecha no se volverá a crear.", symbol: "checkmark.shield.fill", color: Theme.accent)
                     }
                     if let message {
                         Text(message).font(.footnote).foregroundStyle(Theme.danger)
                     }
 
                     Button("Guardar y empezar") { save() }
-                        .buttonStyle(LimeButtonStyle())
+                        .buttonStyle(GoldButtonStyle())
                         .disabled(weight == nil)
                     Button("Omitir por ahora") { finish(saveStart: false) }
-                        .buttonStyle(LimeButtonStyle(filled: false))
+                        .buttonStyle(GoldButtonStyle(filled: false))
 
                     Text("Los objetivos de nutrición (2.300 kcal, 180 g P, 250 g C, 65 g G) son provisionales y editables en Ajustes.")
                         .font(.caption).foregroundStyle(Theme.textTertiary)

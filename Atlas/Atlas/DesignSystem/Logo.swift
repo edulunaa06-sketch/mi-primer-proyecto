@@ -1,74 +1,105 @@
 import SwiftUI
 
-/// Marca de Now or Never: la «N» que comparten NOW y NEVER, atravesada por una barra olímpica
-/// con sus discos. El mismo trazo que el icono de la app (`tools/gen_appicon.py`).
+/// La marca de Now or Never: la «N» que comparten NOW y NEVER.
+///
+/// Un monograma macizo y geométrico, sin adornos: a 60 puntos en la pantalla de inicio, una
+/// letra rellena se reconoce y un dibujo con detalles se convierte en una mancha. El mismo
+/// trazo que el icono de la app (`tools/gen_appicon.py`).
 struct BrandMark: Shape {
     func path(in r: CGRect) -> Path {
         var p = Path()
-        let w = r.width, h = r.height
-        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: r.minX + w * x, y: r.minY + h * y) }
-        // La N: sube la primera pata, baja la diagonal y sube la segunda, de un solo trazo
-        // (así la animación la dibuja como se escribe a mano).
-        p.move(to: pt(0.27, 0.62))
-        p.addLine(to: pt(0.27, 0.14))
-        p.addLine(to: pt(0.73, 0.62))
-        p.addLine(to: pt(0.73, 0.14))
-        // La barra, debajo de la N, con sus discos a los lados.
-        p.move(to: pt(0.10, 0.80))
-        p.addLine(to: pt(0.90, 0.80))
-        return p
-    }
-}
-
-/// Discos de la barra: dos a cada lado, el de fuera más grande.
-struct BrandPlates: Shape {
-    func path(in r: CGRect) -> Path {
-        var p = Path()
-        let w = r.width, h = r.height
-        for (x, ph) in [(0.14, 0.24), (0.20, 0.17), (0.80, 0.17), (0.86, 0.24)] {
-            let rect = CGRect(x: r.minX + w * x - w * 0.0225, y: r.minY + h * (0.80 - ph / 2),
-                              width: w * 0.045, height: h * ph)
-            p.addRoundedRect(in: rect, cornerSize: CGSize(width: w * 0.014, height: w * 0.014))
+        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
+            CGPoint(x: r.minX + r.width * x, y: r.minY + r.height * y)
         }
+        // Contorno de la N: pata izquierda, diagonal bajando, pata derecha, y de vuelta por abajo.
+        // La diagonal tiene el mismo grosor perpendicular que las patas (0,155 de ancho), que en
+        // vertical son 0,169 por la inclinación. Si no, la letra se ve coja.
+        p.move(to: pt(0.200, 0.060))
+        p.addLine(to: pt(0.355, 0.060))
+        p.addLine(to: pt(0.645, 0.551))
+        p.addLine(to: pt(0.645, 0.060))
+        p.addLine(to: pt(0.800, 0.060))
+        p.addLine(to: pt(0.800, 0.720))
+        p.addLine(to: pt(0.645, 0.720))
+        p.addLine(to: pt(0.355, 0.229))
+        p.addLine(to: pt(0.355, 0.720))
+        p.addLine(to: pt(0.200, 0.720))
+        p.closeSubpath()
         return p
     }
 }
 
+/// El filo de oro de debajo del monograma: la línea que llevan los logotipos de las marcas caras.
+struct BrandRule: Shape {
+    func path(in r: CGRect) -> Path {
+        Path(CGRect(x: r.minX + r.width * 0.20, y: r.minY + r.height * 0.845,
+                    width: r.width * 0.60, height: max(1, r.height * 0.018)))
+    }
+}
+
+/// El monograma en oro, con la luz cruzándolo.
 struct BrandLogo: View {
     var size: CGFloat = 96
-    /// 0…1: cuánto está dibujada la N (para la animación de entrada).
+    /// 0…1: cuánto ha subido el oro dentro de la letra (la entrada la va llenando).
     var drawn: CGFloat = 1
-    var platesVisible = true
+    /// 0…1: cuánto se ha abierto el filo de debajo, desde el centro.
+    var ruleOpen: CGFloat = 1
+    /// Dónde está el brillo que cruza el metal: −1 fuera por la izquierda, 1 fuera por la derecha.
+    var shine: CGFloat = 1
 
     var body: some View {
         ZStack {
+            // El oro de la letra, con la luz encima. El brillo va en un `overlay` y no como
+            // hermano en el ZStack: así no puede cambiar el tamaño de la letra al crecer.
             BrandMark()
-                .trim(from: 0, to: drawn)
-                .stroke(DS.brandDiagonal, style: StrokeStyle(lineWidth: size * 0.085, lineCap: .round, lineJoin: .round))
-            BrandPlates()
                 .fill(DS.brandDiagonal)
-                .opacity(platesVisible ? 1 : 0)
-                .scaleEffect(platesVisible ? 1 : 0.4)
+                .frame(width: size, height: size)
+                .overlay {
+                    // La banda de luz: inclinada y recortada por la propia letra, así parece un
+                    // reflejo sobre metal y no un rectángulo pasando por encima.
+                    LinearGradient(colors: [.clear, DS.champagne.opacity(0.95), .clear],
+                                   startPoint: .leading, endPoint: .trailing)
+                        .frame(width: size * 0.26, height: size * 1.8)
+                        .rotationEffect(.degrees(18))
+                        .offset(x: shine * size * 0.95)
+                }
+                .mask { BrandMark().frame(width: size, height: size) }
+                .mask(alignment: .bottom) { Rectangle().frame(height: size * clamped(drawn)) }
+
+            BrandRule()
+                .fill(DS.brandDiagonal)
+                .frame(width: size, height: size)
+                .scaleEffect(x: clamped(ruleOpen), y: 1, anchor: .center)
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
+
+    /// Las animaciones con muelle se pasan de 1 y bajan de 0; recortarlas evita que la letra
+    /// se dibuje de más o que el filo se gire del revés.
+    private func clamped(_ value: CGFloat) -> CGFloat {
+        min(max(value, 0), 1)
+    }
 }
 
-/// Telón de entrada: se dibuja la marca, NOW baja desde arriba y NEVER sube desde abajo,
-/// OR aparece enfocándose en medio, NOW se enciende y NEVER se apaga (eliges ahora),
-/// y el telón se abre por la mitad dejando ver la app. Tocar la pantalla lo salta.
+/// Telón de entrada: el oro llena la N, el filo se abre, la luz la cruza, NOW baja desde arriba
+/// y NEVER sube desde abajo, OR aparece enfocándose en medio, NOW se enciende y NEVER se apaga
+/// (eliges ahora), y el telón se abre por la mitad dejando ver la app. Tocar la pantalla lo salta.
 struct IntroView: View {
     let onFinish: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// El oro llenando la letra, de abajo a arriba.
     @State private var drawn: CGFloat = 0
-    @State private var plates = false
+    /// El filo de debajo abriéndose desde el centro.
+    @State private var ruleOpen: CGFloat = 0
+    /// La luz cruzando el monograma.
+    @State private var shine: CGFloat = -1.2
     /// NOW y NEVER ya han entrado en su sitio.
     @State private var wordsIn = false
     /// El OR del medio está enfocado.
     @State private var orIn = false
-    /// NOW encendido con el degradado de la marca, NEVER apagado.
+    /// NOW encendido en oro, NEVER apagado.
     @State private var chosen = false
     /// Las dos mitades del telón se separan.
     @State private var opened = false
@@ -81,13 +112,13 @@ struct IntroView: View {
                 // Mitad de arriba: la marca y NOW.
                 curtainHalf(total: geo.size, isTop: true) {
                     VStack(spacing: 18) {
-                        BrandLogo(size: 104, drawn: drawn, platesVisible: plates)
-                            .shadow(color: DS.indigo.opacity(plates ? 0.7 : 0), radius: 30)
+                        BrandLogo(size: 112, drawn: drawn, ruleOpen: ruleOpen, shine: shine)
+                            .shadow(color: DS.gold.opacity(ruleOpen > 0 ? 0.45 : 0), radius: 34)
                         Text("NOW")
                             .font(.display(46, .black))
                             .tracking(6)
                             .foregroundStyle(chosen ? AnyShapeStyle(DS.brandDiagonal) : AnyShapeStyle(DS.text))
-                            .shadow(color: DS.cyan.opacity(chosen ? 0.55 : 0), radius: 22)
+                            .shadow(color: DS.gold.opacity(chosen ? 0.45 : 0), radius: 22)
                             .offset(y: wordsIn ? 0 : -70)
                             .opacity(wordsIn ? 1 : 0)
                     }
@@ -103,7 +134,7 @@ struct IntroView: View {
                             .font(.display(46, .black))
                             .tracking(6)
                             .foregroundStyle(DS.text)
-                            .opacity(wordsIn ? (chosen ? 0.22 : 1) : 0)
+                            .opacity(wordsIn ? (chosen ? 0.20 : 1) : 0)
                             .offset(y: wordsIn ? 0 : 70)
                         Text("ENTRENA · COME · PROGRESA")
                             .font(.system(size: 11, weight: .bold).width(.expanded))
@@ -120,7 +151,7 @@ struct IntroView: View {
                 Text("OR")
                     .font(.system(size: 15, weight: .black).width(.expanded))
                     .tracking(8)
-                    .foregroundStyle(DS.cyan)
+                    .foregroundStyle(DS.gold)
                     .padding(.horizontal, 12)
                     .background(Capsule().fill(DS.bg).overlay(Capsule().strokeBorder(DS.stroke, lineWidth: 1)))
                     .blur(radius: orIn ? 0 : 12)
@@ -143,7 +174,7 @@ struct IntroView: View {
     private func curtainHalf<Content: View>(total: CGSize, isTop: Bool,
                                             @ViewBuilder content: () -> Content) -> some View {
         ZStack(alignment: isTop ? .bottom : .top) {
-            backdrop
+            AtlasBackdrop()
                 .frame(width: total.width, height: total.height)
                 .frame(height: total.height / 2, alignment: isTop ? .top : .bottom)
                 .clipped()
@@ -153,27 +184,19 @@ struct IntroView: View {
         .clipped()
     }
 
-    /// El mismo fondo de la app, pero sin `ignoresSafeArea` para poder cortarlo por la mitad.
-    private var backdrop: some View {
-        ZStack {
-            DS.bg
-            RadialGradient(colors: [DS.indigo.opacity(0.28), .clear], center: .init(x: 0.15, y: -0.05), startRadius: 0, endRadius: 420)
-            RadialGradient(colors: [DS.cyan.opacity(0.10), .clear], center: .init(x: 1.0, y: 1.0), startRadius: 0, endRadius: 380)
-        }
-    }
-
     private func play() async {
         if reduceMotion {
-            drawn = 1; plates = true; wordsIn = true; orIn = true; chosen = true
+            drawn = 1; ruleOpen = 1; shine = 1.2; wordsIn = true; orIn = true; chosen = true
             try? await Task.sleep(for: .milliseconds(1000))
             leave(); return
         }
-        withAnimation(.easeInOut(duration: 0.55)) { drawn = 1 }
-        try? await Task.sleep(for: .milliseconds(520))
+        withAnimation(.easeInOut(duration: 0.6)) { drawn = 1 }
+        try? await Task.sleep(for: .milliseconds(560))
         DS.haptic(.heavy)
-        withAnimation(.spring(response: 0.32, dampingFraction: 0.55)) { plates = true }
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.75)) { ruleOpen = 1 }
+        withAnimation(.easeInOut(duration: 0.75).delay(0.1)) { shine = 1.2 }
         withAnimation(.spring(response: 0.5, dampingFraction: 0.72).delay(0.12)) { wordsIn = true }
-        try? await Task.sleep(for: .milliseconds(520))
+        try? await Task.sleep(for: .milliseconds(560))
         withAnimation(.easeOut(duration: 0.4)) { orIn = true }
         try? await Task.sleep(for: .milliseconds(420))
         DS.haptic(.rigid)

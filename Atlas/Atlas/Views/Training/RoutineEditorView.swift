@@ -41,7 +41,7 @@ struct RoutineEditorView: View {
                                         .font(.caption).foregroundStyle(Theme.textSecondary)
                                 }
                                 Spacer()
-                                Image(systemName: "slider.horizontal.3").foregroundStyle(Theme.lime)
+                                Image(systemName: "slider.horizontal.3").foregroundStyle(Theme.accent)
                             }
                         }
                         .swipeActions(edge: .trailing) {

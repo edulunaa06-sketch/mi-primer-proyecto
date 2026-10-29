@@ -59,15 +59,15 @@ struct NutritionView: View {
                         } label: {
                             Label("Elegir mis comidas paso a paso", systemImage: "square.stack.3d.up.fill")
                         }
-                        .buttonStyle(LimeButtonStyle())
+                        .buttonStyle(GoldButtonStyle())
                         Button {
                             rebalance()
                         } label: {
                             Label("Reajustar el resto del día a mis macros", systemImage: "wand.and.stars")
                         }
-                        .buttonStyle(LimeButtonStyle(filled: false))
+                        .buttonStyle(GoldButtonStyle(filled: false))
                         if let rebalanceMessage {
-                            Text(rebalanceMessage).font(.caption).foregroundStyle(Theme.lime)
+                            Text(rebalanceMessage).font(.caption).foregroundStyle(Theme.accent)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                         let dayMeals = meals
@@ -336,7 +336,7 @@ struct NutritionView: View {
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("MENÚ BASE DEL DÍA").font(.caption2.weight(.bold)).foregroundStyle(Theme.lime)
+                    Text("MENÚ BASE DEL DÍA").font(.caption2.weight(.bold)).foregroundStyle(Theme.accent)
                     Text("Menú \(current.number) · \(current.name)").font(.headline).foregroundStyle(Theme.textPrimary)
                     if choices.contains(where: { $0.dayKey == dayKey }) {
                         Text("Con comidas cambiadas por ti").font(.caption2).foregroundStyle(Theme.textSecondary)
@@ -395,7 +395,7 @@ struct NutritionView: View {
                 totalStat("Grasa", NumberFormat.integer(t.fat) + " g", target: dailyTargets.fat)
             }
             Text("Ajuste con tus objetivos: \(NumberFormat.percent(MealPlanner.fit(t, to: dailyTargets)))")
-                .font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+                .font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
             if let extras = custom[.extra], !extras.isEmpty {
                 let e = NutritionMath.sum(extras.map(\.values))
                 Text("Y además, en extras: \(NumberFormat.integer(e.kcal)) kcal "
@@ -455,7 +455,7 @@ struct MealCard: View {
         let totals = NutritionMath.sum(rows.map(\.values))
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Image(systemName: meal.mealType.symbol).foregroundStyle(Theme.lime)
+                Image(systemName: meal.mealType.symbol).foregroundStyle(Theme.accent)
                 VStack(alignment: .leading, spacing: 1) {
                     Text(meal.mealType.label).font(.headline)
                     if let sourceLabel {
@@ -464,7 +464,7 @@ struct MealCard: View {
                     }
                     if lockedByUser {
                         Label("Cambiada por ti · Reajustar no la toca", systemImage: "lock.fill")
-                            .font(.caption2.weight(.semibold)).foregroundStyle(Theme.lime)
+                            .font(.caption2.weight(.semibold)).foregroundStyle(Theme.accent)
                     }
                 }
                 Spacer()
@@ -474,7 +474,7 @@ struct MealCard: View {
                             Text(isCompleted ? "Hecha" : "Marcar").font(.caption.weight(.bold))
                             CheckCircle(isOn: isCompleted, size: 24)
                         }
-                        .foregroundStyle(isCompleted ? Theme.lime : Theme.textSecondary)
+                        .foregroundStyle(isCompleted ? Theme.accent : Theme.textSecondary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -502,7 +502,7 @@ struct MealCard: View {
                 Spacer()
                 Text("≈ \(NumberFormat.integer(totals.kcal)) kcal")
                     .font(.subheadline.weight(.bold).monospacedDigit())
-                    .foregroundStyle(Theme.lime)
+                    .foregroundStyle(Theme.accent)
             }
             Text("P \(NumberFormat.oneDecimal(totals.protein)) g · C \(NumberFormat.oneDecimal(totals.carbs)) g · G \(NumberFormat.oneDecimal(totals.fat)) g")
                 .font(.caption.monospacedDigit())
@@ -513,7 +513,7 @@ struct MealCard: View {
                 Button(action: onCustom) {
                     Label("He comido otra cosa: apuntarlo", systemImage: "square.and.pencil")
                 }
-                .buttonStyle(LimeButtonStyle())
+                .buttonStyle(GoldButtonStyle())
             }
             HStack(spacing: 14) {
                 if let onScan {

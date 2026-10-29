@@ -105,7 +105,7 @@ struct AddFoodSheet: View {
                             DecimalField(placeholder: "g", value: $grams, width: 100)
                         }
                         let v = NutritionMath.values(per100: selected.per100, grams: grams ?? 0)
-                        Text("≈ \(NumberFormat.integer(v.kcal)) kcal").foregroundStyle(Theme.lime)
+                        Text("≈ \(NumberFormat.integer(v.kcal)) kcal").foregroundStyle(Theme.accent)
                     }
                     .listRowBackground(Theme.card)
                 }
@@ -121,7 +121,7 @@ struct AddFoodSheet: View {
                                         .font(.caption).foregroundStyle(Theme.textSecondary)
                                 }
                                 Spacer()
-                                if selected?.id == food.id { Image(systemName: "checkmark").foregroundStyle(Theme.lime) }
+                                if selected?.id == food.id { Image(systemName: "checkmark").foregroundStyle(Theme.accent) }
                             }
                         }
                     }
@@ -186,7 +186,7 @@ struct MenuPlansView: View {
                 Button("Ajustar los 9 menús a \(NumberFormat.integer(target)) kcal") { confirmScaleAll = true }
                     .disabled(target <= 0 || plans.isEmpty)
                 if let resultMessage {
-                    Text(resultMessage).font(.footnote).foregroundStyle(Theme.lime)
+                    Text(resultMessage).font(.footnote).foregroundStyle(Theme.accent)
                 }
             } header: {
                 Text("Ajustar a mis requerimientos")
@@ -221,7 +221,7 @@ struct MenuPlansView: View {
                             HStack {
                                 Text("Menú \(plan.number) · \(plan.name)").font(.subheadline.weight(.semibold))
                                 if settingsList.first?.defaultPlanID == plan.id {
-                                    Text("PREDETERMINADO").font(.caption2.weight(.bold)).foregroundStyle(Theme.lime)
+                                    Text("PREDETERMINADO").font(.caption2.weight(.bold)).foregroundStyle(Theme.accent)
                                 }
                             }
                             Text("≈ \(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.integer(t.protein)) · C \(NumberFormat.integer(t.carbs)) · G \(NumberFormat.integer(t.fat))")
@@ -231,13 +231,13 @@ struct MenuPlansView: View {
                                 let diff = (t.kcal - target) / target
                                 Text(abs(diff) <= 0.05 ? "Dentro de ±5 % de tu objetivo" : "\(diff > 0 ? "+" : "")\(NumberFormat.percent(diff)) respecto a tu objetivo")
                                     .font(.caption2)
-                                    .foregroundStyle(abs(diff) <= 0.05 ? Theme.lime : Theme.warning)
+                                    .foregroundStyle(abs(diff) <= 0.05 ? Theme.accent : Theme.warning)
                             }
                         }
                     }
                     .swipeActions(edge: .trailing) {
                         Button("Borrar", role: .destructive) { deleting = plan }
-                        Button("Duplicar") { DataStore.duplicate(plan, in: context) }.tint(.indigo)
+                        Button("Duplicar") { DataStore.duplicate(plan, in: context) }.tint(DS.steel)
                     }
                 }
             } footer: {
@@ -261,13 +261,13 @@ struct MenuPlansView: View {
                                     if idea.servings > 1, let perServing = idea.perServing {
                                         Text(NumberFormat.plural(idea.servings, "ración", "raciones")
                                              + " · \(NumberFormat.integer(perServing.kcal)) kcal por ración")
-                                            .font(.caption2).foregroundStyle(Theme.lime)
+                                            .font(.caption2).foregroundStyle(Theme.accent)
                                     }
                                 }
                             }
                             .swipeActions(edge: .trailing) {
                                 Button("Borrar", role: .destructive) { deleting = idea }
-                                Button("Duplicar") { DataStore.duplicate(idea, in: context) }.tint(.indigo)
+                                Button("Duplicar") { DataStore.duplicate(idea, in: context) }.tint(DS.steel)
                             }
                         }
                     } header: {
@@ -337,18 +337,18 @@ struct MenuPlanDetailView: View {
                     let t = plan.totals
                     Text("Total diario ≈ \(NumberFormat.integer(t.kcal)) kcal · P \(NumberFormat.oneDecimal(t.protein)) g · C \(NumberFormat.oneDecimal(t.carbs)) g · G \(NumberFormat.oneDecimal(t.fat)) g")
                         .font(.subheadline.monospacedDigit())
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.accent)
                     if let settings = settingsList.first, !plan.isLibrary {
                         Button(settings.defaultPlanID == plan.id ? "Menú predeterminado ✓" : "Usar como menú predeterminado") {
                             settings.defaultPlanID = plan.id
                             try? context.save()
                         }
-                        .buttonStyle(LimeButtonStyle(filled: settings.defaultPlanID != plan.id))
+                        .buttonStyle(GoldButtonStyle(filled: settings.defaultPlanID != plan.id))
                         if settings.kcalTarget > 0, abs(t.kcal - settings.kcalTarget) / settings.kcalTarget > 0.02 {
                             Button("Ajustar este menú a \(NumberFormat.integer(settings.kcalTarget)) kcal") {
                                 DataStore.scale(plan, toKcal: settings.kcalTarget, in: context)
                             }
-                            .buttonStyle(LimeButtonStyle(filled: false))
+                            .buttonStyle(GoldButtonStyle(filled: false))
                         }
                     }
                 }
@@ -404,7 +404,7 @@ struct MenuPlanDetailView: View {
                 let gramsPerServing = RecipeMath.gramsPerServing(cookedGrams: plan.cookedWeightGrams,
                                                                  servings: plan.servings)
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("POR RACIÓN").font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(Theme.lime)
+                    Text("POR RACIÓN").font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(Theme.accent)
                     Text("\(NumberFormat.integer(perServing.kcal)) kcal · P \(NumberFormat.oneDecimal(perServing.protein)) g"
                          + " · C \(NumberFormat.oneDecimal(perServing.carbs)) g · G \(NumberFormat.oneDecimal(perServing.fat)) g")
                         .font(.caption.monospacedDigit())
@@ -417,7 +417,7 @@ struct MenuPlanDetailView: View {
 
             if let per100 = plan.per100gCooked {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("POR 100 g COCINADOS").font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(Theme.lime)
+                    Text("POR 100 g COCINADOS").font(.caption2.weight(.heavy)).tracking(1).foregroundStyle(Theme.accent)
                     Text("\(NumberFormat.integer(per100.kcal)) kcal · P \(NumberFormat.oneDecimal(per100.protein)) g"
                          + " · C \(NumberFormat.oneDecimal(per100.carbs)) g · G \(NumberFormat.oneDecimal(per100.fat)) g")
                         .font(.caption.monospacedDigit())

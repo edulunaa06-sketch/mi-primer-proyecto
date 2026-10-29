@@ -61,7 +61,7 @@ struct CameraCaptureView: View {
                     if let countdown {
                         Text("\(countdown)")
                             .font(.system(size: 120, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Theme.lime)
+                            .foregroundStyle(Theme.accent)
                             .shadow(radius: 8)
                     }
                 }
@@ -73,7 +73,7 @@ struct CameraCaptureView: View {
                 if guide != nil && showGuide {
                     HStack(spacing: 10) {
                         Image(systemName: "circle.lefthalf.filled").foregroundStyle(Theme.textPrimary)
-                        Slider(value: $guideOpacity, in: 0.1...0.7).tint(Theme.lime)
+                        Slider(value: $guideOpacity, in: 0.1...0.7).tint(Theme.accent)
                             .accessibilityLabel("Transparencia de la foto anterior")
                         Text(NumberFormat.percent(guideOpacity)).font(.caption.monospacedDigit()).foregroundStyle(Theme.textPrimary)
                             .frame(width: 40)
@@ -85,16 +85,16 @@ struct CameraCaptureView: View {
                         Button(s == 0 ? "Sin temporizador" : "\(s) s") { timer = s }
                             .font(.footnote.weight(.semibold))
                             .padding(.horizontal, 12).padding(.vertical, 7)
-                            .background(timer == s ? Theme.lime : Theme.cardRaised, in: Capsule())
-                            .foregroundStyle(timer == s ? Theme.onLime : Theme.textPrimary)
+                            .background(timer == s ? Theme.accent : Theme.cardRaised, in: Capsule())
+                            .foregroundStyle(timer == s ? Theme.onAccent : Theme.textPrimary)
                     }
                     if guide != nil {
                         Button { showGuide.toggle() } label: {
                             Image(systemName: showGuide ? "person.fill.viewfinder" : "person.crop.rectangle")
                         }
                         .padding(8)
-                        .background(showGuide ? Theme.lime : Theme.cardRaised, in: Circle())
-                        .foregroundStyle(showGuide ? Theme.onLime : Theme.textPrimary)
+                        .background(showGuide ? Theme.accent : Theme.cardRaised, in: Circle())
+                        .foregroundStyle(showGuide ? Theme.onAccent : Theme.textPrimary)
                         .accessibilityLabel(showGuide ? "Ocultar la foto del mes anterior" : "Mostrar la foto del mes anterior")
                     }
                 }
@@ -103,7 +103,7 @@ struct CameraCaptureView: View {
                 Button(action: shoot) {
                     ZStack {
                         Circle().stroke(Theme.textPrimary, lineWidth: 4).frame(width: 74, height: 74)
-                        Circle().fill(countdown == nil ? Theme.lime : Theme.danger).frame(width: 60, height: 60)
+                        Circle().fill(countdown == nil ? Theme.accent : Theme.danger).frame(width: 60, height: 60)
                     }
                 }
                 .accessibilityLabel(countdown == nil ? "Hacer foto" : "Cancelar temporizador")
@@ -121,12 +121,12 @@ struct CameraCaptureView: View {
             Image(uiImage: image).resizable().scaledToFit().frame(maxWidth: .infinity, maxHeight: .infinity)
             HStack(spacing: 12) {
                 Button("Repetir") { captured = nil }
-                    .buttonStyle(LimeButtonStyle(filled: false))
+                    .buttonStyle(GoldButtonStyle(filled: false))
                 Button("Usar foto") {
                     if let captured { onCapture(captured) }
                     dismiss()
                 }
-                .buttonStyle(LimeButtonStyle())
+                .buttonStyle(GoldButtonStyle())
             }
             .padding()
         }

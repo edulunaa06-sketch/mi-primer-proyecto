@@ -111,9 +111,9 @@ struct ExerciseLibraryView: View {
         HStack(spacing: 10) {
             Image(systemName: info.equipment.symbol)
                 .font(.caption)
-                .foregroundStyle(Theme.lime)
+                .foregroundStyle(Theme.accent)
                 .frame(width: 28, height: 28)
-                .background(Theme.limeDim, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .background(Theme.accentDim, in: RoundedRectangle(cornerRadius: 8, style: .continuous))
             VStack(alignment: .leading, spacing: 2) {
                 Text(info.name).font(.subheadline.weight(.semibold)).foregroundStyle(Theme.textPrimary)
                 Text("\(info.equipment.label) · \(info.pattern.label)")
@@ -123,8 +123,8 @@ struct ExerciseLibraryView: View {
             if info.isCustom {
                 Text("Tuyo").font(.caption2.weight(.bold))
                     .padding(.horizontal, 6).padding(.vertical, 2)
-                    .background(Theme.limeDim, in: Capsule())
-                    .foregroundStyle(Theme.lime)
+                    .background(Theme.accentDim, in: Capsule())
+                    .foregroundStyle(Theme.accent)
             }
             if info.isUnilateral {
                 Text("1 lado").font(.caption2.weight(.bold))
@@ -182,8 +182,8 @@ struct ExerciseLibraryView: View {
             }
             .font(.caption.weight(.semibold))
             .padding(.horizontal, 10).padding(.vertical, 7)
-            .background(isOn ? Theme.limeDim : Theme.cardRaised, in: Capsule())
-            .foregroundStyle(isOn ? Theme.lime : Theme.textSecondary)
+            .background(isOn ? Theme.accentDim : Theme.cardRaised, in: Capsule())
+            .foregroundStyle(isOn ? Theme.accent : Theme.textSecondary)
         }
     }
 }
@@ -244,7 +244,7 @@ struct ExerciseDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             SectionHeader(title: "Qué trabaja")
             HStack(spacing: 8) {
-                chip(info.primary.label, color: Theme.lime, filled: true)
+                chip(info.primary.label, color: Theme.accent, filled: true)
                 ForEach(info.secondary) { muscle in
                     chip(muscle.label, color: Theme.textSecondary, filled: false)
                 }
@@ -272,7 +272,7 @@ struct ExerciseDetailView: View {
             .foregroundStyle(filled ? color : Theme.textSecondary)
     }
 
-    private func stepsCard(title: String, symbol: String, items: [String], tint: Color = Theme.lime) -> some View {
+    private func stepsCard(title: String, symbol: String, items: [String], tint: Color = Theme.accent) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             SectionHeader(title: title)
             ForEach(Array(items.enumerated()), id: \.offset) { index, text in
@@ -322,7 +322,7 @@ struct ExerciseDetailView: View {
                                 .font(.caption2).foregroundStyle(Theme.textSecondary)
                         }
                         Spacer()
-                        Image(systemName: "arrow.left.arrow.right").font(.caption).foregroundStyle(Theme.lime)
+                        Image(systemName: "arrow.left.arrow.right").font(.caption).foregroundStyle(Theme.accent)
                     }
                     .padding(10)
                     .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -376,10 +376,10 @@ struct OneRepMaxChart: View {
             Chart {
                 ForEach(Array(points.enumerated()), id: \.offset) { _, point in
                     LineMark(x: .value("Fecha", point.date), y: .value("1RM estimado", point.value))
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.accent)
                         .interpolationMethod(.monotone)
                     PointMark(x: .value("Fecha", point.date), y: .value("1RM estimado", point.value))
-                        .foregroundStyle(Theme.lime)
+                        .foregroundStyle(Theme.accent)
                         .symbolSize(28)
                 }
             }
@@ -404,7 +404,7 @@ struct ExerciseComparisonView: View {
             VStack(spacing: 14) {
                 HStack(spacing: 10) {
                     side(from, title: "Ahora")
-                    Image(systemName: "arrow.right").foregroundStyle(Theme.lime)
+                    Image(systemName: "arrow.right").foregroundStyle(Theme.accent)
                     side(to, title: "Alternativa")
                 }
 
@@ -412,7 +412,7 @@ struct ExerciseComparisonView: View {
                     SectionHeader(title: "Qué cambia")
                     ForEach(Array(ExerciseCatalog.difference(from: from, to: to).enumerated()), id: \.offset) { _, note in
                         HStack(alignment: .top, spacing: 8) {
-                            Image(systemName: "arrow.triangle.swap").font(.caption).foregroundStyle(Theme.lime)
+                            Image(systemName: "arrow.triangle.swap").font(.caption).foregroundStyle(Theme.accent)
                             Text(note).font(.footnote).foregroundStyle(Theme.textSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -423,12 +423,12 @@ struct ExerciseComparisonView: View {
                 InfoBanner(text: "Dos ejercicios del mismo músculo nunca son idénticos: cambia el recorrido, la "
                            + "estabilidad y el reparto de la carga. Al cambiar, la carga que podrás mover será otra "
                            + "y la progresión empieza de nuevo en ese ejercicio.",
-                           symbol: "info.circle.fill", color: Theme.lime)
+                           symbol: "info.circle.fill", color: Theme.accent)
 
                 NavigationLink { ExerciseDetailView(info: to) } label: {
                     Label("Ver la ficha de \(to.name)", systemImage: "doc.text.magnifyingglass")
                 }
-                .buttonStyle(LimeButtonStyle(filled: false))
+                .buttonStyle(GoldButtonStyle(filled: false))
             }
             .padding(16)
         }
@@ -444,7 +444,7 @@ struct ExerciseComparisonView: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title.uppercased()).font(.caption2.weight(.heavy)).foregroundStyle(Theme.textTertiary)
             Text(info.name).font(.subheadline.weight(.bold))
-            Text(info.equipment.label).font(.caption).foregroundStyle(Theme.lime)
+            Text(info.equipment.label).font(.caption).foregroundStyle(Theme.accent)
             Text(info.pattern.label).font(.caption2).foregroundStyle(Theme.textSecondary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

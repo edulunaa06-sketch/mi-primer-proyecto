@@ -107,7 +107,7 @@ struct RecoveryView: View {
 
     private var readinessColor: Color {
         switch readiness.verdict {
-        case .good: return Theme.lime
+        case .good: return Theme.accent
         case .fair: return Theme.warning
         case .low: return Theme.danger
         case .unknown: return Theme.textSecondary
@@ -187,9 +187,9 @@ struct RecoveryView: View {
                             .font(.subheadline.weight(.bold))
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 9)
-                            .background(value.wrappedValue == option ? Theme.limeDim : Theme.cardRaised,
+                            .background(value.wrappedValue == option ? Theme.accentDim : Theme.cardRaised,
                                         in: RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            .foregroundStyle(value.wrappedValue == option ? Theme.lime : Theme.textSecondary)
+                            .foregroundStyle(value.wrappedValue == option ? Theme.accent : Theme.textSecondary)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("\(title): \(option)")
@@ -252,7 +252,7 @@ struct RecoveryView: View {
             SectionHeader(title: "Descanso y movilidad")
             ForEach(RecoveryTips.all) { tip in
                 HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: tip.symbol).font(.subheadline).foregroundStyle(Theme.lime)
+                    Image(systemName: tip.symbol).font(.subheadline).foregroundStyle(Theme.accent)
                         .frame(width: 24)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(tip.title).font(.subheadline.weight(.semibold))

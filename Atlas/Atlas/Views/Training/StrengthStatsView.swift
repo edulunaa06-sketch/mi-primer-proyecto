@@ -155,7 +155,7 @@ struct StrengthStatsView: View {
 
     private func barColor(_ verdict: VolumeReference.Verdict) -> Color {
         switch verdict {
-        case .inRange: return Theme.lime
+        case .inRange: return Theme.accent
         case .below: return Theme.textSecondary
         case .above: return Theme.warning
         case .none: return Theme.cardRaised
@@ -187,7 +187,7 @@ struct StrengthStatsView: View {
             SectionHeader(title: "Descarga")
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: deload.isRecommended ? "moon.zzz.fill" : "checkmark.circle")
-                    .foregroundStyle(deload.isRecommended ? Theme.warning : Theme.lime)
+                    .foregroundStyle(deload.isRecommended ? Theme.warning : Theme.accent)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(deload.isRecommended ? "Te vendría bien una semana de descarga" : "Por ahora no hace falta descargar")
                         .font(.subheadline.weight(.semibold))

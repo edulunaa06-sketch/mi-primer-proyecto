@@ -92,7 +92,7 @@ struct HomeView: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(DS.cyan)
+                .foregroundStyle(DS.gold)
                 .frame(width: 38, height: 38)
                 .background(Circle().fill(DS.surfaceHi))
                 .overlay(Circle().strokeBorder(DS.stroke, lineWidth: 1))
@@ -132,7 +132,7 @@ struct HomeView: View {
             Button { router.tab = .nutrition } label: {
                 Label("Apuntar lo que como", systemImage: "plus.circle.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(LimeButtonStyle(filled: false))
+            .buttonStyle(GoldButtonStyle(filled: false))
         }
     }
 
@@ -151,7 +151,7 @@ struct HomeView: View {
                 ForEach(todaySessions) { session in
                     HStack {
                         Image(systemName: icon(for: session.kind))
-                            .foregroundStyle(session.kind == .rest ? Theme.rest : isCompleted(session) ? Theme.lime : Theme.textSecondary)
+                            .foregroundStyle(session.kind == .rest ? Theme.rest : isCompleted(session) ? Theme.accent : Theme.textSecondary)
                             .frame(width: 24)
                         VStack(alignment: .leading) {
                             Text(session.title).font(.subheadline.weight(.semibold))
@@ -283,7 +283,7 @@ private struct HomeStepsCard: View {
                 ProgressRing(fraction: today.map { StepEstimates.fraction($0, goal: goal) } ?? 0, size: 84,
                              label: today == nil ? "—" : nil)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("PASOS DE HOY").font(.caption.weight(.heavy)).foregroundStyle(Theme.lime)
+                    Text("PASOS DE HOY").font(.caption.weight(.heavy)).foregroundStyle(Theme.accent)
                     Text(today.map { NumberFormat.integer($0) } ?? "—")
                         .font(.system(size: 40, weight: .heavy, design: .rounded))
                         .monospacedDigit()
@@ -381,7 +381,7 @@ private struct HomeStreakCard: View {
                     Text(subtitle).font(.caption).foregroundStyle(Theme.textSecondary)
                 }
                 Spacer()
-                Text("Calendario").font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+                Text("Calendario").font(.caption.weight(.semibold)).foregroundStyle(Theme.accent)
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(Theme.textTertiary)
             }
             .card()

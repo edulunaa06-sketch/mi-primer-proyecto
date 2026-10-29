@@ -20,7 +20,7 @@ struct StepGoalSection: View {
                     if value { DataStore.updateAdaptiveStepGoal(context) }
                 }
             ))
-            .tint(Theme.lime)
+            .tint(Theme.accent)
             Stepper(value: Binding(get: { settings.stepGoal }, set: { setManually($0) }), in: 1000...40000, step: 500) {
                 HStack {
                     Text("Objetivo")
@@ -86,13 +86,13 @@ struct SmartRemindersSection: View {
     var body: some View {
         Section {
             Toggle("Aviso de pasos", isOn: toggle(\.stepReminderEnabled))
-                .tint(Theme.lime)
+                .tint(Theme.accent)
             if settings.stepReminderEnabled {
                 timeRow("Desde", \.stepReminderFromMinutes)
                 timeRow("Hasta", \.stepReminderToMinutes)
             }
             Toggle("Recordar pesarme", isOn: toggle(\.weightReminderEnabled))
-                .tint(Theme.lime)
+                .tint(Theme.accent)
             if settings.weightReminderEnabled {
                 timeRow("Desde", \.weightReminderFromMinutes)
                 timeRow("Hasta", \.weightReminderToMinutes)

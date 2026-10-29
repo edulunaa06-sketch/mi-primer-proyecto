@@ -65,7 +65,7 @@ struct AtlasApp: App {
                     .environment(claude)
                     .environment(steps)
                     .preferredColorScheme(.dark)
-                    .tint(Theme.lime)
+                    .tint(Theme.accent)
             } else {
                 StorageErrorView(message: containerError ?? "Error desconocido")
                     .preferredColorScheme(.dark)
