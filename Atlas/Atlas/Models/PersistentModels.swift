@@ -379,6 +379,10 @@ final class FoodItem {
 
     /// Viene de escanear un código de barras.
     var isScanned: Bool { !barcode.isEmpty }
+
+    /// Lo has metido tú: escaneado o apuntado a mano con la etiqueta.
+    /// Los alimentos que trae la app de serie llevan `seedKey`; los tuyos no.
+    var isMine: Bool { seedKey.isEmpty }
 }
 
 @Model

@@ -568,6 +568,16 @@ final class UserFlowUITests: XCTestCase {
         app.toolbars.buttons["Listo"].firstMatch.tap()
         scrollTo(app.buttons["Añadir"].firstMatch).tap()
         assertAppears(element(containing: "Total: 140 kcal"), timeout: 10, "Total del extra")
+
+        // Y, como estaba marcado «Guardarlo en mis alimentos», queda en «Míos» con sus
+        // calorías por 100 g: otro día se apunta poniendo solo los gramos.
+        app.buttons["Catálogo"].firstMatch.tap()
+        let mineTab = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Míos")).firstMatch
+        assertAppears(scrollTo(mineTab), timeout: 10, "Filtro de mis alimentos")
+        mineTab.tap()
+        XCTAssertTrue(scrollTo(element(containing: "42 kcal/100 g")).exists,
+                      "La cerveza guardada, con sus calorías por 100 g")
+        shoot("comer-mis-alimentos")
         app.buttons["Hecho"].tap()
         // Y queda apuntado en el día, fuera de las cuatro comidas.
         XCTAssertTrue(scrollTo(element(containing: "Cerveza")).exists, "El extra aparece en el día")

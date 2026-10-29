@@ -24,6 +24,7 @@ struct BarcodeScannerView: View {
     @State private var state: Step = .scanning
     @State private var grams: Double? = 100
     @State private var editing = false
+    @State private var editName = ""
     @State private var editKcal: Double?
     @State private var editProtein: Double?
     @State private var editCarbs: Double?
@@ -148,6 +149,13 @@ struct BarcodeScannerView: View {
                     .buttonStyle(LimeButtonStyle())
                     .disabled(!OpenFoodFacts.isPlausible(typed))
             }
+            Divider().overlay(Theme.separator)
+            Text("¿Sin código de barras, o no sale en la base? Ponlo tú con la etiqueta: "
+                 + "queda guardado en tus alimentos y la próxima vez solo pones los gramos.")
+                .font(.caption).foregroundStyle(Theme.textSecondary)
+            Button("Apuntarlo a mano y guardarlo") { startManualEntry(barcode: typed) }
+                .buttonStyle(LimeButtonStyle(filled: false))
+                .accessibilityIdentifier("barcode.manual")
         }
         .card()
     }
@@ -168,14 +176,20 @@ struct BarcodeScannerView: View {
         let total = per100.scaled(toGrams: grams ?? 0)
         return VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(food.title).font(.headline).foregroundStyle(Theme.textPrimary)
-                Text(fromCatalog ? "Ya lo tenías guardado · \(food.barcode)" : "Open Food Facts · \(food.barcode)")
+                Text(editing && !editName.isEmpty ? editName : food.title)
+                    .font(.headline).foregroundStyle(Theme.textPrimary)
+                Text(subtitle(food, fromCatalog: fromCatalog))
                     .font(.caption2).foregroundStyle(Theme.textTertiary)
             }
             Divider().overlay(Theme.separator)
 
             if editing {
-                Text("Pon los valores de la etiqueta, por 100 g.").font(.caption).foregroundStyle(Theme.textSecondary)
+                Text("Pon el nombre y los valores de la etiqueta, por 100 g.")
+                    .font(.caption).foregroundStyle(Theme.textSecondary)
+                TextField("Nombre (p. ej. tortitas de arroz)", text: $editName)
+                    .padding(10)
+                    .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .accessibilityIdentifier("barcode.name")
                 labeled("Kcal / 100 g", $editKcal)
                 labeled("Proteínas / 100 g", $editProtein)
                 labeled("Carbohidratos / 100 g", $editCarbs)
@@ -206,14 +220,20 @@ struct BarcodeScannerView: View {
 
             Button("Añadir a mi \(type.label.lowercased())") { add(food, per100: per100) }
                 .buttonStyle(LimeButtonStyle())
-                .disabled((grams ?? 0) <= 0)
+                .disabled((grams ?? 0) <= 0 || !hasUsableName(food) || per100.kcal <= 0)
                 .accessibilityIdentifier("barcode.add")
+            if editing && !hasUsableName(food) {
+                Text("Ponle un nombre para poder guardarlo.")
+                    .font(.caption2).foregroundStyle(Theme.warning)
+            }
             HStack(spacing: 12) {
-                Button(editing ? "Dejar los datos de Open Food Facts" : "Corregir con la etiqueta") {
-                    if !editing { startEditing(food) }
-                    editing.toggle()
+                if !(editing && food.per100.kcal <= 0) {
+                    Button(editing ? "Dejar los datos de Open Food Facts" : "Corregir con la etiqueta") {
+                        if !editing { startEditing(food) }
+                        editing.toggle()
+                    }
+                    .font(.caption.weight(.semibold))
                 }
-                .font(.caption.weight(.semibold))
                 Spacer()
                 Button("Escanear otro") { reset() }.font(.caption.weight(.semibold))
             }
@@ -234,16 +254,12 @@ struct BarcodeScannerView: View {
             Label("No se ha podido usar ese código", systemImage: "barcode.viewfinder")
                 .font(.headline).foregroundStyle(Theme.warning)
             Text(message).font(.subheadline).foregroundStyle(Theme.textSecondary)
-            if OpenFoodFacts.isPlausible(barcode) {
-                Button("Apuntarlo a mano y guardarlo con su código") {
-                    let blank = ScannedFood(barcode: barcode, name: "", brand: "", per100: .zero,
-                                            missingMacros: [], note: "Apuntado por ti · \(barcode)")
-                    startEditing(blank)
-                    editing = true
-                    state = .product(blank, fromCatalog: false)
-                }
-                .buttonStyle(LimeButtonStyle())
+            Button(OpenFoodFacts.isPlausible(barcode)
+                   ? "Apuntarlo a mano y guardarlo con su código"
+                   : "Apuntarlo a mano y guardarlo") {
+                startManualEntry(barcode: barcode)
             }
+            .buttonStyle(LimeButtonStyle())
             Button("Volver a escanear") { reset() }
                 .buttonStyle(LimeButtonStyle(filled: false))
         }
@@ -278,7 +294,36 @@ struct BarcodeScannerView: View {
         }
     }
 
+    /// Rótulo de debajo del nombre: de dónde salen los datos que se ven.
+    private func subtitle(_ food: ScannedFood, fromCatalog: Bool) -> String {
+        let origin: String
+        if editing { origin = "Lo pones tú, con la etiqueta" }
+        else if fromCatalog { origin = "Ya lo tenías guardado" }
+        else { origin = "Open Food Facts" }
+        return food.barcode.isEmpty ? origin : "\(origin) · \(food.barcode)"
+    }
+
+    /// Hay nombre con el que guardarlo (el de la base, o el que escribes tú).
+    private func hasUsableName(_ food: ScannedFood) -> Bool {
+        if editing { return !editName.trimmingCharacters(in: .whitespaces).isEmpty }
+        return !food.name.isEmpty
+    }
+
+    /// Apuntar un producto que no está en ningún sitio: pantalla en blanco, la rellenas tú.
+    /// `barcode` puede ir vacío: hay cosas que ni código llevan (la fruta a granel, el pan).
+    private func startManualEntry(barcode rawCode: String) {
+        let code = rawCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        let valid = OpenFoodFacts.isPlausible(code) ? code : ""
+        let blank = ScannedFood(barcode: valid, name: "", brand: "", per100: .zero,
+                                missingMacros: [], note: "Apuntado por ti")
+        grams = 100
+        startEditing(blank)
+        editing = true
+        state = .product(blank, fromCatalog: false)
+    }
+
     private func startEditing(_ food: ScannedFood) {
+        editName = food.name
         editKcal = food.per100.kcal > 0 ? food.per100.kcal : nil
         editProtein = food.per100.protein > 0 ? food.per100.protein : nil
         editCarbs = food.per100.carbs > 0 ? food.per100.carbs : nil
@@ -292,17 +337,23 @@ struct BarcodeScannerView: View {
 
     private func add(_ food: ScannedFood, per100: NutritionValues) {
         guard let g = grams, g > 0 else { return }
-        let name = food.name.isEmpty ? "Producto \(food.barcode)" : food.title
-        let saved = DataStore.saveScanned(barcode: food.barcode, name: food.name.isEmpty ? name : food.name,
+        let typedName = editName.trimmingCharacters(in: .whitespaces)
+        let foodName = editing && !typedName.isEmpty ? typedName : food.name
+        guard !foodName.isEmpty else { return }
+        // El nombre que se ve en la comida lleva la marca delante cuando la hay.
+        let lineName = food.brand.isEmpty ? foodName : "\(food.brand) · \(foodName)"
+        let source = editing
+            ? (food.barcode.isEmpty ? "Etiqueta (lo has puesto tú)" : "Etiqueta (lo has puesto tú) · \(food.barcode)")
+            : food.note
+        let saved = DataStore.saveScanned(barcode: food.barcode, name: foodName,
                                           brand: food.brand, per100: per100,
-                                          source: editing ? "Etiqueta (lo has puesto tú) · \(food.barcode)" : food.note,
-                                          in: context)
+                                          source: source, in: context)
         if editing {
             saved.isUserEdited = true
             saved.isProvisional = false
         }
         DataStore.recordUse(of: saved, grams: g, in: context)
-        DataStore.addCustomItem(type, name: name, grams: g, per100: per100,
+        DataStore.addCustomItem(type, name: lineName, grams: g, per100: per100,
                                 source: .catalog, on: day, in: context)
         DS.haptic(.medium)
         onAdded()
@@ -311,6 +362,7 @@ struct BarcodeScannerView: View {
 
     private func reset() {
         editing = false
+        editName = ""
         grams = 100
         scanner.resume()
         state = .scanning

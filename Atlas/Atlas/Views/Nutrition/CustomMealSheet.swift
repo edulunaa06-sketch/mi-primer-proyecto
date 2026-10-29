@@ -160,6 +160,8 @@ struct CustomMealSheet: View {
     @State private var search = ""
     @State private var selectedFood: FoodItem?
     @State private var catalogGrams: Double? = 100
+    /// true = enseñar solo lo tuyo (escaneado o apuntado por ti), sin los de serie.
+    @State private var onlyMine = false
     // Manual
     @State private var manualName = ""
     @State private var manualGrams: Double?
@@ -167,6 +169,8 @@ struct CustomMealSheet: View {
     @State private var manualProtein: Double?
     @State private var manualCarbs: Double?
     @State private var manualFat: Double?
+    /// Guardar lo apuntado a mano en tus alimentos, para repetirlo sin volver a escribirlo.
+    @State private var manualSave = true
     /// Lo que apuntaste la última vez en esta comida (se lee una vez al abrir la hoja).
     @State private var lastTime: (date: Date?, items: [CustomMealItem])?
 
@@ -464,11 +468,26 @@ struct CustomMealSheet: View {
     // MARK: Catálogo y manual
 
     private var catalogCard: some View {
-        let filtered = search.isEmpty ? foods : foods.filter { FoodSearch.matches(name: $0.name, query: search) }
+        let mine = foods.filter(\.isMine)
+        let base = onlyMine ? mine : foods
+        let filtered = search.isEmpty ? base : base.filter { FoodSearch.matches(name: $0.name, query: search) }
         return VStack(alignment: .leading, spacing: 10) {
             TextField("Buscar alimento", text: $search)
                 .padding(10)
                 .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+            // Lo tuyo aparte: entre los 200 de serie, lo que escaneaste no se encuentra.
+            Picker("Qué alimentos", selection: $onlyMine) {
+                Text("Todos").tag(false)
+                Text(mine.isEmpty ? "Míos" : "Míos (\(mine.count))").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("catalog.scope")
+            if onlyMine && mine.isEmpty {
+                Text("Todavía no tienes ninguno. Los que escanees, o apuntes a mano con «Guardarlo "
+                     + "en mis alimentos», saldrán aquí con sus calorías por 100 g: luego solo pones "
+                     + "los gramos que comas.")
+                    .font(.caption).foregroundStyle(Theme.textSecondary)
+            }
             if let food = selectedFood {
                 HStack {
                     Text("\(food.name) (\(food.basis.label.lowercased()))").font(.subheadline.weight(.semibold))
@@ -494,6 +513,11 @@ struct CustomMealSheet: View {
                     catalogGrams = food.lastGrams > 0 ? food.lastGrams : 100
                 } label: {
                     HStack {
+                        if food.isScanned {
+                            Image(systemName: "barcode").font(.caption2).foregroundStyle(DS.cyan)
+                        } else if food.isMine {
+                            Image(systemName: "pencil").font(.caption2).foregroundStyle(DS.cyan)
+                        }
                         Text(food.displayName).foregroundStyle(Theme.textPrimary)
                         Spacer()
                         Text("\(NumberFormat.integer(food.kcalPer100)) kcal/100 g").font(.caption).foregroundStyle(Theme.textSecondary)
@@ -517,6 +541,16 @@ struct CustomMealSheet: View {
             field("Proteínas (g, opcional)", $manualProtein)
             field("Carbohidratos (g, opcional)", $manualCarbs)
             field("Grasas (g, opcional)", $manualFat)
+            VStack(alignment: .leading, spacing: 4) {
+                Toggle("Guardarlo en mis alimentos", isOn: $manualSave)
+                    .font(.subheadline)
+                    .tint(Theme.lime)
+                    .accessibilityIdentifier("manual.save")
+                Text(manualSave
+                     ? "Se guarda con sus calorías por 100 g. Otro día lo buscas en «Míos» y solo pones los gramos."
+                     : "Solo cuenta para hoy: no queda guardado.")
+                    .font(.caption2).foregroundStyle(Theme.textTertiary)
+            }
             Button("Añadir") { addManual() }
                 .buttonStyle(LimeButtonStyle())
                 .disabled(manualName.trimmingCharacters(in: .whitespaces).isEmpty || (manualGrams ?? 0) <= 0 || manualKcal == nil)
@@ -537,8 +571,17 @@ struct CustomMealSheet: View {
         let factor = 100 / grams
         let per100 = NutritionValues(kcal: kcal * factor, protein: (manualProtein ?? 0) * factor,
                                      carbs: (manualCarbs ?? 0) * factor, fat: (manualFat ?? 0) * factor)
-        DataStore.addCustomItem(type, name: manualName.trimmingCharacters(in: .whitespaces), grams: grams,
+        let name = manualName.trimmingCharacters(in: .whitespaces)
+        DataStore.addCustomItem(type, name: name, grams: grams,
                                 per100: per100, source: .manual, on: day, in: context)
+        if manualSave {
+            // Queda en «Míos» con sus valores por 100 g, y con los gramos de hoy ya puestos.
+            let saved = DataStore.saveScanned(barcode: "", name: name, brand: "", per100: per100,
+                                              source: "Etiqueta (lo has puesto tú)", in: context)
+            saved.isUserEdited = true
+            saved.isProvisional = false
+            DataStore.recordUse(of: saved, grams: grams, in: context)
+        }
         manualName = ""
         manualGrams = nil
         manualKcal = nil

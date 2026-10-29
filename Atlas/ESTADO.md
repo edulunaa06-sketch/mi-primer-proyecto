@@ -46,8 +46,8 @@ le falta parte de lo pedido · **No está** = no implementado, con el motivo.
 | Fibra, agua y micronutrientes | **Parcial** | Agua sí. Fibra y micronutrientes: en el modelo del catálogo, no como objetivo diario. |
 | Objetivos distintos en día de entreno y descanso | **No está** | |
 | Déficit, mantenimiento, superávit, recomposición | **Hecho** | Como objetivo del perfil. |
-| Búsqueda de alimentos, cantidades, marcas, propios | **Hecho** | |
-| Escáner de códigos de barras | **Hecho** | Cámara + Open Food Facts (base abierta y gratuita, sin clave). Lo escaneado se guarda en tu catálogo y la segunda vez funciona sin internet. Los datos son colaborativos: salen marcados como provisionales y se pueden corregir con la etiqueta. **No se ha podido probar una lectura real con cámara desde aquí**: eso se ve en el iPhone. |
+| Búsqueda de alimentos, cantidades, marcas, propios | **Hecho** | Filtro «Míos» en el catálogo: lo que escaneas o apuntas tú queda separado de los 200 que trae la app, con su marca y sus calorías por 100 g. |
+| Escáner de códigos de barras | **Hecho** | Cámara + Open Food Facts (base abierta y gratuita, sin clave). Lo escaneado se guarda en tus alimentos con su nombre y sus calorías por 100 g: la segunda vez funciona sin internet y solo hay que poner los gramos. Si el producto no está, o no tiene código (fruta a granel, pan), se apunta a mano con la etiqueta y queda guardado igual. Los datos son colaborativos: salen marcados como provisionales y se pueden corregir con la etiqueta. **No se ha podido probar una lectura real con cámara desde aquí**: eso se ve en el iPhone. |
 | Apuntar algo fuera de las comidas | **Hecho** | Hueco de extras (una cerveza, un paquete de patatas). Suma a las calorías del día y no toca los menús ni el cumplimiento, que sigue contando cuatro comidas. |
 | Registro por foto | **Hecho** | Con IA, si hay clave. |
 | Registro por voz | **No está** | |

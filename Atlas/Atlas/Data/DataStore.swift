@@ -678,6 +678,28 @@ extension DataStore {
         return (try? context.fetch(descriptor))?.first
     }
 
+    /// Lo que ya tienes guardado para ese producto. Por código de barras cuando lo hay; si no
+    /// (un alimento apuntado a mano, sin código), por nombre, para no acabar con diez «Tortilla».
+    @MainActor
+    static func existingFood(barcode: String, name: String, in context: ModelContext) -> FoodItem? {
+        if !barcode.isEmpty { return food(withBarcode: barcode, in: context) }
+        let clean = name.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !clean.isEmpty else { return nil }
+        let noSeed = ""
+        let descriptor = FetchDescriptor<FoodItem>(predicate: #Predicate { $0.seedKey == noSeed })
+        return (try? context.fetch(descriptor))?
+            .first { $0.name.trimmingCharacters(in: .whitespaces).lowercased() == clean }
+    }
+
+    /// Tus alimentos: lo que has escaneado o apuntado tú, sin los que trae la app de serie.
+    @MainActor
+    static func myFoods(in context: ModelContext) -> [FoodItem] {
+        let noSeed = ""
+        let descriptor = FetchDescriptor<FoodItem>(predicate: #Predicate { $0.seedKey == noSeed },
+                                                   sortBy: [SortDescriptor(\.name)])
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
     /// Guarda (o actualiza) en el catálogo lo que ha devuelto Open Food Facts.
     /// Se marca como provisional porque son datos de una base colaborativa: la etiqueta manda.
     /// Si el usuario ya lo corrigió a mano (`isUserEdited`), no se le pisan sus valores.
@@ -685,7 +707,7 @@ extension DataStore {
     @discardableResult
     static func saveScanned(barcode: String, name: String, brand: String, per100: NutritionValues,
                             source: String, in context: ModelContext) -> FoodItem {
-        if let existing = food(withBarcode: barcode, in: context) {
+        if let existing = existingFood(barcode: barcode, name: name, in: context) {
             if !existing.isUserEdited {
                 existing.name = name.isEmpty ? existing.name : name
                 existing.brand = brand
