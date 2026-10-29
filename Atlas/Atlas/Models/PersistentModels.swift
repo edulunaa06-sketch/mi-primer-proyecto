@@ -335,6 +335,15 @@ final class FoodItem {
     var isProvisional: Bool = true
     var isUserEdited: Bool = false
     var sourceNote: String = ""
+    /// Código de barras del producto (vacío si no viene de un escaneo).
+    var barcode: String = ""
+    /// Marca del producto, cuando se sabe.
+    var brand: String = ""
+    /// Veces que lo has apuntado: los más usados salen los primeros al añadir comida.
+    var timesUsed: Int = 0
+    var lastUsedAt: Date?
+    /// Los gramos que sueles poner de este alimento.
+    var lastGrams: Double = 100
 
     @Relationship(deleteRule: .nullify, inverse: \MealItem.food)
     var usages: [MealItem] = []
@@ -362,6 +371,14 @@ final class FoodItem {
     var per100: NutritionValues {
         NutritionValues(kcal: kcalPer100, protein: proteinPer100, carbs: carbsPer100, fat: fatPer100)
     }
+
+    /// Nombre con la marca delante, cuando la hay.
+    var displayName: String {
+        brand.isEmpty ? name : "\(brand) · \(name)"
+    }
+
+    /// Viene de escanear un código de barras.
+    var isScanned: Bool { !barcode.isEmpty }
 }
 
 @Model

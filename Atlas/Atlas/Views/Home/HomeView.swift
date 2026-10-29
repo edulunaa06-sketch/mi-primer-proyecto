@@ -35,7 +35,12 @@ struct HomeView: View {
         weekLogs.first { $0.sessionID == session.id }?.isCompleted ?? false
     }
 
+    /// Lo comido hoy, extras incluidos: son calorías como las demás.
     private var consumed: NutritionValues { NutritionMath.sum(todayMeals.map(\.values)) }
+    /// Comidas de las cuatro del día que están marcadas (los extras no cuentan como comida).
+    private var plannedMealsDone: Int {
+        Set(todayMeals.filter { $0.mealType.isPlanned }.map(\.mealTypeRaw)).count
+    }
 
 
     var body: some View {
@@ -50,7 +55,7 @@ struct HomeView: View {
                     HomeWaterCard(ml: todayWater.first?.ml ?? 0,
                                   goal: settings?.waterGoalMl ?? 2500)
                     HomeStreakCard()
-                    HomeComplianceCard(mealsCompleted: Set(todayMeals.map(\.mealTypeRaw)).count,
+                    HomeComplianceCard(mealsCompleted: plannedMealsDone,
                                        sessionsCompleted: trainableToday.filter(isCompleted).count,
                                        sessionsScheduled: trainableToday.count,
                                        stepGoal: settings?.stepGoal ?? 8000)
@@ -136,7 +141,7 @@ struct HomeView: View {
             HStack(spacing: 12) {
                 MetricTile(
                     title: "Comidas",
-                    value: "\(Set(todayMeals.map(\.mealTypeRaw)).count)/4",
+                    value: "\(plannedMealsDone)/4",
                     detail: "\(NumberFormat.integer(consumed.kcal)) kcal registradas",
                     symbol: "fork.knife"
                 )
@@ -307,7 +312,7 @@ private struct HomeStepsCard: View {
                 Text(steps.state == .unavailable
                      ? "Este dispositivo no tiene sensor de pasos."
                      : steps.state == .denied
-                     ? "Sin permiso para contar pasos. Actívalo en Ajustes › Privacidad y seguridad › Movimiento y forma física › ATLAS."
+                     ? "Sin permiso para contar pasos. Actívalo en Ajustes › Privacidad y seguridad › Movimiento y forma física › Now or Never."
                      : "Contando pasos… Si no aparecen, revisa Ajustes › Privacidad y seguridad › Movimiento y forma física.")
                     .font(.caption).foregroundStyle(Theme.textTertiary)
             }

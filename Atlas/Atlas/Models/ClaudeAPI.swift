@@ -52,7 +52,7 @@ enum ClaudeAPI {
     }
 
     static let estimateSystem = """
-    Eres el asistente de nutrición de la app ATLAS. El usuario describe en español lo que come o va a comer.
+    Eres el asistente de nutrición de la app Now or Never. El usuario describe en español lo que come o va a comer.
     Desglósalo en ingredientes con su peso estimado en gramos y sus valores por 100 g (kcal, proteínas, carbohidratos y grasas)
     según tablas de composición de referencia (BEDCA, USDA).
     - Si el usuario indica gramos, úsalos tal cual. Si no, estima una ración normal y dilo en la nota.
@@ -107,7 +107,7 @@ enum ClaudeAPI {
     }
 
     static let photoSystem = """
-    Eres el asistente de nutrición de la app ATLAS. Recibes la foto de un plato y el peso total de la comida en gramos
+    Eres el asistente de nutrición de la app Now or Never. Recibes la foto de un plato y el peso total de la comida en gramos
     (pesada en báscula, sin el plato). Identifica cada alimento visible (por ejemplo: pollo a la plancha, boniato asado,
     queso cottage, arroz, aceite) y reparte el peso total entre ellos según lo que ves.
     - La suma de los gramos de todos los ingredientes debe ser igual al peso total indicado.
@@ -174,7 +174,7 @@ enum ClaudeAPI {
     }
 
     static let detectSystem = """
-    Eres el asistente de nutrición de la app ATLAS. Recibes la foto de un plato o de los ingredientes de una comida.
+    Eres el asistente de nutrición de la app Now or Never. Recibes la foto de un plato o de los ingredientes de una comida.
     Enumera cada alimento distinto que se ve, con un nombre corto y concreto en español que indique cómo está
     (por ejemplo: «Pechuga de pollo a la plancha», «Boniato asado», «Queso cottage», «Atún al natural escurrido», «Aceite de oliva»).
     - No inventes alimentos que no se vean. Si algo es dudoso, ponlo igualmente con «(?)» al final para que el usuario lo revise.
@@ -212,7 +212,7 @@ enum ClaudeAPI {
     }
 
     static let calculateSystem = """
-    Eres el asistente de nutrición de la app ATLAS. El usuario ha pesado cada ingrediente de su comida.
+    Eres el asistente de nutrición de la app Now or Never. El usuario ha pesado cada ingrediente de su comida.
     Para CADA ingrediente de la lista, en el mismo orden y con los mismos gramos, da sus valores por 100 g (kcal, proteínas,
     carbohidratos y grasas) según tablas de composición de referencia (BEDCA, USDA), para el alimento tal y como se indica
     (cocinado si está cocinado; en crudo o en seco si lo dice). Si hay foto, úsala solo para saber cómo está preparado.
@@ -279,7 +279,7 @@ enum ClaudeAPI {
     }
 
     static let suggestSystem = """
-    Eres el asistente de nutrición de la app ATLAS. Propón comidas sencillas, saludables y realistas en España
+    Eres el asistente de nutrición de la app Now or Never. Propón comidas sencillas, saludables y realistas en España
     que se acerquen al objetivo de kcal y macros indicado para esa comida.
     - Usa EXCLUSIVAMENTE alimentos del catálogo, por su id exacto. Nunca inventes ids.
     - Indica los gramos tal y como se pesan en la báscula, según el estado que marca el catálogo (en seco, en crudo, escurrido...), en múltiplos de 5 g (aceite en múltiplos de 1 g).
@@ -374,7 +374,7 @@ enum ClaudeAPI {
     }
 
     static let coachSystem = """
-    Eres el entrenador y nutricionista de la app ATLAS. El usuario YA SABE ENTRENAR: trátalo como a alguien
+    Eres el entrenador y nutricionista de la app Now or Never. El usuario YA SABE ENTRENAR: trátalo como a alguien
     con experiencia, no le expliques lo básico ni le des charlas de motivación.
 
     Responde SIEMPRE en español, directo y concreto, con los números de sus datos.

@@ -4,6 +4,7 @@ import Foundation
 /// incluidas las fotos de progreso. No incluye la clave de Claude ni los tokens de Strava (Llavero).
 struct BackupFile: Codable, Equatable {
     static let currentFormat = 2
+    /// No cambia con el nombre de la app: las copias que ya tengas guardadas se siguen pudiendo importar.
     static let appIdentifier = "Atlas"
 
     var app: String = BackupFile.appIdentifier
@@ -32,6 +33,8 @@ struct BackupFile: Codable, Equatable {
     var supplements: [Supplement]?
     var supplementIntakes: [SupplementTaken]?
     var trainingWeeks: [Week]?
+    /// Los ejercicios que te has creado tú. Opcional: las copias anteriores no lo traen.
+    var customExercises: [CustomExerciseEntry]?
 
     struct Settings: Codable, Equatable {
         var kcalTarget: Double
@@ -197,6 +200,28 @@ struct BackupFile: Codable, Equatable {
         var isProvisional: Bool
         var isUserEdited: Bool
         var sourceNote: String
+        /// Del escaneo de códigos de barras. Opcionales: las copias anteriores no los traen.
+        var barcode: String?
+        var brand: String?
+        var timesUsed: Int?
+        var lastGrams: Double?
+    }
+
+    /// Un ejercicio creado por el usuario, con los músculos que él le puso.
+    struct CustomExerciseEntry: Codable, Equatable {
+        var id: String
+        var name: String
+        var primaryRaw: String
+        var secondaryRaw: String
+        var patternRaw: String
+        var equipmentRaw: String
+        var isUnilateral: Bool
+        var defaultSets: Int
+        var defaultRepMin: Int
+        var defaultRepMax: Int
+        var note: String
+        var previousNames: String
+        var createdAt: Date
     }
 
     struct Plan: Codable, Equatable {
@@ -308,7 +333,7 @@ struct BackupFile: Codable, Equatable {
 
         var errorDescription: String? {
             switch self {
-            case .notABackup: return "Este archivo no es una copia de seguridad de ATLAS."
+            case .notABackup: return "Este archivo no es una copia de seguridad de Now or Never."
             case .newerFormat(let v): return "La copia es de una versión más nueva de la app (formato \(v)). Actualiza la app para importarla."
             case .unreadable(let detail): return "No se pudo leer la copia: \(detail)"
             }
@@ -354,10 +379,13 @@ struct BackupFile: Codable, Equatable {
         if let records, !records.isEmpty { parts.append("\(records.count) récords") }
         if let recovery, !recovery.isEmpty { parts.append("\(recovery.count) días de recuperación") }
         if let supplements, !supplements.isEmpty { parts.append("\(supplements.count) suplementos") }
+        if let customExercises, !customExercises.isEmpty {
+            parts.append(NumberFormat.plural(customExercises.count, "1 ejercicio tuyo", "\(customExercises.count) ejercicios tuyos"))
+        }
         return parts.joined(separator: ", ")
     }
 
     static func suggestedFileName(for date: Date) -> String {
-        "Atlas-copia-\(DateUtils.dayKey(date)).json"
+        "NowOrNever-copia-\(DateUtils.dayKey(date)).json"
     }
 }

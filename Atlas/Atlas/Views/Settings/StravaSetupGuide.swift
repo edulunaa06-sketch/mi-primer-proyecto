@@ -21,7 +21,7 @@ struct StravaSetupGuide: View {
 
                 step(2, "Rellena el formulario así", nil) {
                     VStack(alignment: .leading, spacing: 8) {
-                        field("Nombre de la aplicación (Application Name)", "ATLAS")
+                        field("Nombre de la aplicación (Application Name)", "Now or Never")
                         field("Categoría (Category)", "Training (o cualquiera)")
                         field("Club", "Déjalo vacío")
                         field("Sitio web (Website)", "http://localhost")

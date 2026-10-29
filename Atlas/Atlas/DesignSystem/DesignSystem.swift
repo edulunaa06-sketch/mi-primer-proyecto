@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-/// Lenguaje visual de ATLAS: negro profundo con un resplandor índigo, tarjetas de cristal,
+/// Lenguaje visual de Now or Never: negro profundo con un resplandor índigo, tarjetas de cristal,
 /// degradado índigo → cian para las acciones y tipografía ancha para los títulos.
 enum DS {
     // Fondo y superficies

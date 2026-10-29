@@ -62,7 +62,7 @@ final class NotificationManager {
 
         let content = UNMutableNotificationContent()
         content.title = "Creatina"
-        content.body = "Hora de tomar tu creatina. ATLAS."
+        content.body = "Hora de tomar tu creatina. Now or Never."
         content.sound = .default
 
         var comps = DateComponents()
@@ -180,7 +180,7 @@ final class NotificationManager {
         try await ensureAuthorized()
         center.removePendingNotificationRequests(withIdentifiers: [Self.testID])
         let content = UNMutableNotificationContent()
-        content.title = "Prueba de ATLAS"
+        content.title = "Prueba de Now or Never"
         content.body = "Las notificaciones funcionan correctamente."
         content.sound = .default
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
@@ -191,7 +191,7 @@ final class NotificationManager {
     enum NotificationError: LocalizedError {
         case notAuthorized
         var errorDescription: String? {
-            "Las notificaciones están desactivadas. Actívalas en Ajustes › Notificaciones › ATLAS."
+            "Las notificaciones están desactivadas. Actívalas en Ajustes › Notificaciones › Now or Never."
         }
     }
 }

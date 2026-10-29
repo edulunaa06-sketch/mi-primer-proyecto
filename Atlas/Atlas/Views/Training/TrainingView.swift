@@ -85,6 +85,10 @@ struct TrainingView: View {
                     NavigationLink { StrengthStatsView() } label: { Image(systemName: "chart.bar.xaxis") }
                         .accessibilityLabel("Volumen, progresión y récords")
                 }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink { BodyMapView() } label: { Image(systemName: "figure.stand") }
+                        .accessibilityLabel("Cuerpo y rangos por músculo")
+                }
             }
             .navigationDestination(for: String.self) { sessionID in
                 if let session = WeeklyRoutine.session(id: sessionID) {

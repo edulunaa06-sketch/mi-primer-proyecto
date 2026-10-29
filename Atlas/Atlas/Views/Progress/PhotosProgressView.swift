@@ -173,7 +173,7 @@ struct PhotosProgressView: View {
     private var privacyCard: some View {
         VStack(alignment: .leading, spacing: 10) {
             Label("Privacidad", systemImage: "lock.fill").font(.headline)
-            Text("Las fotos se guardan cifradas por iOS dentro de ATLAS, solo en este iPhone. La app no las sube a ningún servidor. Ten en cuenta que las copias de seguridad del iPhone (iCloud o Finder) incluyen los datos de las apps.")
+            Text("Las fotos se guardan cifradas por iOS dentro de Now or Never, solo en este iPhone. La app no las sube a ningún servidor. Ten en cuenta que las copias de seguridad del iPhone (iCloud o Finder) incluyen los datos de las apps.")
                 .font(.footnote).foregroundStyle(Theme.textSecondary)
             Button("Eliminar todo el historial de fotos", role: .destructive) { confirmDeleteAll = true }
                 .font(.footnote.weight(.semibold))

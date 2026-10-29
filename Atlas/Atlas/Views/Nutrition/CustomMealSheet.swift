@@ -72,6 +72,60 @@ struct CustomItemRow: View {
     }
 }
 
+/// Lo que te comes fuera de las cuatro comidas: una cerveza, un paquete de patatas, el trozo
+/// de tarta del cumpleaños. No se planifica y no quita sitio a ninguna comida: simplemente
+/// suma a las calorías del día en cuanto lo apuntas.
+struct ExtrasCard: View {
+    let items: [CustomMealItem]
+    let onAdd: () -> Void
+    let onScan: () -> Void
+    let onRemove: (CustomMealItem) -> Void
+
+    var body: some View {
+        let totals = NutritionMath.sum(items.map(\.values))
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: MealType.extra.symbol).foregroundStyle(Theme.lime)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("Extras").font(.headline)
+                    Text("Lo que cae fuera de las cuatro comidas")
+                        .font(.caption2).foregroundStyle(Theme.textSecondary)
+                }
+                Spacer()
+                if !items.isEmpty {
+                    Text("≈ \(NumberFormat.integer(totals.kcal)) kcal")
+                        .font(.subheadline.weight(.bold).monospacedDigit()).foregroundStyle(Theme.lime)
+                }
+            }
+            if items.isEmpty {
+                Text("Nada de momento. Si te tomas algo fuera de las comidas, apúntalo aquí y cuenta en el día.")
+                    .font(.caption).foregroundStyle(Theme.textTertiary)
+            } else {
+                ForEach(items) { item in
+                    HStack {
+                        CustomItemRow(item: item)
+                        Button { onRemove(item) } label: {
+                            Image(systemName: "trash").foregroundStyle(Theme.danger)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Quitar \(item.name)")
+                    }
+                }
+                Text("P \(NumberFormat.oneDecimal(totals.protein)) g · C \(NumberFormat.oneDecimal(totals.carbs)) g · G \(NumberFormat.oneDecimal(totals.fat)) g")
+                    .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
+            }
+            HStack(spacing: 10) {
+                Button(action: onAdd) { Label("Añadir un extra", systemImage: "plus") }
+                    .buttonStyle(LimeButtonStyle())
+                Button(action: onScan) { Label("Escanear", systemImage: "barcode.viewfinder") }
+                    .buttonStyle(LimeButtonStyle(filled: false))
+            }
+        }
+        .card()
+        .accessibilityIdentifier("nutrition.extras")
+    }
+}
+
 /// Apuntar lo que como en una comida: con una foto del plato pesado, describiéndolo para que Claude lo calcule,
 /// del catálogo o a mano.
 /// También pide a Claude alternativas más saludables con alimentos del catálogo.
@@ -80,6 +134,8 @@ struct CustomMealSheet: View {
     let day: Date
     /// Objetivo de esta comida según el resto del día.
     let target: NutritionValues
+    /// Abrir el escáner de códigos de barras.
+    var onScan: (() -> Void)?
     var onDone: () -> Void
 
     /// Sin IA: de la tabla de alimentos o a mano.
@@ -129,9 +185,15 @@ struct CustomMealSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 14) {
-                    TargetHeader(title: "Objetivo para tu \(type.label.lowercased())",
-                                 subtitle: "Lo que te queda según el resto de comidas del día", target: target)
+                    if type.isPlanned {
+                        TargetHeader(title: "Objetivo para tu \(type.label.lowercased())",
+                                     subtitle: "Lo que te queda según el resto de comidas del día", target: target)
+                    } else {
+                        InfoBanner(text: "Un extra no quita sitio a ninguna comida: suma a las calorías del día "
+                                   + "en cuanto lo apuntas.")
+                    }
                     currentCard
+                    quickCard
                     Picker("Cómo añadir", selection: $mode) {
                         ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
                     }
@@ -161,6 +223,59 @@ struct CustomMealSheet: View {
         }
     }
 
+    // MARK: Lo de siempre
+
+    /// Los alimentos que más usas, de un toque y con los gramos que sueles poner.
+    /// Es lo que hace que apuntar el desayuno de todos los días no sea una excursión.
+    private var quickCard: some View {
+        let favourites = foods.filter { $0.timesUsed > 0 }
+            .sorted { ($0.timesUsed, $0.lastUsedAt ?? .distantPast) > ($1.timesUsed, $1.lastUsedAt ?? .distantPast) }
+            .prefix(8)
+        return VStack(alignment: .leading, spacing: 10) {
+            SectionHeader(title: "De un toque",
+                          subtitle: favourites.isEmpty
+                            ? "Aquí irán saliendo los alimentos que más apuntes, con tus gramos de siempre."
+                            : "Lo que más apuntas, con los gramos de la última vez.")
+            if let onScan {
+                Button { onScan() } label: {
+                    Label("Escanear un código de barras", systemImage: "barcode.viewfinder")
+                }
+                .buttonStyle(LimeButtonStyle())
+                .accessibilityIdentifier("custom.scan")
+            }
+            if !favourites.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(favourites)) { food in
+                            Button { quickAdd(food) } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(food.displayName).font(.caption.weight(.semibold))
+                                        .lineLimit(1)
+                                    Text("\(NumberFormat.integer(food.lastGrams)) g · \(NumberFormat.integer(food.per100.scaled(toGrams: food.lastGrams).kcal)) kcal")
+                                        .font(.caption2.monospacedDigit()).foregroundStyle(Theme.textSecondary)
+                                }
+                                .padding(.horizontal, 12).padding(.vertical, 8)
+                                .frame(maxWidth: 170, alignment: .leading)
+                                .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                                .foregroundStyle(Theme.textPrimary)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+            }
+        }
+        .card()
+    }
+
+    private func quickAdd(_ food: FoodItem) {
+        let grams = food.lastGrams > 0 ? food.lastGrams : 100
+        DataStore.addCustomItem(type, name: food.displayName, grams: grams, per100: food.per100,
+                                source: .catalog, on: day, in: context)
+        DataStore.recordUse(of: food, grams: grams, in: context)
+        DS.haptic(.light)
+    }
+
     // MARK: Lo apuntado
 
     private var currentCard: some View {
@@ -183,11 +298,13 @@ struct CustomMealSheet: View {
                 Divider().overlay(Theme.separator)
                 Text("Total: \(NumberFormat.integer(totals.kcal)) kcal · P \(NumberFormat.integer(totals.protein)) g · C \(NumberFormat.integer(totals.carbs)) g · G \(NumberFormat.integer(totals.fat)) g")
                     .font(.subheadline.weight(.semibold).monospacedDigit())
-                let diff = totals.kcal - target.kcal
-                Text(abs(diff) < 50 ? "Encaja con tu objetivo para esta comida."
-                     : diff > 0 ? "\(NumberFormat.integer(diff)) kcal por encima del objetivo: el resto del día se puede reajustar."
-                                : "\(NumberFormat.integer(-diff)) kcal por debajo del objetivo.")
-                    .font(.caption).foregroundStyle(abs(diff) < 50 ? Theme.lime : Theme.warning)
+                if type.isPlanned {
+                    let diff = totals.kcal - target.kcal
+                    Text(abs(diff) < 50 ? "Encaja con tu objetivo para esta comida."
+                         : diff > 0 ? "\(NumberFormat.integer(diff)) kcal por encima del objetivo: el resto del día se puede reajustar."
+                                    : "\(NumberFormat.integer(-diff)) kcal por debajo del objetivo.")
+                        .font(.caption).foregroundStyle(abs(diff) < 50 ? Theme.lime : Theme.warning)
+                }
                 if items.contains(where: { $0.source == .claude }) {
                     Text("Los alimentos marcados como «Estimación de Claude (IA)» son aproximados.")
                         .font(.caption2).foregroundStyle(Theme.textTertiary)
@@ -345,7 +462,9 @@ struct CustomMealSheet: View {
                     .font(.caption.monospacedDigit()).foregroundStyle(Theme.lime)
                 Button("Añadir") {
                     guard let g = catalogGrams, g > 0 else { return }
-                    DataStore.addCustomItem(type, name: food.name, grams: g, per100: food.per100, source: .catalog, on: day, in: context)
+                    DataStore.addCustomItem(type, name: food.displayName, grams: g, per100: food.per100,
+                                            source: .catalog, on: day, in: context)
+                    DataStore.recordUse(of: food, grams: g, in: context)
                     selectedFood = nil
                 }
                 .buttonStyle(LimeButtonStyle())
@@ -354,9 +473,10 @@ struct CustomMealSheet: View {
             ForEach(filtered.prefix(30)) { food in
                 Button {
                     selectedFood = food
+                    catalogGrams = food.lastGrams > 0 ? food.lastGrams : 100
                 } label: {
                     HStack {
-                        Text(food.name).foregroundStyle(Theme.textPrimary)
+                        Text(food.displayName).foregroundStyle(Theme.textPrimary)
                         Spacer()
                         Text("\(NumberFormat.integer(food.kcalPer100)) kcal/100 g").font(.caption).foregroundStyle(Theme.textSecondary)
                     }

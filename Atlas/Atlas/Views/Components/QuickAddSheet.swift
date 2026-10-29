@@ -7,6 +7,8 @@ struct QuickAddSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var showWeight = false
+    @State private var showScanner = false
+    @State private var showExtra = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -15,6 +17,8 @@ struct QuickAddSheet: View {
                 .padding(.top, 8)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                 tile("Comida", "fork.knife", Theme.carbs) { go(.nutrition) }
+                tile("Escanear alimento", "barcode.viewfinder", DS.cyan) { showScanner = true }
+                tile("Extra (cerveza, snack…)", "takeoutbag.and.cup.and.straw.fill", Theme.fat) { showExtra = true }
                 tile("Entreno", "dumbbell.fill", DS.indigo) { go(.training) }
                 tile("Peso", "scalemass.fill", DS.cyan) { showWeight = true }
                 tile("Agua +250 ml", "drop.fill", DS.water) {
@@ -32,6 +36,20 @@ struct QuickAddSheet: View {
         .background(AtlasBackground())
         .presentationCornerRadius(28)
         .sheet(isPresented: $showWeight, onDismiss: { dismiss() }) { WeightEntrySheet() }
+        // Lo que te comes fuera de las comidas se apunta desde aquí sin dar un rodeo.
+        .sheet(isPresented: $showScanner, onDismiss: { dismiss() }) {
+            BarcodeScannerView(type: .extra, day: Date()) { syncExtras() }
+        }
+        .sheet(isPresented: $showExtra, onDismiss: { dismiss() }) {
+            CustomMealSheet(type: .extra, day: Date(), target: .zero) { syncExtras() }
+        }
+    }
+
+    /// Deja el día al tanto de los extras apuntados (cuentan en las calorías en cuanto se apuntan).
+    private func syncExtras() {
+        let items = DataStore.customItems(for: .extra, on: Date(), in: context)
+        DataStore.setMeal(.extra, values: NutritionMath.sum(items.map(\.values)), planName: "Extras",
+                          completed: !items.isEmpty, on: Date(), in: context)
     }
 
     /// Cierra esta hoja y cambia de pestaña cuando ya se ha ido.

@@ -18,6 +18,9 @@ enum DataStore {
             UserDefaults.standard.set(Date(), forKey: firstLaunchKey)
         }
         seedRoutineIfNeeded(context)
+        // Los ejercicios que se ha creado el usuario entran en el catálogo: a partir de aquí
+        // cuentan en el volumen por músculo igual que los de la biblioteca.
+        StrengthStore.refreshCustomCatalog(in: context)
 
         seedCatalogIfNeeded(context, defaults: .standard)
     }
@@ -661,5 +664,67 @@ enum DataStore {
         }
         try? context.save()
         return factor
+    }
+}
+
+// MARK: - Alimentos escaneados y usados a menudo
+
+extension DataStore {
+    /// Alimento guardado con ese código de barras (lo escaneado una vez funciona ya sin internet).
+    @MainActor
+    static func food(withBarcode barcode: String, in context: ModelContext) -> FoodItem? {
+        guard !barcode.isEmpty else { return nil }
+        let descriptor = FetchDescriptor<FoodItem>(predicate: #Predicate { $0.barcode == barcode })
+        return (try? context.fetch(descriptor))?.first
+    }
+
+    /// Guarda (o actualiza) en el catálogo lo que ha devuelto Open Food Facts.
+    /// Se marca como provisional porque son datos de una base colaborativa: la etiqueta manda.
+    /// Si el usuario ya lo corrigió a mano (`isUserEdited`), no se le pisan sus valores.
+    @MainActor
+    @discardableResult
+    static func saveScanned(barcode: String, name: String, brand: String, per100: NutritionValues,
+                            source: String, in context: ModelContext) -> FoodItem {
+        if let existing = food(withBarcode: barcode, in: context) {
+            if !existing.isUserEdited {
+                existing.name = name.isEmpty ? existing.name : name
+                existing.brand = brand
+                existing.kcalPer100 = per100.kcal
+                existing.proteinPer100 = per100.protein
+                existing.carbsPer100 = per100.carbs
+                existing.fatPer100 = per100.fat
+                existing.sourceNote = source
+            }
+            try? context.save()
+            return existing
+        }
+        let food = FoodItem(name: name.isEmpty ? barcode : name, per100: per100, basis: .asWeighed,
+                            macrosKnown: true, isProvisional: true, sourceNote: source)
+        food.barcode = barcode
+        food.brand = brand
+        context.insert(food)
+        try? context.save()
+        return food
+    }
+
+    /// Apunta que has usado ese alimento, con los gramos de esta vez.
+    /// Sirve para que los de siempre salgan arriba y con tus gramos ya puestos.
+    @MainActor
+    static func recordUse(of food: FoodItem, grams: Double, in context: ModelContext) {
+        food.timesUsed += 1
+        food.lastUsedAt = Date()
+        if grams > 0 { food.lastGrams = grams }
+        try? context.save()
+    }
+
+    /// Los alimentos que más usas, los primeros. Es el acceso rápido de «lo de siempre».
+    @MainActor
+    static func mostUsedFoods(limit: Int = 12, in context: ModelContext) -> [FoodItem] {
+        var descriptor = FetchDescriptor<FoodItem>(
+            predicate: #Predicate { $0.timesUsed > 0 },
+            sortBy: [SortDescriptor(\.timesUsed, order: .reverse), SortDescriptor(\.lastUsedAt, order: .reverse)]
+        )
+        descriptor.fetchLimit = limit
+        return (try? context.fetch(descriptor)) ?? []
     }
 }

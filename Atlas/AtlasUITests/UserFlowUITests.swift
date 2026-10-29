@@ -117,14 +117,15 @@ final class UserFlowUITests: XCTestCase {
         scrollTo(push).tap()
 
         app.buttons["Editar"].tap()
-        let add = app.buttons["Añadir ejercicio"]
+        let add = app.buttons["Crear un ejercicio mío"]
         XCTAssertTrue(add.waitForExistence(timeout: 5))
         add.tap()
-        let name = app.textFields["Nombre del ejercicio"]
+        // El ejercicio del usuario lleva su músculo: por eso sus series cuentan en el volumen.
+        let name = app.textFields["custom.exercise.name"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap()
         name.typeText("Fondos en paralelas")
-        app.buttons["Guardar"].tap()
+        app.buttons["custom.exercise.save"].tap()
         XCTAssertTrue(element(containing: "Fondos en paralelas").waitForExistence(timeout: 5))
         app.buttons["Hecho"].tap()
 
@@ -195,7 +196,7 @@ final class UserFlowUITests: XCTestCase {
 
     func test5_LogWhatIEatAndRebalance() {
         tab("Comer")
-        let custom = app.buttons["Como otra cosa: apuntarla"].firstMatch
+        let custom = app.buttons["He comido otra cosa: apuntarlo"].firstMatch
         XCTAssertTrue(scrollTo(custom).exists)
         custom.tap()
         assertAppears(element(containing: "Lo que como"), "Pantalla de comida libre")
@@ -523,5 +524,54 @@ final class UserFlowUITests: XCTestCase {
         let long = hangs.compactMap { Double($0.replacingOccurrences(of: " s", with: "").replacingOccurrences(of: ",", with: ".")) }.filter { $0 >= 2 }
         XCTAssertTrue(long.isEmpty, "La app se congeló: \(hangs)")
         XCTAssertTrue(slow.isEmpty, "Pantallas lentas: \(slow.joined(separator: ", "))")
+    }
+
+    /// Lo nuevo: el cuerpo con los rangos por músculo y el hueco de los extras en Comer.
+    func test14_BodyMapAndExtras() {
+        func shoot(_ name: String) {
+            let shot = XCTAttachment(screenshot: app.screenshot())
+            shot.name = name
+            shot.lifetime = .keepAlways
+            add(shot)
+        }
+
+        // El cuerpo por músculos, desde la barra superior de Entrenar.
+        tab("Entrenar")
+        let body = app.buttons["Cuerpo y rangos por músculo"].firstMatch
+        assertAppears(body, timeout: 10, "Botón del mapa del cuerpo")
+        body.tap()
+        assertAppears(element(containing: "Todos los músculos"), timeout: 15, "Lista de músculos")
+        XCTAssertTrue(app.buttons["De espalda"].firstMatch.exists, "Selector de lado")
+        shoot("cuerpo-frente")
+        app.buttons["De espalda"].firstMatch.tap()
+        XCTAssertTrue(scrollTo(element(containing: "Dorsal")).exists, "Dorsal en la lista")
+        shoot("cuerpo-espalda")
+        // El rango se explica: de dónde sale y qué falta para subir.
+        XCTAssertTrue(scrollTo(element(containing: "series directas")).exists)
+        app.navigationBars.buttons.firstMatch.tap()
+
+        // Los extras: una cerveza fuera de las cuatro comidas.
+        tab("Comer")
+        let extras = app.descendants(matching: .any).matching(identifier: "nutrition.extras").firstMatch
+        assertAppears(scrollTo(extras), timeout: 15, "Tarjeta de extras")
+        shoot("comer-extras")
+        let add = app.buttons["Añadir un extra"].firstMatch
+        scrollTo(add).tap()
+        assertAppears(element(containing: "Lo que como"), timeout: 10, "Hoja para apuntar el extra")
+        app.buttons["Manual"].firstMatch.tap()
+        let name = app.textFields["Nombre (p. ej. bocadillo de lomo)"]
+        assertAppears(name, timeout: 10, "Nombre del extra")
+        name.tap()
+        name.typeText("Cerveza")
+        let numbers = app.textFields.matching(NSPredicate(format: "placeholderValue == %@", "0"))
+        type("330", into: numbers.element(boundBy: 0))
+        type("140", into: numbers.element(boundBy: 1))
+        app.toolbars.buttons["Listo"].firstMatch.tap()
+        scrollTo(app.buttons["Añadir"].firstMatch).tap()
+        assertAppears(element(containing: "Total: 140 kcal"), timeout: 10, "Total del extra")
+        app.buttons["Hecho"].tap()
+        // Y queda apuntado en el día, fuera de las cuatro comidas.
+        XCTAssertTrue(scrollTo(element(containing: "Cerveza")).exists, "El extra aparece en el día")
+        shoot("comer-extra-apuntado")
     }
 }

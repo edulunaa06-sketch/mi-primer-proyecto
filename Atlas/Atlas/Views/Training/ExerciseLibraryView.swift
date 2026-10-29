@@ -11,6 +11,10 @@ struct ExerciseLibraryView: View {
     var pickHint: String?
 
     @Environment(\.dismiss) private var dismiss
+    /// No se usa para pintar la lista (los ejercicios tuyos ya están en el catálogo), pero
+    /// hace que la pantalla se vuelva a dibujar en cuanto creas o cambias uno.
+    @Query private var mine: [CustomExercise]
+    @State private var creating = false
     @State private var search = ""
     @State private var muscle: MuscleGroup?
     @State private var pattern: MovementPattern?
@@ -40,6 +44,21 @@ struct ExerciseLibraryView: View {
             }
             .listRowBackground(Theme.card)
 
+            Section {
+                if onPick == nil {
+                    NavigationLink { MyExercisesView() } label: {
+                        Label("Mis ejercicios (\(mine.count))", systemImage: "square.and.pencil")
+                    }
+                } else {
+                    Button { creating = true } label: {
+                        Label("Crear un ejercicio mío", systemImage: "plus.circle.fill")
+                    }
+                }
+            } footer: {
+                Text("¿No está el tuyo? Créalo con el músculo que trabaja y contará igual que los de aquí.")
+            }
+            .listRowBackground(Theme.card)
+
             if results.isEmpty {
                 Section {
                     EmptyStateView(symbol: "magnifyingglass", title: "Sin resultados",
@@ -64,6 +83,13 @@ struct ExerciseLibraryView: View {
         .toolbar {
             if onPick != nil {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } }
+            }
+        }
+        .sheet(isPresented: $creating) {
+            CustomExerciseFormView { created in
+                // Recién creado y ya elegido: se añade a la sesión sin tener que buscarlo.
+                onPick?(created.info)
+                dismiss()
             }
         }
     }
@@ -94,6 +120,12 @@ struct ExerciseLibraryView: View {
                     .font(.caption2).foregroundStyle(Theme.textSecondary)
             }
             Spacer()
+            if info.isCustom {
+                Text("Tuyo").font(.caption2.weight(.bold))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Theme.limeDim, in: Capsule())
+                    .foregroundStyle(Theme.lime)
+            }
             if info.isUnilateral {
                 Text("1 lado").font(.caption2.weight(.bold))
                     .padding(.horizontal, 6).padding(.vertical, 2)

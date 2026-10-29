@@ -111,7 +111,8 @@ struct TrackingSnapshot {
         self.trackingStart = trackingStart
         self.currentStepGoal = stepGoal
         var meals2: [String: Set<String>] = [:]
-        for m in meals { meals2[m.dayKey, default: []].insert(m.mealTypeRaw) }
+        // Los extras NO cuentan como comida cumplida: el día sigue teniendo cuatro comidas.
+        for m in meals where m.mealType.isPlanned { meals2[m.dayKey, default: []].insert(m.mealTypeRaw) }
         mealsByDay = meals2.mapValues(\.count)
         completedLogKeys = Set(logs.filter(\.isCompleted).map(\.key))
         stepsByDay = Dictionary(steps.map { ($0.dayKey, $0) }, uniquingKeysWith: { a, b in a.steps >= b.steps ? a : b })

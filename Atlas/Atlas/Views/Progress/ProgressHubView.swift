@@ -4,7 +4,7 @@ import SwiftUI
 
 struct ProgressHubView: View {
     enum ProgressSection: String, CaseIterable, Identifiable {
-        case weight = "Peso", week = "Semana", medals = "Medallas", photos = "Fotos"
+        case weight = "Peso", body = "Cuerpo", week = "Semana", medals = "Medallas", photos = "Fotos"
         var id: String { rawValue }
     }
 
@@ -21,6 +21,7 @@ struct ProgressHubView: View {
                 .padding(.vertical, 8)
                 switch section {
                 case .weight: WeightProgressView()
+                case .body: BodyMapView()
                 case .week: WeeklySummaryView()
                 case .medals: MedalsView()
                 case .photos: PhotosProgressView()

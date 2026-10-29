@@ -17,6 +17,7 @@ struct NutritionView: View {
     @State private var swapping: MealType?
     @State private var showBuilder = false
     @State private var customFor: MealType?
+    @State private var scanning: MealType?
     @State private var rebalanceMessage: String?
 
     private var settings: UserSettings? { settingsList.first }
@@ -96,10 +97,12 @@ struct NutritionView: View {
                                 onAddItem: { addingTo = meal.template },
                                 onSwap: { swapping = meal.type },
                                 onReset: resetAction(for: meal),
-                                onCustom: { customFor = meal.type }
+                                onCustom: { customFor = meal.type },
+                                onScan: { scanning = meal.type }
                             )
                             }
                         }
+                        extrasCard(items: dayCustom[.extra] ?? [])
                         InfoBanner(text: "Menús y valores de EJEMPLO: cifras aproximadas por 100 g, no un plan calculado clínicamente. Revisa cada alimento con su etiqueta en el Catálogo.")
                     } else {
                         EmptyStateView(symbol: "fork.knife", title: "Sin menús", message: "No se ha podido cargar el catálogo de ejemplo. Crea alimentos en el Catálogo.")
@@ -147,13 +150,22 @@ struct NutritionView: View {
                     refreshRecords()
                 }
             }
+            .sheet(item: $scanning) { type in
+                BarcodeScannerView(type: type, day: day) {
+                    if type == .extra { syncExtras() } else { refreshRecords() }
+                }
+            }
             .sheet(item: $customFor) { type in
                 CustomMealSheet(
                     type: type,
                     day: day,
-                    target: MealPlanner.target(for: type, daily: dailyTargets, fixed: fixedValues(except: type))
+                    // Un extra no tiene objetivo: no quita sitio a ninguna comida, solo suma.
+                    target: type.isPlanned
+                        ? MealPlanner.target(for: type, daily: dailyTargets, fixed: fixedValues(except: type))
+                        : .zero,
+                    onScan: { scanning = type }
                 ) {
-                    refreshRecords()
+                    if type == .extra { syncExtras() } else { refreshRecords() }
                 }
             }
             #if DEBUG
@@ -251,7 +263,7 @@ struct NutritionView: View {
             settings: settings
         )
         let done = Set(((try? context.fetch(FetchDescriptor<MealRecord>(predicate: #Predicate { $0.dayKey == key }))) ?? []).map(\.mealTypeRaw))
-        for type in MealType.allCases where done.contains(type.rawValue) {
+        for type in MealType.everyday where done.contains(type.rawValue) {
             let custom = DataStore.customItems(for: type, on: day, in: context)
             if !custom.isEmpty {
                 DataStore.setMeal(type, values: NutritionMath.sum(custom.map(\.values)), planName: "Lo que he comido",
@@ -260,6 +272,30 @@ struct NutritionView: View {
                 DataStore.setMeal(type, values: meal.totals, planName: meal.sourceName, completed: true, on: day, in: context)
             }
         }
+    }
+
+    // MARK: Extras
+
+    /// Lo que te comes fuera de las cuatro comidas. No se planifica: en cuanto lo apuntas
+    /// cuenta como comido, porque una cerveza no se queda a medias.
+    private func extrasCard(items: [CustomMealItem]) -> some View {
+        ExtrasCard(
+            items: items,
+            onAdd: { customFor = .extra },
+            onScan: { scanning = .extra },
+            onRemove: { item in
+                context.delete(item)
+                try? context.save()
+                syncExtras()
+            }
+        )
+    }
+
+    /// Mantiene el registro del día al tanto de los extras apuntados.
+    private func syncExtras() {
+        let items = DataStore.customItems(for: .extra, on: day, in: context)
+        DataStore.setMeal(.extra, values: NutritionMath.sum(items.map(\.values)), planName: "Extras",
+                          completed: !items.isEmpty, on: day, in: context)
     }
 
     // MARK: Tarjetas
@@ -324,7 +360,7 @@ struct NutritionView: View {
                         .foregroundStyle(Theme.textSecondary)
                     Label(status.title, systemImage: status.symbol)
                         .font(.caption.weight(.bold)).foregroundStyle(Theme.color(status))
-                    Text("\(records.count) de 4 comidas completadas")
+                    Text(mealsDoneText)
                         .font(.caption).foregroundStyle(Theme.textTertiary)
                 }
             }
@@ -333,6 +369,15 @@ struct NutritionView: View {
             MacroRow(name: Macro.fat.name, consumed: consumed.fat, target: target?.fatTarget ?? 0, color: Macro.fat.color)
         }
         .card()
+    }
+
+    /// «2 de 4 comidas completadas», y los extras aparte para que no parezcan una quinta comida.
+    private var mealsDoneText: String {
+        let planned = records.filter { $0.mealType.isPlanned }.count
+        let extras = (customByType[.extra] ?? []).count
+        let base = "\(planned) de 4 comidas completadas"
+        guard extras > 0 else { return base }
+        return base + " · " + NumberFormat.plural(extras, "1 extra", "\(extras) extras")
     }
 
     private func dayTotalsCard(meals: [ResolvedMeal], custom: [MealType: [CustomMealItem]]) -> some View {
@@ -347,6 +392,12 @@ struct NutritionView: View {
             }
             Text("Ajuste con tus objetivos: \(NumberFormat.percent(MealPlanner.fit(t, to: dailyTargets)))")
                 .font(.caption.weight(.semibold)).foregroundStyle(Theme.lime)
+            if let extras = custom[.extra], !extras.isEmpty {
+                let e = NutritionMath.sum(extras.map(\.values))
+                Text("Y además, en extras: \(NumberFormat.integer(e.kcal)) kcal "
+                     + "(total del día \(NumberFormat.integer(t.kcal + e.kcal)) kcal).")
+                    .font(.caption).foregroundStyle(Theme.warning)
+            }
             if meals.contains(where: { $0.template.hasProvisionalValues }) {
                 Text("Incluye valores provisionales (marcados con ⚠︎).")
                     .font(.caption2).foregroundStyle(Theme.warning)
@@ -382,6 +433,8 @@ struct MealCard: View {
     var onReset: (() -> Void)?
     /// Apuntar otra cosa que comes en lugar de esta comida.
     var onCustom: (() -> Void)?
+    /// Escanear el código de barras de algo que te comes en esta comida.
+    var onScan: (() -> Void)?
 
     private var isScaled: Bool { abs(factor - 1) > 0.001 }
 
@@ -450,23 +503,29 @@ struct MealCard: View {
             Text("P \(NumberFormat.oneDecimal(totals.protein)) g · C \(NumberFormat.oneDecimal(totals.carbs)) g · G \(NumberFormat.oneDecimal(totals.fat)) g")
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(Theme.textSecondary)
-            if onSwap != nil || onReset != nil {
-                HStack(spacing: 10) {
-                    if let onSwap {
-                        Button(action: onSwap) {
-                            Label("Cambiar \(meal.mealType.label.lowercased())", systemImage: "arrow.triangle.2.circlepath")
-                        }
-                        .buttonStyle(LimeButtonStyle(filled: false))
-                    }
-                    if let onReset {
-                        Button("Volver al menú", action: onReset)
+            // Lo que más se usa es apuntar lo que has comido de verdad, así que ese es el botón
+            // grande; cambiar de menú, que se usa de uvas a peras, queda como enlace pequeño.
+            if let onCustom {
+                Button(action: onCustom) {
+                    Label("He comido otra cosa: apuntarlo", systemImage: "square.and.pencil")
+                }
+                .buttonStyle(LimeButtonStyle())
+            }
+            HStack(spacing: 14) {
+                if let onScan {
+                    Button(action: onScan) {
+                        Label("Escanear", systemImage: "barcode.viewfinder")
                             .font(.caption.weight(.semibold))
                     }
                 }
-            }
-            if let onCustom {
-                Button(action: onCustom) {
-                    Label("Como otra cosa: apuntarla", systemImage: "square.and.pencil")
+                if let onSwap {
+                    Button(action: onSwap) {
+                        Label("Cambiar \(meal.mealType.label.lowercased())", systemImage: "arrow.triangle.2.circlepath")
+                            .font(.caption.weight(.semibold))
+                    }
+                }
+                if let onReset {
+                    Button("Volver al menú", action: onReset)
                         .font(.caption.weight(.semibold))
                 }
             }

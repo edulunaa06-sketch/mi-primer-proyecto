@@ -247,3 +247,93 @@ final class TrainingWeek {
         self.note = note
     }
 }
+
+// MARK: - Ejercicio creado por el usuario
+
+/// Un ejercicio que no está en la biblioteca y que el usuario se crea, diciendo qué músculo
+/// trabaja. Así cuenta en el volumen por músculo, en el mapa del cuerpo y en los informes.
+///
+/// El enganche con lo registrado es el NOMBRE (el catálogo busca por nombre cuando no reconoce
+/// el identificador). Por eso, al renombrarlo, el nombre anterior se guarda en `previousNames`:
+/// lo que ya habías apuntado sigue contando.
+@Model
+final class CustomExercise {
+    @Attribute(.unique) var id: String = ""
+    var name: String = ""
+    var primaryRaw: String = MuscleGroup.chest.rawValue
+    /// Músculos secundarios separados por "|".
+    var secondaryRaw: String = ""
+    var patternRaw: String = MovementPattern.horizontalPush.rawValue
+    var equipmentRaw: String = Equipment.machine.rawValue
+    var isUnilateral: Bool = false
+    var defaultSets: Int = 3
+    var defaultRepMin: Int = 8
+    var defaultRepMax: Int = 12
+    /// Nota del usuario: cómo lo hace él (ángulo, agarre, máquina concreta…).
+    var note: String = ""
+    /// Nombres que tuvo antes, separados por "|".
+    var previousNames: String = ""
+    var createdAt: Date = Date()
+
+    init(name: String, primary: MuscleGroup, secondary: [MuscleGroup] = [],
+         pattern: MovementPattern, equipment: Equipment, unilateral: Bool = false,
+         sets: Int = 3, repMin: Int = 8, repMax: Int = 12, note: String = "") {
+        self.id = "mio-" + UUID().uuidString.lowercased()
+        self.name = name
+        self.primaryRaw = primary.rawValue
+        self.secondaryRaw = CustomExercise.join(secondary.map(\.rawValue))
+        self.patternRaw = pattern.rawValue
+        self.equipmentRaw = equipment.rawValue
+        self.isUnilateral = unilateral
+        self.defaultSets = sets
+        self.defaultRepMin = repMin
+        self.defaultRepMax = repMax
+        self.note = note
+        self.createdAt = Date()
+    }
+
+    static func join(_ parts: [String]) -> String { parts.joined(separator: "|") }
+    static func split(_ text: String) -> [String] {
+        text.split(separator: "|").map(String.init).filter { !$0.isEmpty }
+    }
+
+    var primary: MuscleGroup {
+        get { MuscleGroup(rawValue: primaryRaw) ?? .chest }
+        set { primaryRaw = newValue.rawValue }
+    }
+
+    var secondary: [MuscleGroup] {
+        get { CustomExercise.split(secondaryRaw).compactMap(MuscleGroup.init(rawValue:)) }
+        set { secondaryRaw = CustomExercise.join(newValue.map(\.rawValue)) }
+    }
+
+    var pattern: MovementPattern {
+        get { MovementPattern(rawValue: patternRaw) ?? .horizontalPush }
+        set { patternRaw = newValue.rawValue }
+    }
+
+    var equipment: Equipment {
+        get { Equipment(rawValue: equipmentRaw) ?? .machine }
+        set { equipmentRaw = newValue.rawValue }
+    }
+
+    var aliases: [String] { CustomExercise.split(previousNames) }
+
+    /// Guarda el nombre viejo como alias antes de cambiarlo.
+    func rename(to newName: String) {
+        let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, ExerciseCatalog.normalize(trimmed) != ExerciseCatalog.normalize(name) else { return }
+        var previous = aliases
+        if !previous.contains(name) { previous.append(name) }
+        previousNames = CustomExercise.join(previous)
+        name = trimmed
+    }
+
+    /// Ficha para la biblioteca y para el reparto de volumen.
+    var info: ExerciseInfo {
+        CustomExerciseRules.info(id: id, name: name, primary: primary, secondary: secondary,
+                                 pattern: pattern, equipment: equipment, unilateral: isUnilateral,
+                                 sets: defaultSets, repMin: defaultRepMin, repMax: defaultRepMax,
+                                 note: note, aliases: aliases)
+    }
+}

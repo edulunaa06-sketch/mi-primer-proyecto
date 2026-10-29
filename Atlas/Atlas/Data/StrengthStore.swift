@@ -493,3 +493,104 @@ enum StrengthStore {
                          isDeloadWeek: isDeloadWeek(DateUtils.startOfWeek(date), in: context))
     }
 }
+
+// MARK: - Ejercicios creados por el usuario
+
+extension StrengthStore {
+    @MainActor
+    static func customExercises(in context: ModelContext) -> [CustomExercise] {
+        let descriptor = FetchDescriptor<CustomExercise>(sortBy: [SortDescriptor(\.name)])
+        return (try? context.fetch(descriptor)) ?? []
+    }
+
+    /// Mete los ejercicios del usuario en el catálogo. Hay que llamarlo al abrir la app y
+    /// cada vez que se crea, cambia o borra uno: a partir de ahí cuentan en el volumen por músculo.
+    @MainActor
+    static func refreshCustomCatalog(in context: ModelContext) {
+        ExerciseCatalog.useCustom(customExercises(in: context).map(\.info))
+    }
+
+    /// Crea un ejercicio del usuario. Devuelve nil si el nombre no vale (ya existe, está vacío…).
+    @MainActor
+    @discardableResult
+    static func createCustomExercise(name: String, primary: MuscleGroup, secondary: [MuscleGroup],
+                                     pattern: MovementPattern, equipment: Equipment, unilateral: Bool,
+                                     sets: Int, repMin: Int, repMax: Int, note: String,
+                                     in context: ModelContext) -> CustomExercise? {
+        let mine = customExercises(in: context).map { (id: $0.id, name: $0.name) }
+        guard CustomExerciseRules.validate(name: name, mine: mine) == nil else { return nil }
+        let exercise = CustomExercise(name: name.trimmingCharacters(in: .whitespacesAndNewlines),
+                                      primary: primary, secondary: secondary.filter { $0 != primary },
+                                      pattern: pattern, equipment: equipment, unilateral: unilateral,
+                                      sets: sets, repMin: repMin, repMax: repMax,
+                                      note: note.trimmingCharacters(in: .whitespacesAndNewlines))
+        context.insert(exercise)
+        try? context.save()
+        refreshCustomCatalog(in: context)
+        return exercise
+    }
+
+    /// Guarda los cambios de un ejercicio del usuario. Al cambiarle el nombre, el anterior se
+    /// queda como alias para que lo ya registrado siga contando.
+    @MainActor
+    static func updateCustomExercise(_ exercise: CustomExercise, name: String, primary: MuscleGroup,
+                                     secondary: [MuscleGroup], pattern: MovementPattern,
+                                     equipment: Equipment, unilateral: Bool, sets: Int,
+                                     repMin: Int, repMax: Int, note: String,
+                                     in context: ModelContext) {
+        exercise.rename(to: name)
+        exercise.primary = primary
+        exercise.secondary = secondary.filter { $0 != primary }
+        exercise.pattern = pattern
+        exercise.equipment = equipment
+        exercise.isUnilateral = unilateral
+        exercise.defaultSets = sets
+        exercise.defaultRepMin = repMin
+        exercise.defaultRepMax = repMax
+        exercise.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
+        try? context.save()
+        refreshCustomCatalog(in: context)
+    }
+
+    /// Borra la ficha. Lo registrado NO se borra: lo que pasa es que esas series dejan de
+    /// repartirse por músculo (vuelven a contar como ejercicio sin clasificar).
+    @MainActor
+    static func deleteCustomExercise(_ exercise: CustomExercise, in context: ModelContext) {
+        context.delete(exercise)
+        try? context.save()
+        refreshCustomCatalog(in: context)
+    }
+
+    /// Cuántas series tienes ya apuntadas con ese nombre (para avisar antes de borrarlo).
+    @MainActor
+    static func loggedSetCount(forExerciseNamed name: String, in context: ModelContext) -> Int {
+        let normalized = ExerciseCatalog.normalize(name)
+        let logs = (try? context.fetch(FetchDescriptor<ExerciseLog>())) ?? []
+        return logs.filter { ExerciseCatalog.normalize($0.displayName) == normalized }
+            .reduce(0) { $0 + $1.workSets }
+    }
+}
+
+// MARK: - Rango por músculo
+
+extension StrengthStore {
+    /// Todo el trabajo registrado, desde el principio. Es lo que alimenta el mapa del cuerpo.
+    @MainActor
+    static func allWork(in context: ModelContext) -> [VolumeAnalytics.ExerciseWork] {
+        let sessions = (try? context.fetch(FetchDescriptor<WorkoutSessionLog>())) ?? []
+        var out: [VolumeAnalytics.ExerciseWork] = []
+        for session in sessions {
+            let date = session.completedAt ?? session.finishedAt ?? session.weekStart
+            for exerciseLog in session.exercises {
+                guard let summary = exerciseLog.summary(on: date) else { continue }
+                out.append(VolumeAnalytics.ExerciseWork(summary: summary, name: exerciseLog.displayName))
+            }
+        }
+        return out
+    }
+
+    @MainActor
+    static func muscleLevels(in context: ModelContext) -> [MuscleLevel.Status] {
+        MuscleLevel.statuses(work: allWork(in: context))
+    }
+}

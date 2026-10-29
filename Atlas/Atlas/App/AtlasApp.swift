@@ -24,6 +24,7 @@ struct AtlasApp: App {
         SupplementEntry.self,
         SupplementIntake.self,
         RoutineExercise.self,
+        CustomExercise.self,
         SessionTitle.self,
         FoodItem.self,
         MenuPlan.self,

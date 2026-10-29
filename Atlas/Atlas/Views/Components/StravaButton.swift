@@ -23,7 +23,7 @@ struct StravaLaunchButton: View {
             }
             .buttonStyle(LimeButtonStyle())
 
-            Text(resultMessage ?? "La carrera se graba y se guarda en Strava. ATLAS no graba GPS.")
+            Text(resultMessage ?? "La carrera se graba y se guarda en Strava. Now or Never no graba GPS.")
                 .font(.caption)
                 .foregroundStyle(Theme.textSecondary)
         }

@@ -74,7 +74,7 @@ struct CoachView: View {
             Text("Se activa en Ajustes, y la clave se guarda solo en el Llavero de tu iPhone.")
                 .font(.caption).foregroundStyle(Theme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)
-            Text("Todo lo demás de ATLAS funciona igual sin clave: entrenamientos, nutrición, volumen, "
+            Text("Todo lo demás de Now or Never funciona igual sin clave: entrenamientos, nutrición, volumen, "
                  + "progresión, informes y copia de seguridad.")
                 .font(.caption).foregroundStyle(Theme.textTertiary)
                 .fixedSize(horizontal: false, vertical: true)

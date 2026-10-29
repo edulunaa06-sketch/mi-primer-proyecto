@@ -235,6 +235,6 @@ final class TrackingTests: XCTestCase {
         XCTAssertThrowsError(try BackupFile.decode(try newer.encoded())) { error in
             XCTAssertEqual(error as? BackupFile.BackupError, .newerFormat(BackupFile.currentFormat + 1))
         }
-        XCTAssertEqual(BackupFile.suggestedFileName(for: day(2026, 10, 23)), "Atlas-copia-2026-10-23.json")
+        XCTAssertEqual(BackupFile.suggestedFileName(for: day(2026, 10, 23)), "NowOrNever-copia-2026-10-23.json")
     }
 }

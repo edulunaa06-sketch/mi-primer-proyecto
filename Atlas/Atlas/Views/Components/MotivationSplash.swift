@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Frase motivadora al volver a la app tras 10 minutos o más fuera (al abrirla sale la intro de ATLAS).
+/// Frase motivadora al volver a la app tras 10 minutos o más fuera (al abrirla sale la intro de Now or Never).
 /// Se cierra sola a los 4 segundos o al tocarla.
 struct MotivationSplash: View {
     let quote: Motivation.Quote

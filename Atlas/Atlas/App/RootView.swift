@@ -121,7 +121,7 @@ struct RootView: View {
                 }
             }
             .overlay {
-                // La intro de ATLAS: se dibuja el logo, sale el nombre y se va hacia ti.
+                // La intro de Now or Never: se dibuja el logo, sale el nombre y se va hacia ti.
                 if showCurtain {
                     IntroView { showCurtain = false }
                         .zIndex(2)
@@ -179,7 +179,7 @@ struct RootView: View {
         }
     }
 
-    /// Cápsula flotante de ATLAS: Hoy, Comer, «+», Entrenar y Progreso. Va como `safeAreaInset`,
+    /// Cápsula flotante de Now or Never: Hoy, Comer, «+», Entrenar y Progreso. Va como `safeAreaInset`,
     /// así que reserva su propio sitio y nunca puede tapar el final de una pantalla.
     private var tabBar: some View {
         HStack(spacing: 0) {

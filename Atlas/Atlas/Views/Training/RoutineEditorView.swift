@@ -63,11 +63,12 @@ struct RoutineEditorView: View {
                     Button { addingFromLibrary = true } label: {
                         Label("Añadir de la biblioteca", systemImage: "books.vertical.fill")
                     }
-                    Button { adding = true } label: { Label("Añadir ejercicio", systemImage: "plus.circle.fill") }
+                    Button { adding = true } label: { Label("Crear un ejercicio mío", systemImage: "plus.circle.fill") }
                     Button("Restaurar rutina predeterminada", role: .destructive) { confirmRestore = true }
                 } footer: {
-                    Text("La biblioteca trae 57 ejercicios con su músculo principal, el patrón, el material y los "
-                         + "errores frecuentes. «Añadir ejercicio» es para escribir uno que no esté.")
+                    Text("La biblioteca trae \(ExerciseCatalog.all.count) ejercicios con su músculo principal, el patrón, "
+                         + "el material y los errores frecuentes. Si el tuyo no está, créalo: al decirle qué músculo "
+                         + "trabaja, las series que apuntes cuentan en el volumen de ese músculo.")
                 }
                 .listRowBackground(Theme.card)
             }
@@ -117,8 +118,8 @@ struct RoutineEditorView: View {
                 }
             }
             .sheet(isPresented: $adding) {
-                ExerciseFormView(title: "Nuevo ejercicio", name: "", sets: 3, repMin: 8, repMax: 12, nameEditable: true) { name, sets, lo, hi in
-                    DataStore.addExercise(to: session.id, name: name, sets: sets, repMin: lo, repMax: hi, in: context)
+                CustomExerciseFormView { created in
+                    StrengthStore.addExercise(to: session.id, from: created.info, in: context)
                 }
             }
             .confirmationDialog("¿Restaurar la rutina predeterminada de esta sesión?", isPresented: $confirmRestore, titleVisibility: .visible) {

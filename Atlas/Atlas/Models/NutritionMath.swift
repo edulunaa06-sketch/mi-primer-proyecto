@@ -80,8 +80,22 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
     case lunch
     case snack
     case dinner
+    /// Lo que te comes fuera de las cuatro comidas: una cerveza, un paquete de patatas,
+    /// un trozo de tarta en un cumpleaños. Suma a las calorías del día pero NO se planifica.
+    case extra
+
+    /// OJO: `allCases` son SOLO las cuatro comidas que se planifican. Los menús, el reparto
+    /// de macros y el cumplimiento del día cuentan cuatro comidas, no cinco. Para recorrer
+    /// también los extras está `everyday`.
+    static var allCases: [MealType] { [.breakfast, .lunch, .snack, .dinner] }
+
+    /// Las cuatro comidas y, al final, el hueco de los extras.
+    static let everyday: [MealType] = allCases + [.extra]
 
     var id: String { rawValue }
+
+    /// Se planifica con menús y entra en el reparto de macros del día.
+    var isPlanned: Bool { self != .extra }
 
     var label: String {
         switch self {
@@ -89,6 +103,7 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
         case .lunch: return "Almuerzo"
         case .snack: return "Merienda"
         case .dinner: return "Cena"
+        case .extra: return "Extra"
         }
     }
 
@@ -98,6 +113,7 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
         case .lunch: return "sun.max.fill"
         case .snack: return "cup.and.saucer.fill"
         case .dinner: return "moon.stars.fill"
+        case .extra: return "takeoutbag.and.cup.and.straw.fill"
         }
     }
 
@@ -107,6 +123,7 @@ enum MealType: String, Codable, CaseIterable, Identifiable {
         case .lunch: return 1
         case .snack: return 2
         case .dinner: return 3
+        case .extra: return 4
         }
     }
 }

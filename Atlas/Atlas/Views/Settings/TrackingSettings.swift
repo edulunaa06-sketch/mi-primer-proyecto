@@ -111,7 +111,7 @@ struct SmartRemindersSection: View {
         Binding(get: { settings[keyPath: keyPath] }, set: { value in
             Task {
                 if value, !(await notifications.ensurePermission()) {
-                    problem = "Las notificaciones están desactivadas. Actívalas en Ajustes › Notificaciones › ATLAS."
+                    problem = "Las notificaciones están desactivadas. Actívalas en Ajustes › Notificaciones › Now or Never."
                     settings[keyPath: keyPath] = false
                 } else {
                     problem = nil
@@ -237,6 +237,8 @@ struct BackupSection: View {
         defer { isWorking = false }
         do {
             try BackupService.restore(file, into: context)
+            // Los ejercicios tuyos de la copia vuelven al catálogo sin tener que reabrir la app.
+            StrengthStore.refreshCustomCatalog(in: context)
             let s = DataStore.settings(context)
             strava.configure(clientID: s.stravaClientID)
             if s.creatineReminderEnabled { try? await notifications.scheduleCreatine(hour: s.creatineHour, minute: s.creatineMinute) }

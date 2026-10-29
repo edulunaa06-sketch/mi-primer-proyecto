@@ -75,7 +75,15 @@ enum BackupService {
         file.foods = try all(FoodItem.self).map {
             BackupFile.Food(id: $0.id, seedKey: $0.seedKey, name: $0.name, kcalPer100: $0.kcalPer100, proteinPer100: $0.proteinPer100,
                   carbsPer100: $0.carbsPer100, fatPer100: $0.fatPer100, macrosKnown: $0.macrosKnown, basisRaw: $0.basisRaw,
-                  isProvisional: $0.isProvisional, isUserEdited: $0.isUserEdited, sourceNote: $0.sourceNote)
+                  isProvisional: $0.isProvisional, isUserEdited: $0.isUserEdited, sourceNote: $0.sourceNote,
+                  barcode: $0.barcode, brand: $0.brand, timesUsed: $0.timesUsed, lastGrams: $0.lastGrams)
+        }
+        file.customExercises = try all(CustomExercise.self).map {
+            BackupFile.CustomExerciseEntry(id: $0.id, name: $0.name, primaryRaw: $0.primaryRaw,
+                  secondaryRaw: $0.secondaryRaw, patternRaw: $0.patternRaw, equipmentRaw: $0.equipmentRaw,
+                  isUnilateral: $0.isUnilateral, defaultSets: $0.defaultSets, defaultRepMin: $0.defaultRepMin,
+                  defaultRepMax: $0.defaultRepMax, note: $0.note, previousNames: $0.previousNames,
+                  createdAt: $0.createdAt)
         }
         file.plans = try all(MenuPlan.self).map { plan in
             BackupFile.Plan(id: plan.id, number: plan.number, name: plan.name, note: plan.note, isExample: plan.isExample, isLibrary: plan.isLibrary,
@@ -231,8 +239,25 @@ enum BackupService {
                                 isProvisional: f.isProvisional, sourceNote: f.sourceNote, seedKey: f.seedKey)
             food.id = f.id
             food.isUserEdited = f.isUserEdited
+            food.barcode = f.barcode ?? ""
+            food.brand = f.brand ?? ""
+            food.timesUsed = f.timesUsed ?? 0
+            food.lastGrams = f.lastGrams ?? 100
             context.insert(food)
             foodsByID[f.id] = food
+        }
+        for e in file.customExercises ?? [] {
+            let exercise = CustomExercise(name: e.name,
+                                          primary: MuscleGroup(rawValue: e.primaryRaw) ?? .chest,
+                                          secondary: CustomExercise.split(e.secondaryRaw).compactMap(MuscleGroup.init(rawValue:)),
+                                          pattern: MovementPattern(rawValue: e.patternRaw) ?? .horizontalPush,
+                                          equipment: Equipment(rawValue: e.equipmentRaw) ?? .machine,
+                                          unilateral: e.isUnilateral, sets: e.defaultSets,
+                                          repMin: e.defaultRepMin, repMax: e.defaultRepMax, note: e.note)
+            exercise.id = e.id
+            exercise.previousNames = e.previousNames
+            exercise.createdAt = e.createdAt
+            context.insert(exercise)
         }
         for p in file.plans {
             let plan = MenuPlan(number: p.number, name: p.name, note: p.note, isExample: p.isExample)
@@ -333,6 +358,7 @@ enum BackupService {
         try wipe(StravaActivityRecord.self)
         try wipe(DailySteps.self)
         try wipe(DayMarkRecord.self)
+        try wipe(CustomExercise.self)
         try context.save()
         let files = (try? FileManager.default.contentsOfDirectory(at: PhotoStorage.directory, includingPropertiesForKeys: nil)) ?? []
         for f in files { try? FileManager.default.removeItem(at: f) }

@@ -50,7 +50,7 @@ struct CameraCaptureView: View {
             ZStack {
                 switch camera.state {
                 case .denied:
-                    message("ATLAS no tiene permiso para usar la cámara. Actívalo en Ajustes › ATLAS › Cámara, o elige la foto de la galería.")
+                    message("Now or Never no tiene permiso para usar la cámara. Actívalo en Ajustes › Now or Never › Cámara, o elige la foto de la galería.")
                 case .unavailable:
                     message("Este dispositivo no tiene cámara disponible (por ejemplo, el simulador). Elige la foto de la galería.")
                 case .starting, .running:

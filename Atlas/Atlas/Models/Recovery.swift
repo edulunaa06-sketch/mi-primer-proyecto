@@ -184,7 +184,7 @@ enum RecoveryAnalysis {
         if entry.hasDiscomfort {
             out.append("Has apuntado una molestia. Las agujetas se van en unos días; un dolor que va a más, "
                        + "que es agudo o que te limita el movimiento lo tiene que ver un profesional sanitario. "
-                       + "ATLAS no diagnostica ni trata lesiones.")
+                       + "Now or Never no diagnostica ni trata lesiones.")
         }
 
         // Sueño corto mantenido: se mira el día de hoy y los anteriores seguidos.

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Paleta y estilos compartidos de ATLAS.
+/// Paleta y estilos compartidos de Now or Never.
 ///
-/// Todo el color de la app pasa por aquí, y aquí se traduce al lenguaje visual de ATLAS (`DS`):
+/// Todo el color de la app pasa por aquí, y aquí se traduce al lenguaje visual de Now or Never (`DS`):
 /// negro profundo con resplandor índigo, tarjetas de cristal y degradado índigo → cian en las acciones.
 /// Las pantallas siguen escribiendo `Theme.algo`, así que cambiar la estética es cambiar este archivo.
 enum Theme {
@@ -71,12 +71,12 @@ struct CardModifier: ViewModifier {
 }
 
 extension View {
-    /// Tarjeta de cristal de ATLAS.
+    /// Tarjeta de cristal de Now or Never.
     func card(padding: CGFloat = 16) -> some View {
         modifier(CardModifier(padding: padding))
     }
 
-    /// Fondo común de todas las pantallas: negro con los dos resplandores de ATLAS.
+    /// Fondo común de todas las pantallas: negro con los dos resplandores de Now or Never.
     func screenBackground() -> some View {
         self
             .scrollContentBackground(.hidden)

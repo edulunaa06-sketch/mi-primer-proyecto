@@ -25,11 +25,14 @@ struct ExerciseInfo: Identifiable, Hashable {
     let safety: String?
     /// En qué se diferencia de sus parientes cercanos.
     let trait: String
+    /// Lo ha creado el usuario (no viene en la biblioteca).
+    let isCustom: Bool
 
     init(_ id: String, _ name: String, primary: MuscleGroup, secondary: [MuscleGroup] = [],
          pattern: MovementPattern, equipment: Equipment, unilateral: Bool = false,
          sets: Int = 3, reps: ClosedRange<Int> = 8...12, aliases: [String] = [],
-         execution: [String], mistakes: [String], safety: String? = nil, trait: String) {
+         execution: [String], mistakes: [String], safety: String? = nil, trait: String,
+         isCustom: Bool = false) {
         self.id = id
         self.name = name
         self.aliases = aliases
@@ -45,6 +48,7 @@ struct ExerciseInfo: Identifiable, Hashable {
         self.mistakes = mistakes
         self.safety = safety
         self.trait = trait
+        self.isCustom = isCustom
     }
 
     var defaultRepRange: String { ExerciseDefinition.formatRange(min: defaultRepMin, max: defaultRepMax) }
@@ -93,11 +97,15 @@ enum ExerciseCatalog {
     static func info(id: String, name: String? = nil) -> ExerciseInfo? {
         if let direct = byID[id] { return direct }
         if let canonical = byID[canonicalID(id)] { return canonical }
+        if let mine = custom(id: id, name: name) { return mine }
         if let name, let match = byName[normalize(name)] { return match }
         return nil
     }
 
     static func info(named name: String) -> ExerciseInfo? { byName[normalize(name)] }
+
+    /// La biblioteca y los ejercicios que ha creado el usuario, todo junto.
+    static var everything: [ExerciseInfo] { all + customExercises }
 
     /// Compara sin acentos, sin mayúsculas y sin espacios de más.
     static func normalize(_ text: String) -> String {
@@ -111,7 +119,7 @@ enum ExerciseCatalog {
     static func search(_ text: String, muscle: MuscleGroup? = nil, pattern: MovementPattern? = nil,
                        equipment: Equipment? = nil) -> [ExerciseInfo] {
         let needle = normalize(text)
-        return all.filter { info in
+        return everything.filter { info in
             if let muscle, !info.allMuscles.contains(muscle) { return false }
             if let pattern, info.pattern != pattern { return false }
             if let equipment, info.equipment != equipment { return false }
@@ -122,15 +130,16 @@ enum ExerciseCatalog {
     }
 
     static func byMuscle(_ group: MuscleGroup) -> [ExerciseInfo] {
-        all.filter { $0.primary == group }.sorted { $0.name < $1.name }
+        everything.filter { $0.primary == group }.sorted { $0.name < $1.name }
     }
 
     /// Ejercicios que trabajan el mismo músculo principal con el mismo patrón: los candidatos
     /// más razonables para sustituir uno sin cambiar el objetivo de la sesión.
     /// Se ordenan poniendo primero los que comparten patrón y músculo, y luego los del mismo músculo.
     static func alternatives(to info: ExerciseInfo, equipment: Equipment? = nil, limit: Int = 8) -> [ExerciseInfo] {
-        let samePattern = all.filter { $0.id != info.id && $0.pattern == info.pattern && $0.primary == info.primary }
-        let sameMuscle = all.filter { $0.id != info.id && $0.primary == info.primary && $0.pattern != info.pattern }
+        let pool = everything
+        let samePattern = pool.filter { $0.id != info.id && $0.pattern == info.pattern && $0.primary == info.primary }
+        let sameMuscle = pool.filter { $0.id != info.id && $0.primary == info.primary && $0.pattern != info.pattern }
         let ordered = samePattern + sameMuscle
         let filtered = equipment == nil ? ordered : ordered.filter { $0.equipment == equipment }
         return Array(filtered.prefix(limit))

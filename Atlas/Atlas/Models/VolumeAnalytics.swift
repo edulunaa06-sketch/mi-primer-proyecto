@@ -21,19 +21,24 @@ enum VolumeAnalytics {
         /// Kilos movidos (peso × repeticiones) en esas series.
         let volumeKg: Double
         let totalReps: Int
+        /// 1RM estimado de la mejor serie de ese día. Sirve para ver si los pesos suben.
+        let estimatedOneRepMax: Double?
 
-        init(exerciseID: String, name: String, date: Date, workSets: Int, volumeKg: Double, totalReps: Int = 0) {
+        init(exerciseID: String, name: String, date: Date, workSets: Int, volumeKg: Double,
+             totalReps: Int = 0, estimatedOneRepMax: Double? = nil) {
             self.exerciseID = exerciseID
             self.name = name
             self.date = date
             self.workSets = workSets
             self.volumeKg = volumeKg
             self.totalReps = totalReps
+            self.estimatedOneRepMax = estimatedOneRepMax
         }
 
         init(summary: ExerciseSessionSummary, name: String) {
             self.init(exerciseID: summary.exerciseID, name: name, date: summary.date,
-                      workSets: summary.workSets, volumeKg: summary.volumeKg, totalReps: summary.totalReps)
+                      workSets: summary.workSets, volumeKg: summary.volumeKg, totalReps: summary.totalReps,
+                      estimatedOneRepMax: summary.estimatedOneRepMax)
         }
 
         /// Ficha del ejercicio, si está en la biblioteca.
