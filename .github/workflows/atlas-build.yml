@@ -1,4 +1,4 @@
-name: iOS build (ATLAS)
+name: iOS build (Now or Never)
 
 on:
   push:

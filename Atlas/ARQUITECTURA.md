@@ -1,4 +1,10 @@
-# ATLAS · Arquitectura
+# Now or Never · Arquitectura
+
+> El proyecto, la carpeta y el objetivo de Xcode siguen llamándose `Atlas`, igual que el
+> identificador `com.example.atlas` y el almacén de SwiftData. Es a propósito: cambiarlos haría
+> que el iPhone tratara la app como otra distinta y se perdería lo que ya hay dentro. Lo que
+> cambió es la marca que se ve.
+
 
 App iOS nativa en Swift y SwiftUI, con SwiftData para guardar los datos en el propio iPhone.
 Sin servidor, sin cuenta y sin suscripción: todo funciona en el dispositivo.
@@ -43,10 +49,13 @@ Son funciones puras sobre valores. Eso tiene dos consecuencias prácticas:
 |---|---|
 | `Models/Strength.swift` | `LoggedSet` (peso, reps, RIR, RPE, descanso, tipo de serie), `OneRepMax` (Epley, Brzycki, Lombardi), `ExerciseSessionSummary`, `StrengthTrend`, `PersonalRecords`, `PlateMath`, `SessionClock` |
 | `Models/MuscleGroup.swift` | 18 grupos musculares, 22 patrones de movimiento, 10 materiales y `VolumeReference` |
-| `Models/ExerciseCatalog.swift` | 57 fichas de ejercicio: músculos, patrón, material, ejecución, errores, seguridad, variantes y `difference` |
+| `Models/ExerciseCatalog.swift` | 58 fichas de ejercicio: músculos, patrón, material, ejecución, errores, seguridad, variantes y `difference`. Guarda además los ejercicios del usuario (`useCustom`), que se consultan igual que los de la biblioteca |
+| `Models/CustomExercises.swift` | Reglas de los ejercicios que se crea el usuario: validación del nombre, patrón sugerido por músculo y su entrada en el catálogo |
+| `Models/MuscleLevels.swift` | Rango por músculo: semanas productivas, tope por semanas naturales y la parte que aporta subir pesos |
+| `Models/BodyMap.swift` | Coordenadas del cuerpo de frente y de espalda, por músculo. Se describe medio cuerpo y se refleja |
 | `Models/VolumeAnalytics.swift` | Series directas e indirectas, tonelaje, frecuencia, programado frente a realizado y avisos |
 | `Models/ProgressionEngine.swift` | Progresión doble con RIR, estancamiento, descarga y series planificadas |
-| `Models/TrainingModels.swift` | SwiftData: `SetLog`, `PersonalRecordEntry`, `RecoveryLogEntry`, `SupplementEntry`, `SupplementIntake`, `TrainingWeek` |
+| `Models/TrainingModels.swift` | SwiftData: `SetLog`, `PersonalRecordEntry`, `RecoveryLogEntry`, `SupplementEntry`, `SupplementIntake`, `TrainingWeek`, `CustomExercise` |
 | `Data/StrengthStore.swift` | Puente entre la base de datos y los cálculos: series de la sesión, historial, récords, descarga, informes |
 
 ### Nutrición
@@ -54,6 +63,16 @@ Son funciones puras sobre valores. Eso tiene dos consecuencias prácticas:
 `Models/NutritionMath.swift`, `EnergyCalculator.swift` (Mifflin-St Jeor), `MealPlanner.swift`,
 `FoodSearch.swift`, `Data/SeedCatalog.swift` y las pantallas de `Views/Nutrition/`.
 Los totales **siempre** se suman desde los ingredientes; nunca se guarda un total escrito a mano.
+
+El día tiene cuatro comidas que se planifican (`MealType.allCases`) y un hueco aparte para los
+extras (`MealType.extra`, y `MealType.everyday` para recorrerlo todo). Un extra suma a las
+calorías del día pero no entra en los menús ni en el cumplimiento: el día sigue teniendo cuatro
+comidas, no cinco.
+
+`Models/FoodFacts.swift` lee la respuesta de Open Food Facts y valida el código de barras
+(incluido el dígito de control); `Services/BarcodeLookup.swift` hace la llamada y
+`Views/Nutrition/BarcodeScannerView.swift` pone la cámara. Lo escaneado se guarda como
+`FoodItem` con su código, así que la segunda vez no hace falta internet.
 
 ### Cuerpo, recuperación y suplementos
 

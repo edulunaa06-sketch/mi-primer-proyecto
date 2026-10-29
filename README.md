@@ -2,7 +2,10 @@
 
 En este repositorio conviven tres cosas. Cada una está en su carpeta y no se pisan entre ellas.
 
-## `Atlas/` — ATLAS, la app de iOS (lo que está en desarrollo)
+## `Atlas/` — Now or Never, la app de iOS (lo que está en desarrollo)
+
+> La carpeta, el proyecto de Xcode y el identificador siguen llamándose `Atlas`: cambiarlos
+> haría que el iPhone tratara la app como otra distinta y se perderían los datos ya guardados.
 
 App nativa de entrenamiento, nutrición y progreso. Swift + SwiftUI + SwiftData, sin servidor,
 sin cuenta y sin suscripción: los datos viven en el iPhone.
@@ -36,7 +39,7 @@ firmarlo con tu Apple ID**. Está explicado paso a paso en el documento de insta
 
 ## `NowOrNever/` — la versión anterior de la app
 
-La app de la que salió ATLAS. Se conserva entera y con su propio CI por si hace falta volver a
+La app de la que salió Now or Never. Se conserva entera y con su propio CI por si hace falta volver a
 mirar algo. No es donde se trabaja.
 
 ## Raíz (`index.html`, `app.html`, `sw.js`…) — Kcalia, la web instalable

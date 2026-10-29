@@ -1,4 +1,9 @@
-# Traspaso de trabajo: app ATLAS (iOS)
+# Traspaso de trabajo: app Now or Never (iOS)
+
+> **La app se llama Now or Never** desde el 29/10/2026. El proyecto, la carpeta, el objetivo de
+> Xcode, el identificador `com.example.atlas` y el almacén de SwiftData **siguen llamándose
+> Atlas a propósito**: cambiarlos haría que el iPhone tratara la app como otra distinta y el
+> usuario perdería sus datos. No los cambies sin que él lo pida sabiendo eso.
 
 ## Quién es el usuario y cómo trabajar con él
 - Responde SIEMPRE en español. No es técnico; explica las cosas de forma sencilla.
@@ -33,7 +38,7 @@ calendario, medallas, copia de seguridad, Strava, IA opcional):
 - Suplementos con dosis, coste al mes, evidencia, duplicados y avisos.
 
 ## Pruebas
-- 235 pruebas de lógica se ejecutan **en Linux** con el toolchain de Swift. Es la forma rápida
+- 301 pruebas de lógica se ejecutan **en Linux** con el toolchain de Swift. Es la forma rápida
   de trabajar: copia a un paquete SwiftPM los archivos que solo importan Foundation y los corre.
   El script de sincronización está en el directorio temporal de la sesión; se rehace en dos minutos
   (ver «Pruebas» en ARQUITECTURA.md).
@@ -46,7 +51,27 @@ calendario, medallas, copia de seguridad, Strava, IA opcional):
 - Al terminar en verde: copiar el IPA a `Atlas/dist/Atlas.ipa` con `git add -f` y `[skip ci]`
   en el mensaje, entregarlo con SendUserFile y explicar la instalación.
 
-## Por dónde va (25/10/2026, sesión de Opus 5)
+## Por dónde va (29/10/2026, sesión de Opus 5)
+
+El usuario pidió, por este orden: que no se pierdan sus datos (lleva días usándola), poder
+crear ejercicios que no están en la biblioteca **diciendo qué músculo trabajan** (su ejemplo:
+«jalón al pecho enfatizando espalda alta» no contaba como espalda alta), escanear códigos de
+barras de alimentos, un hueco para lo que come fuera de las cuatro comidas, que apuntar comida
+sea más cómodo (el botón de «como otra cosa» era diminuto), un mapa del cuerpo con rangos por
+músculo estilo Symmetry, y el cambio de nombre a Now or Never.
+
+Todo eso está hecho en el commit `288420a`:
+- `Models/CustomExercises.swift` + `CustomExercise` (SwiftData): el enganche con lo ya
+  registrado es **el nombre**, no el identificador, para que lo apuntado antes empiece a contar.
+- `Models/FoodFacts.swift` + `Services/BarcodeLookup.swift` + `Views/Nutrition/BarcodeScannerView.swift`:
+  Open Food Facts, sin clave. Lo escaneado se guarda como `FoodItem` con su código.
+- `MealType.extra`: ojo, `MealType.allCases` son SOLO las cuatro comidas que se planifican;
+  para recorrer también los extras está `MealType.everyday`.
+- `Models/MuscleLevels.swift` + `Models/BodyMap.swift` + `Views/Progress/BodyMapView.swift`.
+  Las coordenadas del cuerpo se previsualizan con `tools/preview_bodymap.py` (lee el Swift).
+- Marca nueva en `DesignSystem/Logo.swift` e icono con `tools/gen_appicon.py`.
+
+## Lo anterior (25/10/2026)
 
 - 15 commits nuevos sobre `819e83f`: +10.478 líneas en `Atlas/`, 25 archivos Swift nuevos.
   El código de ATLAS pasa de 15.040 a 25.172 líneas.

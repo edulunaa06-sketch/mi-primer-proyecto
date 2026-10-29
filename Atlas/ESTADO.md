@@ -1,4 +1,4 @@
-# ATLAS · Estado real de cada módulo
+# Now or Never · Estado real de cada módulo
 
 Qué funciona, qué funciona a medias y qué no está. Sin adornos: si algo no se ha podido
 comprobar, aquí pone que no se ha comprobado.
@@ -33,7 +33,8 @@ le falta parte de lo pedido · **No está** = no implementado, con el motivo.
 | Programado frente a realizado | **Hecho** | |
 | Semanas de descarga | **Parcial** | Se sugiere con señales reales y se puede marcar la semana a mano; no hay planificación automática. |
 | Planificación por bloques | **No está** | |
-| Biblioteca de ejercicios con variantes | **Hecho** | 57 fichas con músculos, patrón, material, ejecución, errores, seguridad y alternativas. |
+| Biblioteca de ejercicios con variantes | **Hecho** | 58 fichas con músculos, patrón, material, ejecución, errores, seguridad y alternativas. |
+| Crear ejercicios que no están | **Hecho** | Con su músculo principal y los que ayudan, para que las series cuenten en el volumen de ese músculo. Si ya tenías series apuntadas con ese nombre, pasan a contar. |
 | Comparar barras, mancuernas, poleas y máquinas | **Hecho** | El comparador explica qué cambia; nunca dice que dos sean idénticos. |
 | Vídeos de los ejercicios | **No está** | A propósito: no se inventan enlaces y no hay una fuente de vídeo con licencia. |
 
@@ -46,10 +47,11 @@ le falta parte de lo pedido · **No está** = no implementado, con el motivo.
 | Objetivos distintos en día de entreno y descanso | **No está** | |
 | Déficit, mantenimiento, superávit, recomposición | **Hecho** | Como objetivo del perfil. |
 | Búsqueda de alimentos, cantidades, marcas, propios | **Hecho** | |
-| Escáner de códigos de barras | **No está** | Haría falta una base de datos de productos; no se añade una integración que no se pueda verificar aquí. |
+| Escáner de códigos de barras | **Hecho** | Cámara + Open Food Facts (base abierta y gratuita, sin clave). Lo escaneado se guarda en tu catálogo y la segunda vez funciona sin internet. Los datos son colaborativos: salen marcados como provisionales y se pueden corregir con la etiqueta. **No se ha podido probar una lectura real con cámara desde aquí**: eso se ve en el iPhone. |
+| Apuntar algo fuera de las comidas | **Hecho** | Hueco de extras (una cerveza, un paquete de patatas). Suma a las calorías del día y no toca los menús ni el cumplimiento, que sigue contando cuatro comidas. |
 | Registro por foto | **Hecho** | Con IA, si hay clave. |
 | Registro por voz | **No está** | |
-| Comidas frecuentes y duplicar comidas | **Parcial** | Las ideas y los menús hacen de plantillas; duplicar un día entero, no. |
+| Comidas frecuentes y duplicar comidas | **Parcial** | Acceso «de un toque» a lo que más apuntas, con tus gramos de siempre. Las ideas y los menús hacen de plantillas; duplicar un día entero, no. |
 | Recetas: crear, ingredientes, duplicar, favoritas | **Parcial** | Crear, ingredientes, cantidades, duplicar y borrar: hecho. Favoritas: no. |
 | Peso final cocinado y valores por ración | **Hecho** | Y el rendimiento al cocinar, explicado. |
 | Pesos crudo, cocinado y comestible | **Hecho** | Siete bases de peso distintas. |
@@ -65,6 +67,7 @@ le falta parte de lo pedido · **No está** = no implementado, con el motivo.
 | Medias semanales y evolución mensual | **Hecho** | |
 | Comparación de periodos | **Hecho** | En los informes. |
 | Gráficas interactivas | **Hecho** | Peso, volumen por músculo y 1RM por ejercicio. |
+| Mapa del cuerpo con rango por músculo | **Hecho** | Cuerpo de frente y de espalda, los 18 músculos separados y un rango por músculo. Sale de las series registradas repartidas en semanas, con hasta un 25 % más si tus pesos suben. Mide lo registrado, no tu músculo, y la pantalla lo dice. |
 | Informes semanales, mensuales y anuales | **Hecho** | Cuatro periodos, con lo que falta para que sean fiables. |
 | Sueño, fatiga, energía, estrés, agujetas, molestias | **Hecho** | |
 | Pasos y actividad | **Hecho** | Sensor del iPhone; carreras desde Strava. |
@@ -90,16 +93,16 @@ le falta parte de lo pedido · **No está** = no implementado, con el motivo.
 | Strava | **Hecho y probado** por sesiones anteriores. Necesita que el usuario cree su app en Strava y un backend propio para el secreto, con guía paso a paso dentro de la app. |
 | API de Claude | **Implementada.** Las peticiones y el formato están probados sin red; **no se ha comprobado una llamada real desde aquí**, porque haría falta una clave del usuario. |
 | Apple Health / HealthKit | **No está.** Añadirlo exige un entitlement nuevo, y eso puede complicar la instalación con un Apple ID gratuito, que es justo lo que se necesita para poder usar la app. Se deja fuera a propósito. |
-| Bases de datos nutricionales externas | **No está.** No se añade una integración que no se pueda probar aquí. |
+| Open Food Facts (códigos de barras) | **Implementada.** La lectura de la respuesta está probada sin red con respuestas reales; **no se ha comprobado una llamada de verdad desde aquí**. Es gratuita y no necesita clave. |
 | Precios de supermercados | **No está.** No hay fuente fiable y gratuita. |
 | Exportar e importar datos | **Hecho y probado.** JSON con todo, fotos incluidas. |
 
 ## Pruebas
 
-- **254 pruebas de lógica**, ejecutadas con el toolchain de Swift para Linux en cada cambio.
+- **301 pruebas de lógica**, ejecutadas con el toolchain de Swift para Linux en cada cambio.
 - **Pruebas de persistencia** con SwiftData en memoria, en el simulador: series, historial,
   cronómetro, récords, recuperación, suplementos, recetas y copia de seguridad.
-- **14 recorridos de interfaz** en el simulador, incluido uno con ocho meses de datos que mide
+- **15 recorridos de interfaz** en el simulador, incluido uno con ocho meses de datos que mide
   si alguna pantalla se congela.
 
 ## Limitaciones conocidas
@@ -111,8 +114,15 @@ le falta parte de lo pedido · **No está** = no implementado, con el motivo.
    nuevos tienen valor por defecto) y, si fallara, la app lo dice en una pantalla en vez de
    borrar nada. Por eso conviene exportar la copia antes de actualizar.
 3. **La llamada real a la IA no se ha probado** desde este entorno: requiere una clave.
-4. **El identificador del paquete es `com.example.atlas`.** Funciona para instalar, pero es un
-   dominio de ejemplo. Cambiarlo haría que el iPhone lo tratara como una app distinta y
-   perderías los datos de la instalada, así que se deja como está.
-5. **El nombre «Atlas» está muy usado** en Salud y Fitness de la App Store. Para uso personal da
-   igual; para publicar habría que cambiarlo. No se ha comprobado en registros de marcas.
+4. **El identificador del paquete sigue siendo `com.example.atlas`** y el almacén de datos se
+   sigue llamando `Atlas`, aunque la app se llame Now or Never. Es a propósito: cambiarlos
+   haría que el iPhone la tratara como una app distinta y perderías lo que ya tienes dentro.
+   Por eso el proyecto, la carpeta y el objetivo de Xcode siguen llamándose `Atlas`.
+5. **El nombre «Now or Never» no se ha comprobado en registros de marcas.** Es una expresión
+   corriente en inglés y hay productos y canciones con ese nombre. Para uso personal no
+   importa; para publicar en la App Store habría que mirarlo antes.
+6. **El escáner de códigos de barras no se ha podido probar con una cámara real** desde este
+   entorno (aquí no hay cámara ni se llama a internet en las pruebas). La lectura de la
+   respuesta de Open Food Facts sí está probada con respuestas reales guardadas.
+7. **Los datos de Open Food Facts los suben voluntarios.** Pueden estar incompletos o no
+   coincidir con la etiqueta. La app los enseña siempre antes de apuntarlos y deja corregirlos.

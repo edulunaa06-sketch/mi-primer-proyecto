@@ -1,4 +1,10 @@
-# Instalar ATLAS en tu iPhone sin pagar los 99 € al año
+# Instalar Now or Never en tu iPhone sin pagar los 99 € al año
+
+> **Si ya tienes la app instalada** (cuando se llamaba ATLAS): esta versión se instala encima y
+> **conserva tus datos**. El identificador del paquete no ha cambiado (`com.example.atlas`), así
+> que el iPhone la ve como la misma app actualizada, no como una nueva. Lo que cambia es el
+> nombre y el icono que verás en la pantalla de inicio. Aun así, exporta la copia antes (abajo):
+> si algo fuera mal, se restaura en un minuto.
 
 Lo primero, claro y sin rodeos:
 
@@ -9,12 +15,12 @@ Lo primero, claro y sin rodeos:
 
 ## Antes de nada: haz una copia de seguridad
 
-Si ya tienes ATLAS en el iPhone, **exporta tus datos antes de instalar la versión nueva**:
+Antes de instalar la versión nueva, **exporta tus datos**:
 Ajustes → Copia de seguridad → Exportar, y guárdala en Archivos o en iCloud Drive.
 
 Por qué: esta versión añade tablas y campos a la base de datos (series, récords, recuperación,
 suplementos). La actualización está pensada para hacerse sola y no borrar nada, pero si algo
-fuera mal al abrirla, ATLAS te lo dirá en una pantalla en vez de perder datos en silencio, y con
+fuera mal al abrirla, la app te lo dirá en una pantalla en vez de perder datos en silencio, y con
 esa copia lo recuperas todo. Es un minuto y te ahorra un disgusto.
 
 Las cinco cosas que la gente mezcla y conviene separar:
@@ -49,7 +55,7 @@ Es la única forma de quitarse la renovación semanal; el resto son maneras de h
 Necesitas un ordenador (Windows o Mac) una vez por semana.
 
 1. Descarga el artefacto **`Atlas-ipa`** del último build verde del CI:
-   `Actions` → «iOS build (ATLAS)` → el último run en verde → `Atlas-ipa`.
+   `Actions` → «iOS build (Now or Never)» → el último run en verde → `Atlas-ipa`.
    Dentro del zip está `Atlas.ipa`.
    (También queda una copia en el repositorio, en `Atlas/dist/Atlas.ipa`.)
 2. Instala **Sideloadly** (sideloadly.io) y, en Windows, **iTunes** de la web de Apple
