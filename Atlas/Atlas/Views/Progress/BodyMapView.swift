@@ -64,7 +64,9 @@ struct BodyMapView: View {
                                 selected = (selected == group) ? nil : group
                             }
                         })
-                .frame(maxWidth: 320)
+                // El alto manda: con solo el ancho, el cuerpo salía de 320 x 688 y empujaba
+                // el resumen y la lista fuera de la pantalla.
+                .frame(maxWidth: 320, maxHeight: 420)
                 .frame(maxWidth: .infinity)
             Text(selected == nil ? "Toca un músculo para ver su rango." : "Toca otro para cambiar.")
                 .font(.caption).foregroundStyle(Theme.textTertiary)
