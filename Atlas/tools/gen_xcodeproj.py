@@ -388,7 +388,8 @@ out = f"""// !$*UTF8*$!
 	rootObject = {S('PROJECT')} /* Project object */;
 }}
 """
-root = sys.argv[1]
+# Sin argumento, genera en la carpeta actual (es lo que dice INSTALAR_EN_IPHONE.md).
+root = sys.argv[1] if len(sys.argv) > 1 else '.'
 open(os.path.join(root,'Atlas.xcodeproj/project.pbxproj'),'w').write(out)
 scheme = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Scheme
