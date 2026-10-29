@@ -238,7 +238,7 @@ struct MyExercisesView: View {
                 let count = StrengthStore.loggedSetCount(forExerciseNamed: deleting.name, in: context)
                 Text(count > 0
                      ? "No se borra nada de lo que has entrenado. Lo que pasa es que esas "
-                       + NumberFormat.plural(count, "1 serie dejará", "\(count) series dejarán")
+                       + NumberFormat.plural(count, "serie dejará", "series dejarán")
                        + " de contar en \(deleting.primary.label.lowercased())."
                      : "No tienes series apuntadas con este nombre.")
             }

@@ -266,8 +266,12 @@ struct NutritionView: View {
         for type in MealType.everyday where done.contains(type.rawValue) {
             let custom = DataStore.customItems(for: type, on: day, in: context)
             if !custom.isEmpty {
-                DataStore.setMeal(type, values: NutritionMath.sum(custom.map(\.values)), planName: "Lo que he comido",
+                DataStore.setMeal(type, values: NutritionMath.sum(custom.map(\.values)),
+                                  planName: type.isPlanned ? "Lo que he comido" : "Extras",
                                   completed: true, on: day, in: context)
+            } else if !type.isPlanned {
+                // Un extra sin nada apuntado deja de contar: no hay menú al que volver.
+                DataStore.setMeal(type, values: .zero, planName: "Extras", completed: false, on: day, in: context)
             } else if let meal = fresh.first(where: { $0.type == type }) {
                 DataStore.setMeal(type, values: meal.totals, planName: meal.sourceName, completed: true, on: day, in: context)
             }
@@ -377,7 +381,7 @@ struct NutritionView: View {
         let extras = (customByType[.extra] ?? []).count
         let base = "\(planned) de 4 comidas completadas"
         guard extras > 0 else { return base }
-        return base + " · " + NumberFormat.plural(extras, "1 extra", "\(extras) extras")
+        return base + " · " + NumberFormat.plural(extras, "extra", "extras")
     }
 
     private func dayTotalsCard(meals: [ResolvedMeal], custom: [MealType: [CustomMealItem]]) -> some View {

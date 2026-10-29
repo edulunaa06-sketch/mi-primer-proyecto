@@ -728,3 +728,34 @@ extension DataStore {
         return (try? context.fetch(descriptor)) ?? []
     }
 }
+
+// MARK: - Repetir lo de otro día
+
+extension DataStore {
+    /// Lo último que apuntaste en esa comida antes del día que se mira. Sirve para repetirlo
+    /// de un toque: el desayuno suele ser el mismo y escribirlo cada mañana cansa.
+    @MainActor
+    static func lastLogged(_ type: MealType, before day: Date, in context: ModelContext) -> (date: Date?, items: [CustomMealItem])? {
+        let key = DateUtils.dayKey(day)
+        let raw = type.rawValue
+        var descriptor = FetchDescriptor<CustomMealItem>(
+            predicate: #Predicate { $0.mealTypeRaw == raw && $0.dayKey < key },
+            sortBy: [SortDescriptor(\.dayKey, order: .reverse), SortDescriptor(\.order)]
+        )
+        // Con el orden por día hacia atrás, los primeros ya son los del último día con algo
+        // apuntado. No hace falta traerse meses de registros para enseñar un botón.
+        descriptor.fetchLimit = 40
+        guard let items = try? context.fetch(descriptor), let newest = items.first else { return nil }
+        let sameDay = items.filter { $0.dayKey == newest.dayKey }
+        return (date: DateUtils.date(fromDayKey: newest.dayKey), items: sameDay)
+    }
+
+    /// Copia al día una comida que ya apuntaste otro día.
+    @MainActor
+    static func repeatMeal(_ items: [CustomMealItem], as type: MealType, on day: Date, in context: ModelContext) {
+        for item in items {
+            addCustomItem(type, name: item.name, grams: item.grams, per100: item.per100,
+                          source: item.source, on: day, in: context)
+        }
+    }
+}

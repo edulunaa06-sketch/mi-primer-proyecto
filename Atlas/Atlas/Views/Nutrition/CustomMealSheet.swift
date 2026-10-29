@@ -167,6 +167,8 @@ struct CustomMealSheet: View {
     @State private var manualProtein: Double?
     @State private var manualCarbs: Double?
     @State private var manualFat: Double?
+    /// Lo que apuntaste la última vez en esta comida (se lee una vez al abrir la hoja).
+    @State private var lastTime: (date: Date?, items: [CustomMealItem])?
 
     private var items: [CustomMealItem] {
         let key = DateUtils.dayKey(day)
@@ -208,6 +210,7 @@ struct CustomMealSheet: View {
             .scrollDismissesKeyboard(.interactively)
             .screenBackground()
             .navigationTitle("Lo que como · \(type.label)")
+            .task { lastTime = DataStore.lastLogged(type, before: day, in: context) }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -235,13 +238,23 @@ struct CustomMealSheet: View {
             SectionHeader(title: "De un toque",
                           subtitle: favourites.isEmpty
                             ? "Aquí irán saliendo los alimentos que más apuntes, con tus gramos de siempre."
-                            : "Lo que más apuntas, con los gramos de la última vez.")
+                            : "Repite lo de la última vez o tira de lo que más apuntas, con tus gramos.")
             if let onScan {
                 Button { onScan() } label: {
                     Label("Escanear un código de barras", systemImage: "barcode.viewfinder")
                 }
                 .buttonStyle(LimeButtonStyle())
                 .accessibilityIdentifier("custom.scan")
+            }
+            // Solo mientras no hayas apuntado nada todavía: así no se repite dos veces sin querer.
+            if items.isEmpty, let previous = lastTime, !previous.items.isEmpty {
+                Button { repeatPrevious(previous.items) } label: {
+                    Label(previous.date.map { "Repetir lo del \(DateUtils.shortDate($0))" }
+                          ?? "Repetir la última vez", systemImage: "arrow.counterclockwise")
+                }
+                .buttonStyle(LimeButtonStyle(filled: false))
+                Text(previous.items.map(\.name).joined(separator: ", "))
+                    .font(.caption2).foregroundStyle(Theme.textTertiary).lineLimit(2)
             }
             if !favourites.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -266,6 +279,11 @@ struct CustomMealSheet: View {
             }
         }
         .card()
+    }
+
+    private func repeatPrevious(_ items: [CustomMealItem]) {
+        DataStore.repeatMeal(items, as: type, on: day, in: context)
+        DS.haptic(.medium)
     }
 
     private func quickAdd(_ food: FoodItem) {

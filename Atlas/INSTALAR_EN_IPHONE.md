@@ -1,10 +1,19 @@
 # Instalar Now or Never en tu iPhone sin pagar los 99 € al año
 
-> **Si ya tienes la app instalada** (cuando se llamaba ATLAS): esta versión se instala encima y
-> **conserva tus datos**. El identificador del paquete no ha cambiado (`com.example.atlas`), así
-> que el iPhone la ve como la misma app actualizada, no como una nueva. Lo que cambia es el
-> nombre y el icono que verás en la pantalla de inicio. Aun así, exporta la copia antes (abajo):
-> si algo fuera mal, se restaura en un minuto.
+> **Si ya tienes la app instalada** (cuando se llamaba ATLAS): esta versión está pensada para
+> instalarse encima y **conservar tus datos**. El identificador del paquete no ha cambiado
+> (`com.example.atlas`), así que el iPhone la ve como la misma app actualizada, no como una
+> nueva. Lo que cambia es el nombre y el icono.
+>
+> Para que sea una actualización y no una app distinta tienen que cumplirse dos cosas:
+>
+> 1. **Fírmala con el mismo Apple ID** que usaste la última vez. Si usas otro, el iPhone la
+>    considera de otro desarrollador y, o no deja instalarla encima, o la instala de cero.
+> 2. **No marques «Change Bundle ID»** (ni equivalente) en Sideloadly o en la herramienta que
+>    uses. Si lo cambias, para el iPhone es otra app y empezarías vacío.
+>
+> Y, pase lo que pase: **exporta la copia antes** (abajo). Son diez segundos y, si algo sale
+> mal, lo recuperas todo.
 
 Lo primero, claro y sin rodeos:
 

@@ -380,7 +380,7 @@ struct BackupFile: Codable, Equatable {
         if let recovery, !recovery.isEmpty { parts.append("\(recovery.count) días de recuperación") }
         if let supplements, !supplements.isEmpty { parts.append("\(supplements.count) suplementos") }
         if let customExercises, !customExercises.isEmpty {
-            parts.append(NumberFormat.plural(customExercises.count, "1 ejercicio tuyo", "\(customExercises.count) ejercicios tuyos"))
+            parts.append(NumberFormat.plural(customExercises.count, "ejercicio tuyo", "ejercicios tuyos"))
         }
         return parts.joined(separator: ", ")
     }

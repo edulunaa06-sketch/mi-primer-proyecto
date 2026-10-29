@@ -78,7 +78,7 @@ jobs:
             xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
             xcrun simctl terminate "$UDID" "$BID" || true
           done
-          for section in week medals; do
+          for section in week medals body; do
             xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab progress -AtlasProgress "$section"; sleep 5
             xcrun simctl io "$UDID" screenshot "screenshots/progress-$section.png"
             xcrun simctl terminate "$UDID" "$BID" || true

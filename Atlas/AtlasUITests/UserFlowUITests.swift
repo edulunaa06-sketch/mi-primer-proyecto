@@ -537,9 +537,9 @@ final class UserFlowUITests: XCTestCase {
 
         // El cuerpo por músculos, desde la barra superior de Entrenar.
         tab("Entrenar")
-        let body = app.buttons["Cuerpo y rangos por músculo"].firstMatch
-        assertAppears(body, timeout: 10, "Botón del mapa del cuerpo")
-        body.tap()
+        let bodyButton = app.buttons["Cuerpo y rangos por músculo"].firstMatch
+        assertAppears(bodyButton, timeout: 10, "Botón del mapa del cuerpo")
+        bodyButton.tap()
         assertAppears(element(containing: "Todos los músculos"), timeout: 15, "Lista de músculos")
         XCTAssertTrue(app.buttons["De espalda"].firstMatch.exists, "Selector de lado")
         shoot("cuerpo-frente")
@@ -552,11 +552,10 @@ final class UserFlowUITests: XCTestCase {
 
         // Los extras: una cerveza fuera de las cuatro comidas.
         tab("Comer")
-        let extras = app.descendants(matching: .any).matching(identifier: "nutrition.extras").firstMatch
-        assertAppears(scrollTo(extras), timeout: 15, "Tarjeta de extras")
+        let addExtra = app.buttons["Añadir un extra"].firstMatch
+        assertAppears(scrollTo(addExtra), timeout: 15, "Tarjeta de extras")
         shoot("comer-extras")
-        let add = app.buttons["Añadir un extra"].firstMatch
-        scrollTo(add).tap()
+        addExtra.tap()
         assertAppears(element(containing: "Lo que como"), timeout: 10, "Hoja para apuntar el extra")
         app.buttons["Manual"].firstMatch.tap()
         let name = app.textFields["Nombre (p. ej. bocadillo de lomo)"]
