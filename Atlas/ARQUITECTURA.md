@@ -22,7 +22,7 @@ Sin servidor, sin cuenta y sin suscripción: todo funciona en el dispositivo.
 Atlas/
 ├─ Atlas/
 │  ├─ App/              Punto de entrada, navegación raíz y traducción de la paleta
-│  ├─ DesignSystem/     Lenguaje visual (DS: negro cálido, grafito y oro), logotipo y marca
+│  ├─ DesignSystem/     Lenguaje visual (DS: papel blanco, texto casi negro y azul), logotipo y marca
 │  ├─ Models/           LÓGICA PURA: solo Foundation, sin interfaz ni base de datos
 │  ├─ Data/             SwiftData: consultas y operaciones sobre el almacén
 │  ├─ Services/         Lo que habla con el exterior (IA, Strava, avisos, fotos, pasos)
