@@ -374,7 +374,8 @@ enum StrengthStore {
         }
         input.sessionsCompleted = inPeriod.filter(\.isCompleted).count
         let weeks = max(Double(period.dayCount) / 7, 0)
-        input.sessionsScheduled = Int((Double(WeeklyRoutine.trainableSessions.count) * weeks).rounded())
+        let myTrainable = WeeklyRoutine.trainable(kinds: DataStore.kindChoices(in: context)).count
+        input.sessionsScheduled = Int((Double(myTrainable) * weeks).rounded())
         input.programmedSets = Int((Double(programmedSetsPerWeek(in: context)) * weeks).rounded())
 
         // Récords logrados dentro del periodo.

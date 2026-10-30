@@ -4,6 +4,7 @@ import UIKit
 
 struct HomeView: View {
     @Query private var sessionTitles: [SessionTitle]
+    @Query private var sessionKinds: [SessionKindChoice]
     @Environment(AppRouter.self) private var router
 
     @Query(sort: \WeightEntry.date) private var weights: [WeightEntry]
@@ -27,7 +28,8 @@ struct HomeView: View {
 
     private var settings: UserSettings? { settingsList.first }
     private var todaySessions: [SessionDefinition] {
-        WeeklyRoutine.sessions(forWeekday: DateUtils.weekdayMondayBased(today)).map { $0.resolved(with: routine, titles: sessionTitles) }
+        WeeklyRoutine.sessions(forWeekday: DateUtils.weekdayMondayBased(today))
+            .map { $0.resolved(with: routine, titles: sessionTitles, kinds: sessionKinds) }
     }
     private var trainableToday: [SessionDefinition] { todaySessions.filter { $0.kind != .rest } }
 

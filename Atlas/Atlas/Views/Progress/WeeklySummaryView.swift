@@ -5,6 +5,7 @@ import SwiftUI
 struct WeeklySummaryView: View {
     @Environment(\.modelContext) private var context
     @Query private var meals: [MealRecord]
+    @Query private var sessionKinds: [SessionKindChoice]
     @Query private var logs: [WorkoutSessionLog]
     @Query private var dailySteps: [DailySteps]
     @Query private var marks: [DayMarkRecord]
@@ -36,7 +37,7 @@ struct WeeklySummaryView: View {
             weights: weights.map { WeightStats.Point(date: $0.date, kg: $0.weightKg) },
             outcomes: outcomes, weekStart: weekStart, weekEnd: weekEnd)
         let weekLogs = logs.filter { $0.weekStart == weekStart && $0.isCompleted }
-        let trainable = WeeklyRoutine.trainableSessions.count
+        let trainable = WeeklyRoutine.trainable(kinds: sessionKinds).count
 
         ScrollView {
             VStack(spacing: 16) {

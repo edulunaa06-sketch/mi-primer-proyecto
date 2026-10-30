@@ -27,6 +27,7 @@ struct AtlasApp: App {
         RoutineExercise.self,
         CustomExercise.self,
         SessionTitle.self,
+        SessionKindChoice.self,
         FoodItem.self,
         MenuPlan.self,
         MealTemplate.self,

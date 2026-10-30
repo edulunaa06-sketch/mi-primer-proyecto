@@ -237,10 +237,33 @@ enum DataStore {
         try? context.save()
     }
 
+    /// Qué es ese día para ti: fuerza, carrera o descanso. Volver al tipo original se hace
+    /// pasando el mismo tipo que trae la sesión de serie.
+    @MainActor
+    static func setKind(_ kind: SessionKind, for sessionID: String, in context: ModelContext) {
+        let descriptor = FetchDescriptor<SessionKindChoice>(predicate: #Predicate { $0.sessionID == sessionID })
+        let existing = (try? context.fetch(descriptor))?.first
+        if WeeklyRoutine.session(id: sessionID)?.kind == kind {
+            // Es el tipo de serie: se borra la excepción en vez de guardarla.
+            if let existing { context.delete(existing) }
+        } else if let existing {
+            existing.kind = kind
+        } else {
+            context.insert(SessionKindChoice(sessionID: sessionID, kind: kind))
+        }
+        try? context.save()
+    }
+
+    @MainActor
+    static func kindChoices(in context: ModelContext) -> [SessionKindChoice] {
+        (try? context.fetch(FetchDescriptor<SessionKindChoice>())) ?? []
+    }
+
     /// Rutina desde cero: las sesiones de fuerza se quedan sin ejercicios y con un nombre genérico
     /// («Fuerza · martes»), para que cada persona ponga los suyos. El historial no se toca.
     @MainActor
     static func startRoutineFromScratch(in context: ModelContext) {
+        kindChoices(in: context).forEach { context.delete($0) }
         for session in WeeklyRoutine.allSessions where session.kind == .strength {
             routine(for: session.id, in: context).forEach { context.delete($0) }
             renameSession(session.id, to: "Fuerza · \(WeeklyRoutine.weekdayName(session.weekday).lowercased())", in: context)
@@ -251,6 +274,7 @@ enum DataStore {
     /// Vuelve a la rutina predeterminada completa (ejercicios y nombres originales).
     @MainActor
     static func restoreAllDefaults(in context: ModelContext) {
+        kindChoices(in: context).forEach { context.delete($0) }
         for session in WeeklyRoutine.allSessions where session.kind == .strength {
             restoreDefaultRoutine(for: session, in: context)
         }

@@ -9,7 +9,9 @@ struct TrainingView: View {
     @Query private var weekLogs: [WorkoutSessionLog]
     @Query(sort: \RoutineExercise.order) private var routine: [RoutineExercise]
     @Query private var titles: [SessionTitle]
+    @Query private var kinds: [SessionKindChoice]
     @State private var path: [String] = []
+    @State private var planningWeek = false
     @State private var renaming: SessionDefinition?
     @State private var confirmScratch = false
     @State private var confirmDefaults = false
@@ -30,8 +32,13 @@ struct TrainingView: View {
         weekLogs.first { $0.sessionID == session.id }
     }
 
+    /// La semana tal y como la tiene montada el usuario.
+    private var myWeek: [SessionDefinition] {
+        WeeklyRoutine.week(routine: routine, titles: titles, kinds: kinds)
+    }
+
     private var completedCount: Int {
-        WeeklyRoutine.trainableSessions.filter { log(for: $0)?.isCompleted == true }.count
+        myWeek.filter { $0.kind != .rest && log(for: $0)?.isCompleted == true }.count
     }
 
     var body: some View {
@@ -60,6 +67,13 @@ struct TrainingView: View {
                         Label("Historial de semanas anteriores", systemImage: "clock.arrow.circlepath")
                     }
                     .buttonStyle(ActionButtonStyle(filled: false))
+                    Button {
+                        planningWeek = true
+                    } label: {
+                        Label("Montar mi semana", systemImage: "calendar.badge.plus")
+                    }
+                    .buttonStyle(ActionButtonStyle(filled: false))
+                    .accessibilityIdentifier("training.planWeek")
                     Menu {
                         Button("Empezar mi rutina desde cero", role: .destructive) { confirmScratch = true }
                         Button("Volver a la rutina predeterminada") { confirmDefaults = true }
@@ -67,7 +81,7 @@ struct TrainingView: View {
                         Label("Opciones de la rutina", systemImage: "slider.horizontal.3")
                     }
                     .font(.footnote.weight(.semibold))
-                    Text("Mantén pulsada una sesión para cambiarle el nombre; dentro de cada sesión de fuerza, «Editar» para sus ejercicios.")
+                    Text("En «Montar mi semana» decides qué es cada día (fuerza, carrera o descanso), cómo se llama y sus ejercicios.")
                         .font(.caption2).foregroundStyle(Theme.textTertiary)
                 }
                 .padding(16)
@@ -95,6 +109,11 @@ struct TrainingView: View {
                     SessionDestination(session: session, weekStart: weekStart)
                 }
             }
+            .onChange(of: planningWeek) { _, open in
+                // Al cerrar el planificador puede haber cambiado el tipo del día abierto.
+                if !open { path.removeAll() }
+            }
+            .sheet(isPresented: $planningWeek) { WeekPlannerView() }
             .confirmationDialog("¿Empezar la rutina desde cero?", isPresented: $confirmScratch, titleVisibility: .visible) {
                 Button("Vaciar las sesiones de fuerza", role: .destructive) { DataStore.startRoutineFromScratch(in: context) }
             } message: {
@@ -126,7 +145,7 @@ struct TrainingView: View {
     }
 
     private var weeklySummary: some View {
-        let total = WeeklyRoutine.trainableSessions.count
+        let total = myWeek.filter { $0.kind != .rest }.count
         let fraction = total > 0 ? Double(completedCount) / Double(total) : 0
         return HStack(spacing: 16) {
             ProgressRing(fraction: fraction, size: 76)
@@ -178,7 +197,7 @@ struct TrainingView: View {
 
     /// Pendiente: gris neutro (legible). Descanso: gris azulado. Hecha: icono y check en lima, borde fino y fondo un poco teñido.
     private func sessionRow(_ base: SessionDefinition) -> some View {
-        let session = base.resolved(with: routine, titles: titles)
+        let session = base.resolved(with: routine, titles: titles, kinds: kinds)
         let log = log(for: session)
         let progress = SessionProgress(session: session, log: log)
         let done = session.kind != .rest && log?.isCompleted == true
@@ -220,10 +239,10 @@ struct TrainingView: View {
     /// Tocar abre la sesión; deslizar hacia la derecha la marca como hecha (o la desmarca si ya lo estaba).
     /// Mantener pulsado: cambiar el nombre. Los días de descanso solo se abren.
     private func swipeableRow(_ base: SessionDefinition) -> some View {
-        let session = base.resolved(with: routine, titles: titles)
+        let session = base.resolved(with: routine, titles: titles, kinds: kinds)
         let done = log(for: session)?.isCompleted ?? false
         let open = { path.append(base.id) }
-        return SwipeToComplete(isDone: done, enabled: base.kind != .rest, onOpen: open) {
+        return SwipeToComplete(isDone: done, enabled: session.kind != .rest, onOpen: open) {
             toggleDone(base)
         } content: {
             sessionRow(base)
@@ -235,14 +254,14 @@ struct TrainingView: View {
             } label: { Label("Cambiar nombre", systemImage: "pencil") }
         }
         .accessibilityIdentifier("session.\(base.id)")
-        .accessibilityLabel(base.kind == .rest ? session.title : "\(session.title), \(done ? "hecha" : "pendiente")")
-        .accessibilityHint(base.kind == .rest ? "Abre el día" : "Desliza a la derecha para \(done ? "desmarcarla" : "marcarla como hecha")")
+        .accessibilityLabel(session.kind == .rest ? session.title : "\(session.title), \(done ? "hecha" : "pendiente")")
+        .accessibilityHint(session.kind == .rest ? "Abre el día" : "Desliza a la derecha para \(done ? "desmarcarla" : "marcarla como hecha")")
     }
 
     /// Marca la sesión como hecha (o la desmarca) en el registro de esta semana; reutiliza el registro si ya existe.
     /// Fuerza: marca o desmarca todos sus ejercicios, igual que si lo hicieras dentro; los kilos y repeticiones no se tocan.
     private func toggleDone(_ base: SessionDefinition) {
-        let session = base.resolved(with: routine, titles: titles)
+        let session = base.resolved(with: routine, titles: titles, kinds: kinds)
         let log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
         withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.65)) {
             log.toggleDoneFromWeek(session: session)
@@ -311,13 +330,16 @@ struct SessionDestination: View {
 
     @Environment(\.modelContext) private var context
     @Query private var titles: [SessionTitle]
+    @Query private var kinds: [SessionKindChoice]
     @State private var renaming = false
     @State private var newTitle = ""
 
     var body: some View {
-        let named = session.renamed(titles)
+        // Con el tipo que le haya puesto el usuario: un día que era de carrera y ha pasado a
+        // fuerza tiene que abrir la pantalla de fuerza, no la de correr.
+        let named = session.resolved(with: [], titles: titles, kinds: kinds)
         Group {
-            switch session.kind {
+            switch named.kind {
             case .strength: StrengthSessionView(session: named, weekStart: weekStart)
             case .run: RunSessionView(session: named, weekStart: weekStart)
             case .rest: RestDayView(session: named)

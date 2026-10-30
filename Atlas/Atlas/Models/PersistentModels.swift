@@ -157,11 +157,39 @@ final class SessionTitle {
     }
 }
 
+/// Qué es cada día para ti: fuerza, carrera o descanso.
+///
+/// La rutina de serie trae unos días puestos (lunes carrera, viernes descanso…), pero cada
+/// persona entrena a su manera. Esto guarda el cambio sin tocar el id de la sesión, así que
+/// el historial de lo ya entrenado se conserva aunque cambies de idea.
+@Model
+final class SessionKindChoice {
+    @Attribute(.unique) var sessionID: String = ""
+    var kindRaw: String = SessionKind.strength.rawValue
+
+    init(sessionID: String, kind: SessionKind) {
+        self.sessionID = sessionID
+        self.kindRaw = kind.rawValue
+    }
+
+    var kind: SessionKind {
+        get { SessionKind(rawValue: kindRaw) ?? .strength }
+        set { kindRaw = newValue.rawValue }
+    }
+}
+
 extension SessionDefinition {
-    /// Aplica la rutina personalizada guardada (si la sesión es de fuerza) y el nombre personalizado.
-    func resolved(with routine: [RoutineExercise], titles: [SessionTitle] = []) -> SessionDefinition {
-        let named = renamed(titles)
-        guard kind == .strength else { return named }
+    /// Aplica lo que el usuario ha personalizado de esta sesión: qué tipo de día es, cómo se
+    /// llama y, si es de fuerza, qué ejercicios tiene.
+    ///
+    /// El orden importa: primero el tipo, porque es lo que decide si la lista de ejercicios
+    /// pinta algo. Un día que has pasado a carrera o a descanso no arrastra los ejercicios.
+    func resolved(with routine: [RoutineExercise],
+                  titles: [SessionTitle] = [],
+                  kinds: [SessionKindChoice] = []) -> SessionDefinition {
+        let typed = with(kind: kinds.first { $0.sessionID == id }?.kind)
+        let named = typed.renamed(titles)
+        guard named.kind == .strength else { return named }
         let mine = routine.filter { $0.sessionID == id }.sorted { $0.order < $1.order }
         return named.with(exercises: mine.map(\.definition))
     }

@@ -35,6 +35,9 @@ struct BackupFile: Codable, Equatable {
     var trainingWeeks: [Week]?
     /// Los ejercicios que te has creado tú. Opcional: las copias anteriores no lo traen.
     var customExercises: [CustomExerciseEntry]?
+    /// Qué es cada día para ti (fuerza, carrera o descanso), cuando lo has cambiado.
+    /// Opcional: las copias anteriores no lo traen.
+    var sessionKinds: [SessionKindEntry]?
 
     struct Settings: Codable, Equatable {
         var kcalTarget: Double
@@ -91,6 +94,12 @@ struct BackupFile: Codable, Equatable {
     struct SessionTitle: Codable, Equatable {
         var sessionID: String
         var title: String
+    }
+
+    struct SessionKindEntry: Codable, Equatable {
+        var sessionID: String
+        /// "strength", "run" o "rest".
+        var kind: String
     }
 
     struct SessionLog: Codable, Equatable {

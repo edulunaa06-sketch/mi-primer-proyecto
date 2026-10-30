@@ -3,10 +3,28 @@ import Foundation
 /// Rutina semanal fija definida por el usuario.
 /// IMPORTANTE: no modificar ejercicios, orden, series ni rangos sin autorización del usuario.
 
-enum SessionKind: String, Codable {
-    case run
+enum SessionKind: String, Codable, CaseIterable, Identifiable {
     case strength
+    case run
     case rest
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .strength: return "Fuerza"
+        case .run: return "Carrera"
+        case .rest: return "Descanso"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .strength: return "dumbbell.fill"
+        case .run: return "figure.run"
+        case .rest: return "moon.zzz.fill"
+        }
+    }
 }
 
 struct ExerciseDefinition: Identifiable, Hashable {
@@ -46,6 +64,16 @@ struct SessionDefinition: Identifiable, Hashable {
     /// Misma sesión con la lista de ejercicios personalizada por el usuario.
     func with(exercises custom: [ExerciseDefinition]) -> SessionDefinition {
         SessionDefinition(id: id, title: title, kind: kind, weekday: weekday, detail: detail, exercises: custom)
+    }
+
+    /// Misma sesión convertida en otro tipo de día (fuerza, carrera o descanso).
+    ///
+    /// Se vacía el `detail`: describe el día original («Corre entre 25 y 35 minutos»), y dejarlo
+    /// en un día que has pasado a fuerza sería mentir al que lo lee.
+    func with(kind custom: SessionKind?) -> SessionDefinition {
+        guard let custom, custom != kind else { return self }
+        return SessionDefinition(id: id, title: title, kind: custom, weekday: weekday,
+                                 detail: "", exercises: custom == .strength ? exercises : [])
     }
 
     /// Misma sesión con el nombre que le ha puesto el usuario (vacío = nombre original).
@@ -174,6 +202,22 @@ enum WeeklyRoutine {
     /// Sesiones entrenables (excluye el descanso). Base del cumplimiento semanal.
     static var trainableSessions: [SessionDefinition] {
         allSessions.filter { $0.kind != .rest }
+    }
+
+    /// La semana tal y como la tiene montada el usuario: con sus tipos de día, sus nombres y
+    /// sus ejercicios. Todo lo que cuente sesiones debe salir de aquí y no de `allSessions`,
+    /// o diría que te faltan entrenos que tú has puesto como descanso.
+    static func week(routine: [RoutineExercise] = [],
+                     titles: [SessionTitle] = [],
+                     kinds: [SessionKindChoice] = []) -> [SessionDefinition] {
+        allSessions.map { $0.resolved(with: routine, titles: titles, kinds: kinds) }
+    }
+
+    /// Las sesiones que cuentan para el cumplimiento, ya con los cambios del usuario.
+    static func trainable(routine: [RoutineExercise] = [],
+                          titles: [SessionTitle] = [],
+                          kinds: [SessionKindChoice] = []) -> [SessionDefinition] {
+        week(routine: routine, titles: titles, kinds: kinds).filter { $0.kind != .rest }
     }
 
     static func sessions(forWeekday weekday: Int) -> [SessionDefinition] {

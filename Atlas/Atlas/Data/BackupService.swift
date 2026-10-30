@@ -36,6 +36,9 @@ enum BackupService {
                   repMin: $0.repMin, repMax: $0.repMax, order: $0.order)
         }
         file.sessionTitles = try all(SessionTitle.self).map { BackupFile.SessionTitle(sessionID: $0.sessionID, title: $0.title) }
+        file.sessionKinds = try all(SessionKindChoice.self).map {
+            BackupFile.SessionKindEntry(sessionID: $0.sessionID, kind: $0.kindRaw)
+        }
         file.sessionLogs = try all(WorkoutSessionLog.self).map { log in
             BackupFile.SessionLog(weekStart: log.weekStart, sessionID: log.sessionID, isCompleted: log.isCompleted, completedAt: log.completedAt,
                   notes: log.notes, lastModified: log.lastModified,
@@ -154,6 +157,10 @@ enum BackupService {
                                            sets: r.sets, repMin: r.repMin, repMax: r.repMax, order: r.order))
         }
         for t in file.sessionTitles { context.insert(SessionTitle(sessionID: t.sessionID, title: t.title)) }
+        for k in file.sessionKinds ?? [] {
+            guard let kind = SessionKind(rawValue: k.kind) else { continue }
+            context.insert(SessionKindChoice(sessionID: k.sessionID, kind: kind))
+        }
         for l in file.sessionLogs {
             let log = WorkoutSessionLog(weekStart: l.weekStart, sessionID: l.sessionID)
             log.isCompleted = l.isCompleted
@@ -350,6 +357,7 @@ enum BackupService {
         try wipe(WeightEntry.self)
         try wipe(RoutineExercise.self)
         try wipe(SessionTitle.self)
+        try wipe(SessionKindChoice.self)
         try wipe(MealRecord.self)
         try wipe(DayPlanSelection.self)
         try wipe(DayMealChoice.self)
