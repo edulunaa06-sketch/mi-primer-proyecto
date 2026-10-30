@@ -128,20 +128,41 @@ struct MedalCard: View {
         }
     }
 
+    /// El metal de cada medalla, en degradado, para el aro y el icono. Antes todas lo
+    /// llevaban en oro, así que una de plata salía con el borde dorado; sobre el fondo negro
+    /// no cantaba, sobre papel blanco sí.
+    static func metal(_ tier: MedalTier) -> AnyShapeStyle {
+        switch tier {
+        case .locked:
+            return AnyShapeStyle(Theme.cardRaised)
+        case .bronze:
+            return AnyShapeStyle(LinearGradient(colors: [Color(red: 0.78, green: 0.52, blue: 0.26),
+                                                         Color(red: 0.62, green: 0.38, blue: 0.16),
+                                                         Color(red: 0.44, green: 0.25, blue: 0.08)],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing))
+        case .silver:
+            return AnyShapeStyle(LinearGradient(colors: [Color(red: 0.66, green: 0.70, blue: 0.76),
+                                                         DS.steel,
+                                                         Color(red: 0.30, green: 0.34, blue: 0.42)],
+                                                startPoint: .topLeading, endPoint: .bottomTrailing))
+        case .gold:
+            return AnyShapeStyle(Theme.goldGradient)
+        }
+    }
+
     private var unlocked: Bool { medal.tier != .locked }
 
     var body: some View {
         VStack(spacing: 8) {
             ZStack {
                 Circle().fill(unlocked ? Self.color(medal.tier).opacity(0.18) : Theme.cardRaised)
-                Circle().strokeBorder(unlocked ? AnyShapeStyle(Theme.goldGradient) : AnyShapeStyle(Theme.cardRaised),
-                                      lineWidth: medal.tier == .gold ? 4 : 3)
+                Circle().strokeBorder(Self.metal(medal.tier), lineWidth: medal.tier == .gold ? 4 : 3)
                 Image(systemName: unlocked ? medal.symbol : "lock.fill")
                     .font(.system(size: unlocked ? 24 : 18, weight: .bold))
-                    .foregroundStyle(unlocked ? AnyShapeStyle(Theme.goldGradient) : AnyShapeStyle(Theme.textTertiary))
+                    .foregroundStyle(unlocked ? Self.metal(medal.tier) : AnyShapeStyle(Theme.textTertiary))
             }
             .frame(width: 64, height: 64)
-            .shadow(color: medal.tier == .gold || celebrate ? Theme.gold.opacity(0.45) : .clear, radius: celebrate ? 14 : 8)
+            .shadow(color: medal.tier == .gold || celebrate ? Self.color(medal.tier).opacity(0.45) : .clear, radius: celebrate ? 14 : 8)
             .scaleEffect(pop ? 1.15 : 1)
             Text(medal.title).font(.subheadline.weight(.semibold)).multilineTextAlignment(.center).lineLimit(2)
             HStack(spacing: 2) {
@@ -159,14 +180,14 @@ struct MedalCard: View {
                 .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
             Text(medal.value ?? "Sin datos todavía")
                 .font(.caption.weight(unlocked ? .bold : .regular).monospacedDigit())
-                .foregroundStyle(medal.value == nil ? Theme.textTertiary : (unlocked ? Theme.gold : Theme.textPrimary))
+                .foregroundStyle(medal.value == nil ? Theme.textTertiary : (unlocked ? Self.color(medal.tier) : Theme.textPrimary))
                 .multilineTextAlignment(.center)
             if let date = medal.date {
                 Text(DateUtils.shortDate(date)).font(.caption2).foregroundStyle(Theme.textTertiary)
             }
             if let next = medal.nextGoal {
                 VStack(spacing: 4) {
-                    ProgressBar(fraction: medal.progress, height: 5, color: Theme.gold.opacity(unlocked ? 1 : 0.6))
+                    ProgressBar(fraction: medal.progress, height: 5, color: Self.color(medal.tier).opacity(unlocked ? 1 : 0.6))
                     Text(next).font(.caption2).foregroundStyle(Theme.textSecondary).multilineTextAlignment(.center)
                 }
             }
@@ -175,7 +196,7 @@ struct MedalCard: View {
         .card(padding: 12)
         .overlay {
             RoundedRectangle(cornerRadius: Theme.cornerRadius, style: .continuous)
-                .strokeBorder(Theme.gold.opacity(celebrate ? 0.9 : (unlocked ? 0.25 : 0)), lineWidth: celebrate ? 2 : 1)
+                .strokeBorder(Self.color(medal.tier).opacity(celebrate ? 0.9 : (unlocked ? 0.25 : 0)), lineWidth: celebrate ? 2 : 1)
         }
         .onChange(of: celebrate) { _, now in
             guard now, !reduceMotion else { return }
