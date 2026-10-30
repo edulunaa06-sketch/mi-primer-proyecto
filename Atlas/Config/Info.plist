@@ -2,43 +2,47 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>atlas.reminders.refresh</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>Now or Never</string>
-	<key>NSMotionUsageDescription</key>
-	<string>Now or Never cuenta tus pasos con el sensor de movimiento del iPhone para enseñártelos en Hoy. No salen de tu iPhone.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Now or Never usa la cámara para tus fotos mensuales de progreso (frente, lateral y espalda) y para leer el código de barras de los alimentos. Las fotos se guardan solo en tu iPhone.</string>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>strava</string>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
 			<key>CFBundleURLName</key>
 			<string>$(PRODUCT_BUNDLE_IDENTIFIER).oauth</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>atlas</string>
 			</array>
-			<key>CFBundleTypeRole</key>
-			<string>Viewer</string>
 		</dict>
+	</array>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>strava</string>
+	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Now or Never usa la cámara para tus fotos mensuales de progreso (frente, lateral y espalda) y para leer el código de barras de los alimentos. Las fotos se guardan solo en tu iPhone.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Now or Never lee de Salud tus pasos y tus pesajes para que el historial esté completo aunque no lleves el móvil encima. Nada sale de tu iPhone.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Now or Never guarda en Salud tus pesajes, tus entrenos, el agua y lo que comes, para que estén junto al resto de tus datos de salud. Nada sale de tu iPhone.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Now or Never cuenta tus pasos con el sensor de movimiento del iPhone para enseñártelos en Hoy. No salen de tu iPhone.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
 		<string>LaunchBackground</string>
 	</dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-	</array>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>atlas.reminders.refresh</string>
-	</array>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 </dict>
 </plist>

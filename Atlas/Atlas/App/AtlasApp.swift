@@ -11,6 +11,7 @@ struct AtlasApp: App {
     @State private var router = AppRouter()
     @State private var claude = ClaudeService()
     @State private var steps = StepCounter()
+    @State private var health = HealthService()
 
     static let schema = Schema([
         UserSettings.self,
@@ -64,6 +65,7 @@ struct AtlasApp: App {
                     .environment(router)
                     .environment(claude)
                     .environment(steps)
+                    .environment(health)
                     .preferredColorScheme(.light)
                     .tint(Theme.accent)
             } else {

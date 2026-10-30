@@ -98,6 +98,10 @@ final class WeightEntry {
     var weightKg: Double = 0
     var waistCm: Double?
     var note: String = ""
+    /// Cuándo se mandó este pesaje a Apple Salud. Vacío = todavía no. Sirve para no
+    /// escribirlo dos veces. Opcional a propósito: así los pesajes que ya tienes guardados
+    /// siguen valiendo sin tocar la base de datos.
+    var healthSyncedAt: Date?
 
     init(date: Date, weightKg: Double, waistCm: Double? = nil, note: String = "") {
         self.id = UUID()
@@ -185,6 +189,8 @@ final class WorkoutSessionLog {
     var runningSince: Date?
     /// Cuándo se dio por terminada.
     var finishedAt: Date?
+    /// Cuándo se mandó este entreno a Apple Salud. Vacío = todavía no.
+    var healthSyncedAt: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \ExerciseLog.session)
     var exercises: [ExerciseLog] = []
