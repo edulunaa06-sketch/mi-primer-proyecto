@@ -137,7 +137,7 @@ struct CoachView: View {
             } label: {
                 Label("Preguntar", systemImage: "sparkles")
             }
-            .buttonStyle(GoldButtonStyle())
+            .buttonStyle(ActionButtonStyle())
             .disabled(question.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || claude.isWorking)
 
             Text("Ejemplos").font(.caption.weight(.bold)).foregroundStyle(Theme.textSecondary)

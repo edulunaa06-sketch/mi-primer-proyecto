@@ -121,12 +121,12 @@ struct CameraCaptureView: View {
             Image(uiImage: image).resizable().scaledToFit().frame(maxWidth: .infinity, maxHeight: .infinity)
             HStack(spacing: 12) {
                 Button("Repetir") { captured = nil }
-                    .buttonStyle(GoldButtonStyle(filled: false))
+                    .buttonStyle(ActionButtonStyle(filled: false))
                 Button("Usar foto") {
                     if let captured { onCapture(captured) }
                     dismiss()
                 }
-                .buttonStyle(GoldButtonStyle())
+                .buttonStyle(ActionButtonStyle())
             }
             .padding()
         }

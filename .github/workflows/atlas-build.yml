@@ -69,7 +69,7 @@ jobs:
           xcrun simctl io "$UDID" recordVideo --codec h264 --force screenshots/intro.mp4 &
           REC=$!
           sleep 1
-          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasCurtain; sleep 6
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasIntro; sleep 6
           kill -INT $REC; wait $REC || true
           xcrun simctl terminate "$UDID" "$BID" || true
           # Cada sección.

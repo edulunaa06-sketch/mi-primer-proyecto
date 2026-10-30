@@ -146,7 +146,7 @@ struct BarcodeScannerView: View {
                     .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
                     .accessibilityIdentifier("barcode.field")
                 Button("Buscar") { Task { await resolve(typed) } }
-                    .buttonStyle(GoldButtonStyle())
+                    .buttonStyle(ActionButtonStyle())
                     .disabled(!OpenFoodFacts.isPlausible(typed))
             }
             Divider().overlay(Theme.separator)
@@ -154,7 +154,7 @@ struct BarcodeScannerView: View {
                  + "queda guardado en tus alimentos y la próxima vez solo pones los gramos.")
                 .font(.caption).foregroundStyle(Theme.textSecondary)
             Button("Apuntarlo a mano y guardarlo") { startManualEntry(barcode: typed) }
-                .buttonStyle(GoldButtonStyle(filled: false))
+                .buttonStyle(ActionButtonStyle(filled: false))
                 .accessibilityIdentifier("barcode.manual")
         }
         .card()
@@ -219,7 +219,7 @@ struct BarcodeScannerView: View {
                 .font(.subheadline.weight(.semibold).monospacedDigit()).foregroundStyle(Theme.accent)
 
             Button("Añadir a mi \(type.label.lowercased())") { add(food, per100: per100) }
-                .buttonStyle(GoldButtonStyle())
+                .buttonStyle(ActionButtonStyle())
                 .disabled((grams ?? 0) <= 0 || !hasUsableName(food) || per100.kcal <= 0)
                 .accessibilityIdentifier("barcode.add")
             if editing && !hasUsableName(food) {
@@ -259,9 +259,9 @@ struct BarcodeScannerView: View {
                    : "Apuntarlo a mano y guardarlo") {
                 startManualEntry(barcode: barcode)
             }
-            .buttonStyle(GoldButtonStyle())
+            .buttonStyle(ActionButtonStyle())
             Button("Volver a escanear") { reset() }
-                .buttonStyle(GoldButtonStyle(filled: false))
+                .buttonStyle(ActionButtonStyle(filled: false))
         }
         .card()
     }

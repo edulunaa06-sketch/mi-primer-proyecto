@@ -59,13 +59,13 @@ struct NutritionView: View {
                         } label: {
                             Label("Elegir mis comidas paso a paso", systemImage: "square.stack.3d.up.fill")
                         }
-                        .buttonStyle(GoldButtonStyle())
+                        .buttonStyle(ActionButtonStyle())
                         Button {
                             rebalance()
                         } label: {
                             Label("Reajustar el resto del día a mis macros", systemImage: "wand.and.stars")
                         }
-                        .buttonStyle(GoldButtonStyle(filled: false))
+                        .buttonStyle(ActionButtonStyle(filled: false))
                         if let rebalanceMessage {
                             Text(rebalanceMessage).font(.caption).foregroundStyle(Theme.accent)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -513,15 +513,18 @@ struct MealCard: View {
                 Button(action: onCustom) {
                     Label("He comido otra cosa: apuntarlo", systemImage: "square.and.pencil")
                 }
-                .buttonStyle(GoldButtonStyle())
+                .buttonStyle(ActionButtonStyle())
+            }
+            // Escanear es de las cosas que más se usan, así que es un botón de verdad y no
+            // un enlace pequeño perdido entre «cambiar menú» y «volver al menú».
+            if let onScan {
+                Button(action: onScan) {
+                    Label("Escanear un código de barras", systemImage: "barcode.viewfinder")
+                }
+                .buttonStyle(ActionButtonStyle(filled: false))
+                .accessibilityIdentifier("meal.scan")
             }
             HStack(spacing: 14) {
-                if let onScan {
-                    Button(action: onScan) {
-                        Label("Escanear", systemImage: "barcode.viewfinder")
-                            .font(.caption.weight(.semibold))
-                    }
-                }
                 if let onSwap {
                     Button(action: onSwap) {
                         Label("Cambiar \(meal.mealType.label.lowercased())", systemImage: "arrow.triangle.2.circlepath")

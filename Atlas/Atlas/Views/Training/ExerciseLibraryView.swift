@@ -428,7 +428,7 @@ struct ExerciseComparisonView: View {
                 NavigationLink { ExerciseDetailView(info: to) } label: {
                     Label("Ver la ficha de \(to.name)", systemImage: "doc.text.magnifyingglass")
                 }
-                .buttonStyle(GoldButtonStyle(filled: false))
+                .buttonStyle(ActionButtonStyle(filled: false))
             }
             .padding(16)
         }

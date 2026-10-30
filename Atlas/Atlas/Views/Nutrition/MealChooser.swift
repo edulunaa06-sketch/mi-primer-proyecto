@@ -41,7 +41,7 @@ struct MealOptionCard: View {
                 macroLine("Día completo", dayTotal, target: daily)
             }
             Button("Elegir esta opción", action: onPick)
-                .buttonStyle(GoldButtonStyle())
+                .buttonStyle(ActionButtonStyle())
         }
         .card()
     }
@@ -86,7 +86,7 @@ struct MealChooserSheet: View {
                     }
                     if !showAll && candidates.count > 4 {
                         Button("Ver las \(candidates.count) opciones") { showAll = true }
-                            .buttonStyle(GoldButtonStyle(filled: false))
+                            .buttonStyle(ActionButtonStyle(filled: false))
                     }
                 }
                 .padding(16)
@@ -210,7 +210,7 @@ struct DayBuilderSheet: View {
         } label: {
             Label("Voy a comer otra cosa: apuntarla", systemImage: "square.and.pencil")
         }
-        .buttonStyle(GoldButtonStyle(filled: false))
+        .buttonStyle(ActionButtonStyle(filled: false))
         ForEach(options, id: \.id) { option in
             if let meal = byID[option.id] {
                 MealOptionCard(meal: meal, option: option, target: target) {
@@ -225,7 +225,7 @@ struct DayBuilderSheet: View {
         }
         if !showAll && candidates.count > 4 {
             Button("Ver las \(candidates.count) opciones") { showAll = true }
-                .buttonStyle(GoldButtonStyle(filled: false))
+                .buttonStyle(ActionButtonStyle(filled: false))
         }
     }
 
@@ -243,7 +243,7 @@ struct DayBuilderSheet: View {
                          Set(order.filter { !customPicks.contains($0) }))
                 dismiss()
             }
-            .buttonStyle(GoldButtonStyle())
+            .buttonStyle(ActionButtonStyle())
             Text("Después puedes marcar cada comida como hecha o cambiar cualquiera con «Cambiar».")
                 .font(.caption).foregroundStyle(Theme.textSecondary)
         }

@@ -64,11 +64,11 @@ struct AtlasApp: App {
                     .environment(router)
                     .environment(claude)
                     .environment(steps)
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(.light)
                     .tint(Theme.accent)
             } else {
                 StorageErrorView(message: containerError ?? "Error desconocido")
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(.light)
             }
         }
         .backgroundTask(.appRefresh(ReminderCoordinator.refreshTaskID)) {

@@ -191,16 +191,17 @@ struct BodyMapView: View {
         .card()
     }
 
-    /// Color de cada rango: del grafito del músculo que no has tocado al champán del máximo,
-    /// pasando por el platino y el oro. La idea es que se vea de un vistazo lo que te falta.
+    /// Color de cada rango. Sobre papel blanco la escala va de pálido a intenso: el músculo
+    /// que no has tocado es casi del color del papel y el máximo es el más cargado de color.
+    /// Así lo que te falta se ve de un vistazo, sin leer la leyenda.
     private func rankColor(_ rank: MuscleLevel.Rank?) -> Color {
         switch rank {
-        case .none, .some(.novato): return Color(red: 0.16, green: 0.15, blue: 0.14)
-        case .some(.iniciado): return DS.steel.opacity(0.40)
-        case .some(.intermedio): return DS.steel
-        case .some(.avanzado): return DS.goldDark
+        case .none, .some(.novato): return Color(red: 0.87, green: 0.89, blue: 0.92)
+        case .some(.iniciado): return DS.sky
+        case .some(.intermedio): return DS.cyan
+        case .some(.avanzado): return DS.indigo
         case .some(.veterano): return DS.gold
-        case .some(.elite): return DS.champagne
+        case .some(.elite): return Theme.goldDeep
         }
     }
 }
@@ -218,7 +219,7 @@ struct BodyDrawing: View {
         ZStack {
             ForEach(BodyMap.silhouettePieces) { piece in
                 MusclePolygon(points: piece.points)
-                    .fill(Color(red: 0.10, green: 0.11, blue: 0.14))
+                    .fill(Color(red: 0.91, green: 0.93, blue: 0.96))
             }
             ForEach(BodyMap.pieces(side)) { piece in
                 if let group = piece.group {
@@ -226,8 +227,8 @@ struct BodyDrawing: View {
                         .fill(color(group))
                         .overlay(
                             MusclePolygon(points: piece.points)
-                                .stroke(selected == group ? Color.white : Color.black.opacity(0.55),
-                                        lineWidth: selected == group ? 2 : 1)
+                                .stroke(selected == group ? DS.text : Color.black.opacity(0.16),
+                                        lineWidth: selected == group ? 2.5 : 1)
                         )
                         .contentShape(MusclePolygon(points: piece.points))
                         .onTapGesture { onTap?(group) }

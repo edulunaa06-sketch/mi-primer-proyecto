@@ -17,9 +17,9 @@ struct QuickAddSheet: View {
                 .padding(.top, 8)
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
                 tile("Comida", "fork.knife", Theme.carbs) { go(.nutrition) }
-                tile("Escanear alimento", "barcode.viewfinder", DS.champagne) { showScanner = true }
+                tile("Escanear alimento", "barcode.viewfinder", DS.cyan) { showScanner = true }
                 tile("Extra (cerveza, snack…)", "takeoutbag.and.cup.and.straw.fill", Theme.fat) { showExtra = true }
-                tile("Entreno", "dumbbell.fill", DS.gold) { go(.training) }
+                tile("Entreno", "dumbbell.fill", DS.indigo) { go(.training) }
                 tile("Peso", "scalemass.fill", DS.steel) { showWeight = true }
                 tile("Agua +250 ml", "drop.fill", DS.water) {
                     DataStore.changeWater(250, in: context)

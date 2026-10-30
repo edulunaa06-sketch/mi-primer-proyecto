@@ -47,19 +47,19 @@ struct TrainingView: View {
                     } label: {
                         Label("Volumen, progresión y récords", systemImage: "chart.bar.xaxis")
                     }
-                    .buttonStyle(GoldButtonStyle())
+                    .buttonStyle(ActionButtonStyle())
                     NavigationLink {
                         ExerciseLibraryView()
                     } label: {
                         Label("Biblioteca de ejercicios", systemImage: "books.vertical")
                     }
-                    .buttonStyle(GoldButtonStyle(filled: false))
+                    .buttonStyle(ActionButtonStyle(filled: false))
                     NavigationLink {
                         TrainingHistoryView()
                     } label: {
                         Label("Historial de semanas anteriores", systemImage: "clock.arrow.circlepath")
                     }
-                    .buttonStyle(GoldButtonStyle(filled: false))
+                    .buttonStyle(ActionButtonStyle(filled: false))
                     Menu {
                         Button("Empezar mi rutina desde cero", role: .destructive) { confirmScratch = true }
                         Button("Volver a la rutina predeterminada") { confirmDefaults = true }

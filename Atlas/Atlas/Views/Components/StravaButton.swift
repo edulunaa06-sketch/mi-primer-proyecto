@@ -21,7 +21,7 @@ struct StravaLaunchButton: View {
             } label: {
                 Label(title, systemImage: "figure.run")
             }
-            .buttonStyle(GoldButtonStyle())
+            .buttonStyle(ActionButtonStyle())
 
             Text(resultMessage ?? "La carrera se graba y se guarda en Strava. Now or Never no graba GPS.")
                 .font(.caption)

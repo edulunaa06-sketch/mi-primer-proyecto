@@ -51,8 +51,8 @@ struct RootView: View {
     @State private var showOnboarding = false
     @State private var showQuickAdd = false
     @State private var bootstrapped = false
-    /// Al abrir la app: telón con NOW / OR / NEVER que se abre y deja ver la app.
-    @State private var showCurtain = !RootView.skipSplashForTests
+    /// Al abrir la app: el aro se traza, el rayo cae dentro y sale el nombre.
+    @State private var showIntro = !RootView.skipSplashForTests
     /// Al volver tras un rato fuera: una frase motivadora.
     @State private var splashQuote: Motivation.Quote?
     @State private var backgroundedAt: Date?
@@ -71,8 +71,8 @@ struct RootView: View {
     static var skipSplashForTests: Bool {
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
-        // -NNCurtain: el telón se ve entero (para grabarlo en vídeo en el CI).
-        return args.contains("-AtlasSkipOnboarding") && !args.contains("-AtlasSplash") && !args.contains("-AtlasCurtain")
+        // -AtlasIntro: la entrada se ve entera (para grabarla en vídeo en el CI).
+        return args.contains("-AtlasSkipOnboarding") && !args.contains("-AtlasSplash") && !args.contains("-AtlasIntro")
         #else
         false
         #endif
@@ -121,9 +121,9 @@ struct RootView: View {
                 }
             }
             .overlay {
-                // La intro de Now or Never: se dibuja el logo, sale el nombre y se va hacia ti.
-                if showCurtain {
-                    IntroView { showCurtain = false }
+                // La entrada de Now or Never: el aro, el rayo y el nombre.
+                if showIntro {
+                    IntroView { showIntro = false }
                         .zIndex(2)
                 }
             }
@@ -191,11 +191,11 @@ struct RootView: View {
             } label: {
                 Image(systemName: "plus")
                     .font(.system(size: 22, weight: .heavy))
-                    .foregroundStyle(DS.onGold)
+                    .foregroundStyle(DS.onAccent)
                     .frame(width: DS.tabBarButton, height: DS.tabBarButton)
                     .background(Circle().fill(DS.brandDiagonal))
-                    .overlay(Circle().strokeBorder(DS.champagne.opacity(0.5), lineWidth: 1))
-                    .shadow(color: DS.gold.opacity(0.45), radius: 16, y: 4)
+                    .overlay(Circle().strokeBorder(Color.white.opacity(0.35), lineWidth: 1))
+                    .shadow(color: DS.indigo.opacity(0.40), radius: 16, y: 4)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Apuntar")
@@ -207,9 +207,11 @@ struct RootView: View {
         .padding(.horizontal, 10)
         .padding(.vertical, DS.tabBarPaddingV)
         .background(
-            Capsule().fill(Color(red: 0.07, green: 0.075, blue: 0.10).opacity(0.96))
+            // Blanca y opaca: la barra flota por encima del contenido que se desplaza
+            // por debajo, así que tiene que taparlo del todo.
+            Capsule().fill(Color.white)
                 .overlay(Capsule().strokeBorder(DS.stroke, lineWidth: 1))
-                .shadow(color: .black.opacity(0.6), radius: 20, y: 8)
+                .shadow(color: DS.shadowLift, radius: 18, y: 6)
         )
         .padding(.horizontal, 16)
         .padding(.bottom, DS.tabBarBottom)

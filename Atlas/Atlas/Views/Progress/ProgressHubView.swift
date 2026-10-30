@@ -70,7 +70,7 @@ struct WeightProgressView: View {
         ScrollView {
             VStack(spacing: 16) {
                 Button { showSheet = true } label: { Label("Registrar peso", systemImage: "plus") }
-                    .buttonStyle(GoldButtonStyle())
+                    .buttonStyle(ActionButtonStyle())
 
                 if entries.isEmpty {
                     EmptyStateView(symbol: "scalemass", title: "Sin pesajes", message: "Registra tu primer peso para ver la evolución. Si configuraste un peso inicial en el onboarding aparecerá aquí.")

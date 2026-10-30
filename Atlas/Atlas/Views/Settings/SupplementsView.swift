@@ -49,7 +49,7 @@ struct SupplementsView: View {
         Button { adding = true } label: {
             Label("Añadir un suplemento", systemImage: "plus.circle.fill")
         }
-        .buttonStyle(GoldButtonStyle(filled: supplements.isEmpty))
+        .buttonStyle(ActionButtonStyle(filled: supplements.isEmpty))
     }
 
     private var costCard: some View {

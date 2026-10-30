@@ -179,7 +179,7 @@ struct StrengthSessionView: View {
             } label: {
                 Label(log.finishedAt == nil ? "Terminar entreno" : "Volver a guardar", systemImage: "checkmark.seal.fill")
             }
-            .buttonStyle(GoldButtonStyle())
+            .buttonStyle(ActionButtonStyle())
             .accessibilityIdentifier("session.finish")
 
             if let finished = log.finishedAt {
@@ -569,7 +569,7 @@ struct NewRecordsSheet: View {
                     }
 
                     Button("Seguir") { dismiss() }
-                        .buttonStyle(GoldButtonStyle())
+                        .buttonStyle(ActionButtonStyle())
                         .padding(.top, 8)
                 }
                 .padding(16)

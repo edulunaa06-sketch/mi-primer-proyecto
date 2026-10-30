@@ -70,10 +70,10 @@ struct OnboardingView: View {
                     }
 
                     Button("Guardar y empezar") { save() }
-                        .buttonStyle(GoldButtonStyle())
+                        .buttonStyle(ActionButtonStyle())
                         .disabled(weight == nil)
                     Button("Omitir por ahora") { finish(saveStart: false) }
-                        .buttonStyle(GoldButtonStyle(filled: false))
+                        .buttonStyle(ActionButtonStyle(filled: false))
 
                     Text("Los objetivos de nutrición (2.300 kcal, 180 g P, 250 g C, 65 g G) son provisionales y editables en Ajustes.")
                         .font(.caption).foregroundStyle(Theme.textTertiary)

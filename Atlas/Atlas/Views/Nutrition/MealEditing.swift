@@ -343,12 +343,12 @@ struct MenuPlanDetailView: View {
                             settings.defaultPlanID = plan.id
                             try? context.save()
                         }
-                        .buttonStyle(GoldButtonStyle(filled: settings.defaultPlanID != plan.id))
+                        .buttonStyle(ActionButtonStyle(filled: settings.defaultPlanID != plan.id))
                         if settings.kcalTarget > 0, abs(t.kcal - settings.kcalTarget) / settings.kcalTarget > 0.02 {
                             Button("Ajustar este menú a \(NumberFormat.integer(settings.kcalTarget)) kcal") {
                                 DataStore.scale(plan, toKcal: settings.kcalTarget, in: context)
                             }
-                            .buttonStyle(GoldButtonStyle(filled: false))
+                            .buttonStyle(ActionButtonStyle(filled: false))
                         }
                     }
                 }

@@ -117,12 +117,14 @@ struct MedalCard: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pop = false
 
+    /// Cada metal con su color de verdad: bronce marrón, plata gris y oro dorado. Antes la
+    /// plata salía dorada y el oro en un amarillo clarito que sobre papel blanco no se veía.
     static func color(_ tier: MedalTier) -> Color {
         switch tier {
         case .locked: return Theme.textTertiary
-        case .bronze: return Theme.goldDeep
-        case .silver: return Theme.gold
-        case .gold: return Color(red: 1.0, green: 0.84, blue: 0.40)
+        case .bronze: return Color(red: 0.62, green: 0.38, blue: 0.16)
+        case .silver: return DS.steel
+        case .gold: return Theme.gold
         }
     }
 

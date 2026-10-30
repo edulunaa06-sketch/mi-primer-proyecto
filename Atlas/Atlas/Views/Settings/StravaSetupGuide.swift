@@ -16,7 +16,7 @@ struct StravaSetupGuide: View {
                     } label: {
                         Label("Abrir strava.com/settings/api", systemImage: "safari")
                     }
-                    .buttonStyle(GoldButtonStyle(filled: false))
+                    .buttonStyle(ActionButtonStyle(filled: false))
                 }
 
                 step(2, "Rellena el formulario así", nil) {

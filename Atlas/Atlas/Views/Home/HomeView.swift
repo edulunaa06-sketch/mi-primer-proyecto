@@ -92,7 +92,7 @@ struct HomeView: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 15, weight: .bold))
-                .foregroundStyle(DS.gold)
+                .foregroundStyle(DS.accent)
                 .frame(width: 38, height: 38)
                 .background(Circle().fill(DS.surfaceHi))
                 .overlay(Circle().strokeBorder(DS.stroke, lineWidth: 1))
@@ -132,7 +132,7 @@ struct HomeView: View {
             Button { router.tab = .nutrition } label: {
                 Label("Apuntar lo que como", systemImage: "plus.circle.fill").frame(maxWidth: .infinity)
             }
-            .buttonStyle(GoldButtonStyle(filled: false))
+            .buttonStyle(ActionButtonStyle(filled: false))
         }
     }
 

@@ -47,7 +47,7 @@ struct PhotosProgressView: View {
                     } label: {
                         Label("Antes / después", systemImage: "square.split.2x1")
                     }
-                    .buttonStyle(GoldButtonStyle(filled: false))
+                    .buttonStyle(ActionButtonStyle(filled: false))
                 }
                 pastMonthsCard
                 privacyCard
@@ -419,7 +419,9 @@ struct PhotoCompareView: View {
     private func tag(_ text: String) -> some View {
         Text(text).font(.caption2.weight(.heavy)).tracking(1)
             .padding(.horizontal, 8).padding(.vertical, 4)
-            .background(.black.opacity(0.6), in: Capsule())
-            .foregroundStyle(Theme.accent)
+            // Va encima de la foto, así que el velo negro se queda aunque la app sea clara;
+            // el texto, blanco: el azul de la marca sobre negro no se lee.
+            .background(.black.opacity(0.55), in: Capsule())
+            .foregroundStyle(.white)
     }
 }

@@ -44,7 +44,7 @@ struct CustomMealCard: View {
                 .font(.caption.monospacedDigit()).foregroundStyle(Theme.textSecondary)
             HStack(spacing: 10) {
                 Button(action: onEdit) { Label("Editar", systemImage: "square.and.pencil") }
-                    .buttonStyle(GoldButtonStyle(filled: false))
+                    .buttonStyle(ActionButtonStyle(filled: false))
                 Button("Volver al menú", action: onRemove).font(.caption.weight(.semibold))
             }
         }
@@ -116,9 +116,9 @@ struct ExtrasCard: View {
             }
             HStack(spacing: 10) {
                 Button(action: onAdd) { Label("Añadir un extra", systemImage: "plus") }
-                    .buttonStyle(GoldButtonStyle())
+                    .buttonStyle(ActionButtonStyle())
                 Button(action: onScan) { Label("Escanear", systemImage: "barcode.viewfinder") }
-                    .buttonStyle(GoldButtonStyle(filled: false))
+                    .buttonStyle(ActionButtonStyle(filled: false))
             }
         }
         .card()
@@ -247,7 +247,7 @@ struct CustomMealSheet: View {
                 Button { onScan() } label: {
                     Label("Escanear un código de barras", systemImage: "barcode.viewfinder")
                 }
-                .buttonStyle(GoldButtonStyle())
+                .buttonStyle(ActionButtonStyle())
                 .accessibilityIdentifier("custom.scan")
             }
             // Solo mientras no hayas apuntado nada todavía: así no se repite dos veces sin querer.
@@ -256,7 +256,7 @@ struct CustomMealSheet: View {
                     Label(previous.date.map { "Repetir lo del \(DateUtils.shortDate($0))" }
                           ?? "Repetir la última vez", systemImage: "arrow.counterclockwise")
                 }
-                .buttonStyle(GoldButtonStyle(filled: false))
+                .buttonStyle(ActionButtonStyle(filled: false))
                 Text(previous.items.map(\.name).joined(separator: ", "))
                     .font(.caption2).foregroundStyle(Theme.textTertiary).lineLimit(2)
             }
@@ -353,7 +353,7 @@ struct CustomMealSheet: View {
             } label: {
                 if claude.isWorking { ProgressView().tint(Theme.onAccent) } else { Label("Calcular con Claude", systemImage: "sparkles") }
             }
-            .buttonStyle(GoldButtonStyle())
+            .buttonStyle(ActionButtonStyle())
             .disabled(description.trimmingCharacters(in: .whitespaces).isEmpty || claude.isWorking || !claude.isConfigured)
             if let claudeError { Text(claudeError).font(.footnote).foregroundStyle(Theme.danger) }
             if let estimate {
@@ -382,7 +382,7 @@ struct CustomMealSheet: View {
                     self.estimate = nil
                     description = ""
                 }
-                .buttonStyle(GoldButtonStyle(filled: false))
+                .buttonStyle(ActionButtonStyle(filled: false))
                 .disabled(estimate.items.isEmpty)
             }
         }
@@ -407,7 +407,7 @@ struct CustomMealSheet: View {
             } label: {
                 if claude.isWorking { ProgressView() } else { Label("Pedir ideas a Claude", systemImage: "leaf.fill") }
             }
-            .buttonStyle(GoldButtonStyle(filled: false))
+            .buttonStyle(ActionButtonStyle(filled: false))
             .disabled(claude.isWorking || !claude.isConfigured)
             ForEach(Array(suggestions.enumerated()), id: \.offset) { _, suggestion in
                 let values = NutritionMath.sum(suggestion.lines.map { $0.entry.per100.scaled(toGrams: $0.grams) })
@@ -430,7 +430,7 @@ struct CustomMealSheet: View {
                     Text("\(NumberFormat.integer(values.kcal)) kcal · P \(NumberFormat.integer(values.protein)) · C \(NumberFormat.integer(values.carbs)) · G \(NumberFormat.integer(values.fat))")
                         .font(.caption.weight(.semibold).monospacedDigit())
                     Button("Usar esta comida") { use(suggestion.lines) }
-                        .buttonStyle(GoldButtonStyle())
+                        .buttonStyle(ActionButtonStyle())
                 }
                 .padding(12)
                 .background(Theme.cardRaised, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
@@ -504,7 +504,7 @@ struct CustomMealSheet: View {
                     DataStore.recordUse(of: food, grams: g, in: context)
                     selectedFood = nil
                 }
-                .buttonStyle(GoldButtonStyle())
+                .buttonStyle(ActionButtonStyle())
                 .disabled((catalogGrams ?? 0) <= 0)
             }
             ForEach(filtered.prefix(30)) { food in
@@ -514,9 +514,9 @@ struct CustomMealSheet: View {
                 } label: {
                     HStack {
                         if food.isScanned {
-                            Image(systemName: "barcode").font(.caption2).foregroundStyle(DS.gold)
+                            Image(systemName: "barcode").font(.caption2).foregroundStyle(DS.accent)
                         } else if food.isMine {
-                            Image(systemName: "pencil").font(.caption2).foregroundStyle(DS.gold)
+                            Image(systemName: "pencil").font(.caption2).foregroundStyle(DS.accent)
                         }
                         Text(food.displayName).foregroundStyle(Theme.textPrimary)
                         Spacer()
@@ -552,7 +552,7 @@ struct CustomMealSheet: View {
                     .font(.caption2).foregroundStyle(Theme.textTertiary)
             }
             Button("Añadir") { addManual() }
-                .buttonStyle(GoldButtonStyle())
+                .buttonStyle(ActionButtonStyle())
                 .disabled(manualName.trimmingCharacters(in: .whitespaces).isEmpty || (manualGrams ?? 0) <= 0 || manualKcal == nil)
         }
         .card()

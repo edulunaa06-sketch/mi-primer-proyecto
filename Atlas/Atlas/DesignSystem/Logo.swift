@@ -1,166 +1,145 @@
 import SwiftUI
 
-/// La marca de Now or Never: la «N» que comparten NOW y NEVER.
+/// El rayo de Now or Never.
 ///
-/// Un monograma macizo y geométrico, sin adornos: a 60 puntos en la pantalla de inicio, una
-/// letra rellena se reconoce y un dibujo con detalles se convierte en una mancha. El mismo
-/// trazo que el icono de la app (`tools/gen_appicon.py`).
-struct BrandMark: Shape {
+/// Macizo y con las puntas achaflanadas en vez de en aguja: a 20 puntos en una cabecera, una
+/// punta afilada se queda en nada y el rayo deja de leerse. El mismo trazo que el icono de la
+/// app (`tools/gen_appicon.py`).
+struct BrandBolt: Shape {
+    /// Lo que ocupa el rayo dentro del cuadro. El resto lo ocupa el aro.
+    var scale: CGFloat = 0.58
+
+    /// El rayo en coordenadas 0…1, de la punta de arriba a la de abajo.
+    static let points: [(CGFloat, CGFloat)] = [
+        (0.566, 0.070),  // punta de arriba, lado izquierdo del chaflán
+        (0.662, 0.070),  // punta de arriba, lado derecho
+        (0.548, 0.432),  // baja por el canto derecho del brazo de arriba
+        (0.742, 0.432),  // el escalón de la derecha
+        (0.430, 0.930),  // punta de abajo, lado derecho
+        (0.336, 0.930),  // punta de abajo, lado izquierdo
+        (0.452, 0.568),  // sube por el canto izquierdo del brazo de abajo
+        (0.258, 0.568),  // el escalón de la izquierda
+    ]
+
     func path(in r: CGRect) -> Path {
+        let xs = Self.points.map(\.0), ys = Self.points.map(\.1)
+        // Se centra por su caja, no por el 0,5: el rayo está inclinado y, sin esto, queda
+        // descolgado dentro del aro.
+        let bx = (xs.min()! + xs.max()!) / 2, by = (ys.min()! + ys.max()!) / 2
         var p = Path()
-        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-            CGPoint(x: r.minX + r.width * x, y: r.minY + r.height * y)
+        for (i, point) in Self.points.enumerated() {
+            let pt = CGPoint(x: r.midX + (point.0 - bx) * scale * r.width,
+                             y: r.midY + (point.1 - by) * scale * r.height)
+            if i == 0 { p.move(to: pt) } else { p.addLine(to: pt) }
         }
-        // Contorno de la N: pata izquierda, diagonal bajando, pata derecha, y de vuelta por abajo.
-        // La diagonal tiene el mismo grosor perpendicular que las patas (0,155 de ancho), que en
-        // vertical son 0,169 por la inclinación. Si no, la letra se ve coja.
-        p.move(to: pt(0.200, 0.060))
-        p.addLine(to: pt(0.355, 0.060))
-        p.addLine(to: pt(0.645, 0.551))
-        p.addLine(to: pt(0.645, 0.060))
-        p.addLine(to: pt(0.800, 0.060))
-        p.addLine(to: pt(0.800, 0.720))
-        p.addLine(to: pt(0.645, 0.720))
-        p.addLine(to: pt(0.355, 0.229))
-        p.addLine(to: pt(0.355, 0.720))
-        p.addLine(to: pt(0.200, 0.720))
         p.closeSubpath()
         return p
     }
 }
 
-/// El filo de oro de debajo del monograma: la línea que llevan los logotipos de las marcas caras.
-struct BrandRule: Shape {
+/// El aro que rodea al rayo, abierto por arriba.
+///
+/// Abierto y no cerrado a propósito: un círculo cerrado se queda quieto, y este, con el hueco,
+/// parece que está dando la vuelta. Además es lo que permite dibujarlo de un trazo en la entrada.
+struct BrandRing: Shape {
+    /// Grados de hueco, centrados arriba.
+    var gap: CGFloat = 62
+
     func path(in r: CGRect) -> Path {
-        Path(CGRect(x: r.minX + r.width * 0.20, y: r.minY + r.height * 0.845,
-                    width: r.width * 0.60, height: max(1, r.height * 0.018)))
+        var p = Path()
+        p.addArc(center: CGPoint(x: r.midX, y: r.midY),
+                 radius: min(r.width, r.height) * 0.415,
+                 startAngle: .degrees(-90 + gap / 2),
+                 endAngle: .degrees(270 - gap / 2),
+                 clockwise: false)
+        return p
     }
 }
 
-/// El monograma en oro, con la luz cruzándolo.
+/// La marca entera: el rayo dentro del aro, en el azul de Now or Never.
 struct BrandLogo: View {
     var size: CGFloat = 96
-    /// 0…1: cuánto ha subido el oro dentro de la letra (la entrada la va llenando).
+    /// 0…1: cuánto aro se ha dibujado (la entrada lo va trazando).
     var drawn: CGFloat = 1
-    /// 0…1: cuánto se ha abierto el filo de debajo, desde el centro.
-    var ruleOpen: CGFloat = 1
-    /// Dónde está el brillo que cruza el metal: −1 fuera por la izquierda, 1 fuera por la derecha.
-    var shine: CGFloat = 1
+    /// 0…1: cuánto ha entrado el rayo (la entrada lo deja caer dentro).
+    var strike: CGFloat = 1
 
     var body: some View {
         ZStack {
-            // El oro de la letra, con la luz encima. El brillo va en un `overlay` y no como
-            // hermano en el ZStack: así no puede cambiar el tamaño de la letra al crecer.
-            BrandMark()
+            BrandRing()
+                .trim(from: 0, to: clamped(drawn))
+                .stroke(DS.brandDiagonal,
+                        style: StrokeStyle(lineWidth: size * 0.058, lineCap: .round))
+            BrandBolt()
                 .fill(DS.brandDiagonal)
-                .frame(width: size, height: size)
-                .overlay {
-                    // La banda de luz: inclinada y recortada por la propia letra, así parece un
-                    // reflejo sobre metal y no un rectángulo pasando por encima.
-                    LinearGradient(colors: [.clear, DS.champagne.opacity(0.95), .clear],
-                                   startPoint: .leading, endPoint: .trailing)
-                        .frame(width: size * 0.26, height: size * 1.8)
-                        .rotationEffect(.degrees(18))
-                        .offset(x: shine * size * 0.95)
-                }
-                .mask { BrandMark().frame(width: size, height: size) }
-                .mask(alignment: .bottom) { Rectangle().frame(height: size * clamped(drawn)) }
-
-            BrandRule()
-                .fill(DS.brandDiagonal)
-                .frame(width: size, height: size)
-                .scaleEffect(x: clamped(ruleOpen), y: 1, anchor: .center)
+                // Entra un pelín grande y se asienta: así parece que cae, no que aparece.
+                .scaleEffect(0.72 + 0.28 * clamped(strike))
+                .opacity(Double(clamped(strike)))
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
 
-    /// Las animaciones con muelle se pasan de 1 y bajan de 0; recortarlas evita que la letra
-    /// se dibuje de más o que el filo se gire del revés.
-    private func clamped(_ value: CGFloat) -> CGFloat {
-        min(max(value, 0), 1)
-    }
+    /// Las animaciones con muelle se pasan de 1 y bajan de 0; recortarlas evita que el aro
+    /// se dibuje de más o que el rayo se dé la vuelta.
+    private func clamped(_ value: CGFloat) -> CGFloat { min(max(value, 0), 1) }
 }
 
-/// Telón de entrada: el oro llena la N, el filo se abre, la luz la cruza, NOW baja desde arriba
-/// y NEVER sube desde abajo, OR aparece enfocándose en medio, NOW se enciende y NEVER se apaga
-/// (eliges ahora), y el telón se abre por la mitad dejando ver la app. Tocar la pantalla lo salta.
+/// La entrada al abrir la app: el aro se traza de una vuelta, el rayo cae dentro con un golpe,
+/// el nombre se abre letra a letra y todo se va con un respiro dejando ver la app.
+/// Tocar la pantalla la salta.
 struct IntroView: View {
     let onFinish: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// El oro llenando la letra, de abajo a arriba.
+    /// El aro trazándose.
     @State private var drawn: CGFloat = 0
-    /// El filo de debajo abriéndose desde el centro.
-    @State private var ruleOpen: CGFloat = 0
-    /// La luz cruzando el monograma.
-    @State private var shine: CGFloat = -1.2
-    /// NOW y NEVER ya han entrado en su sitio.
-    @State private var wordsIn = false
-    /// El OR del medio está enfocado.
-    @State private var orIn = false
-    /// NOW encendido en oro, NEVER apagado.
-    @State private var chosen = false
-    /// Las dos mitades del telón se separan.
-    @State private var opened = false
+    /// El rayo cayendo dentro.
+    @State private var strike: CGFloat = 0
+    /// El destello del momento del golpe.
+    @State private var flash: Double = 0
+    /// Separación entre las letras del nombre: empiezan apretadas y se abren.
+    @State private var tracking: CGFloat = -3
+    @State private var wordIn = false
+    /// El lema de abajo.
+    @State private var taglineIn = false
+    /// Todo se va.
+    @State private var leaving = false
     @State private var done = false
 
     var body: some View {
-        GeometryReader { geo in
-            let travel = geo.size.height / 2 + 40
-            ZStack {
-                // Mitad de arriba: la marca y NOW.
-                curtainHalf(total: geo.size, isTop: true) {
-                    VStack(spacing: 18) {
-                        BrandLogo(size: 112, drawn: drawn, ruleOpen: ruleOpen, shine: shine)
-                            .shadow(color: DS.gold.opacity(ruleOpen > 0 ? 0.45 : 0), radius: 34)
-                        Text("NOW")
-                            .font(.display(46, .black))
-                            .tracking(6)
-                            .foregroundStyle(chosen ? AnyShapeStyle(DS.brandDiagonal) : AnyShapeStyle(DS.text))
-                            .shadow(color: DS.gold.opacity(chosen ? 0.45 : 0), radius: 22)
-                            .offset(y: wordsIn ? 0 : -70)
-                            .opacity(wordsIn ? 1 : 0)
-                    }
-                    .padding(.bottom, 26)
-                }
-                .frame(maxHeight: .infinity, alignment: .top)
-                .offset(y: opened ? -travel : 0)
+        ZStack {
+            AtlasBackdrop().ignoresSafeArea()
 
-                // Mitad de abajo: NEVER y el lema.
-                curtainHalf(total: geo.size, isTop: false) {
-                    VStack(spacing: 14) {
-                        Text("NEVER")
-                            .font(.display(46, .black))
-                            .tracking(6)
-                            .foregroundStyle(DS.text)
-                            .opacity(wordsIn ? (chosen ? 0.20 : 1) : 0)
-                            .offset(y: wordsIn ? 0 : 70)
-                        Text("ENTRENA · COME · PROGRESA")
-                            .font(.system(size: 11, weight: .bold).width(.expanded))
-                            .tracking(3)
-                            .foregroundStyle(DS.text3)
-                            .opacity(orIn ? 1 : 0)
+            VStack(spacing: 24) {
+                BrandLogo(size: 128, drawn: drawn, strike: strike)
+                    // El resplandor solo existe en el instante del golpe.
+                    .shadow(color: DS.indigo.opacity(flash * 0.55), radius: 40)
+                    .overlay {
+                        Circle()
+                            .fill(DS.sky.opacity(flash * 0.35))
+                            .frame(width: 128, height: 128)
+                            .blur(radius: 30)
+                            .allowsHitTesting(false)
                     }
-                    .padding(.top, 26)
-                }
-                .frame(maxHeight: .infinity, alignment: .bottom)
-                .offset(y: opened ? travel : 0)
 
-                // El OR va justo en la línea por la que se parte el telón.
-                Text("OR")
-                    .font(.system(size: 15, weight: .black).width(.expanded))
-                    .tracking(8)
-                    .foregroundStyle(DS.gold)
-                    .padding(.horizontal, 12)
-                    .background(Capsule().fill(DS.bg).overlay(Capsule().strokeBorder(DS.stroke, lineWidth: 1)))
-                    .blur(radius: orIn ? 0 : 12)
-                    .scaleEffect(orIn ? 1 : 1.6)
-                    .opacity(orIn && !opened ? 1 : 0)
+                VStack(spacing: 10) {
+                    Text("NOW OR NEVER")
+                        .font(.display(26, .black))
+                        .tracking(tracking)
+                        .foregroundStyle(DS.text)
+                        .opacity(wordIn ? 1 : 0)
+                    Text("ENTRENA · COME · PROGRESA")
+                        .font(.system(size: 11, weight: .bold).width(.expanded))
+                        .tracking(3)
+                        .foregroundStyle(DS.text3)
+                        .opacity(taglineIn ? 1 : 0)
+                }
             }
-            .frame(width: geo.size.width, height: geo.size.height)
+            // Al irse se acerca un punto, como si la app estuviera debajo.
+            .scaleEffect(leaving ? 1.12 : 1)
+            .opacity(leaving ? 0 : 1)
         }
-        .ignoresSafeArea()
         .contentShape(Rectangle())
         .onTapGesture { leave() }
         .accessibilityElement(children: .ignore)
@@ -169,49 +148,35 @@ struct IntroView: View {
         .task { await play() }
     }
 
-    /// Una mitad del telón: su trozo del fondo (para que las dos juntas se vean como una sola
-    /// pantalla, sin costura) y su contenido pegado a la línea por la que se abre.
-    private func curtainHalf<Content: View>(total: CGSize, isTop: Bool,
-                                            @ViewBuilder content: () -> Content) -> some View {
-        ZStack(alignment: isTop ? .bottom : .top) {
-            AtlasBackdrop()
-                .frame(width: total.width, height: total.height)
-                .frame(height: total.height / 2, alignment: isTop ? .top : .bottom)
-                .clipped()
-            content()
-        }
-        .frame(width: total.width, height: total.height / 2)
-        .clipped()
-    }
-
     private func play() async {
         if reduceMotion {
-            drawn = 1; ruleOpen = 1; shine = 1.2; wordsIn = true; orIn = true; chosen = true
-            try? await Task.sleep(for: .milliseconds(1000))
+            drawn = 1; strike = 1; tracking = 4; wordIn = true; taglineIn = true
+            try? await Task.sleep(for: .milliseconds(900))
             leave(); return
         }
-        withAnimation(.easeInOut(duration: 0.6)) { drawn = 1 }
-        try? await Task.sleep(for: .milliseconds(560))
+        // El aro da la vuelta.
+        withAnimation(.easeInOut(duration: 0.62)) { drawn = 1 }
+        try? await Task.sleep(for: .milliseconds(540))
+        // El rayo cae dentro, con golpe y destello.
         DS.haptic(.heavy)
-        withAnimation(.spring(response: 0.38, dampingFraction: 0.75)) { ruleOpen = 1 }
-        withAnimation(.easeInOut(duration: 0.75).delay(0.1)) { shine = 1.2 }
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.72).delay(0.12)) { wordsIn = true }
-        try? await Task.sleep(for: .milliseconds(560))
-        withAnimation(.easeOut(duration: 0.4)) { orIn = true }
-        try? await Task.sleep(for: .milliseconds(420))
-        DS.haptic(.rigid)
-        withAnimation(.easeInOut(duration: 0.5)) { chosen = true }
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.62)) { strike = 1 }
+        withAnimation(.easeOut(duration: 0.12)) { flash = 1 }
+        withAnimation(.easeOut(duration: 0.55).delay(0.12)) { flash = 0 }
+        // El nombre se abre.
+        withAnimation(.easeOut(duration: 0.55).delay(0.14)) { tracking = 4; wordIn = true }
+        try? await Task.sleep(for: .milliseconds(520))
+        withAnimation(.easeOut(duration: 0.35)) { taglineIn = true }
         // Para las capturas del CI la entrada se queda aquí, con todo en su sitio.
         if RootView.screenshotSplash { return }
-        try? await Task.sleep(for: .milliseconds(620))
+        try? await Task.sleep(for: .milliseconds(680))
         leave()
     }
 
     private func leave() {
-        guard !opened else { return }
-        withAnimation(.easeInOut(duration: 0.5)) { opened = true }
+        guard !leaving else { return }
+        withAnimation(.easeIn(duration: 0.42)) { leaving = true }
         Task {
-            try? await Task.sleep(for: .milliseconds(480))
+            try? await Task.sleep(for: .milliseconds(400))
             guard !done else { return }
             done = true
             onFinish()
