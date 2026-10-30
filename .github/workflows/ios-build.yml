@@ -1,0 +1,169 @@
+name: iOS build (Now or Never)
+
+on:
+  push:
+    paths:
+      - "NowOrNever/**"
+      - ".github/workflows/ios-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: NowOrNever
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build for iOS device (sin firma)
+        run: |
+          set -o pipefail
+          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
+            -destination 'generic/platform=iOS' -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build | tee build-device.log | grep -E "error:|warning:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build-device.log
+
+      - name: Build IPA for SideStore/AltStore (Release, firma ad-hoc)
+        run: |
+          set -o pipefail
+          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
+            -destination 'generic/platform=iOS' -configuration Release \
+            -derivedDataPath build-release CODE_SIGNING_ALLOWED=NO build | tee build-release.log | grep -E "error:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build-release.log
+          APP=build-release/Build/Products/Release-iphoneos/NowOrNever.app
+          # Firma ad-hoc. Sideloadly/SideStore vuelven a firmar con tu Apple ID.
+          codesign --force --sign - --entitlements Config/NowOrNever.entitlements --timestamp=none "$APP"
+          codesign --verify "$APP"
+          rm -rf ipa && mkdir -p ipa/Payload && cp -R "$APP" ipa/Payload/
+          (cd ipa && zip -qry ../NowOrNever.ipa Payload)
+          ls -la NowOrNever.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NowOrNever-ipa
+          path: NowOrNever/NowOrNever.ipa
+
+      - name: Run unit tests on simulator
+        run: |
+          set -o pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "Simulator: $UDID"
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          # Perfil de rendimiento (Instruments · Time Profiler) de la prueba con 8 meses de datos:
+          # en cuanto arranca la app con -NNDemoData se engancha el perfilador 100 s.
+          (
+            for i in $(seq 1 1500); do
+              PID=$(pgrep -f "NowOrNever.app/NowOrNever.*NNDemoData" | head -1)
+              [ -n "$PID" ] && break
+              sleep 1
+            done
+            if [ -n "$PID" ]; then
+              echo "Perfilando PID $PID" > xctrace.log
+              xcrun xctrace record --template 'Time Profiler' --device "$UDID" --attach "$PID" --time-limit 100s --output perf.trace >> xctrace.log 2>&1 \
+                || xcrun xctrace record --template 'Time Profiler' --attach "$PID" --time-limit 100s --output perf.trace >> xctrace.log 2>&1
+            fi
+          ) &
+          PROFILER=$!
+          xcodebuild -project NowOrNever.xcodeproj -scheme NowOrNever \
+            -destination "id=$UDID" -derivedDataPath build -resultBundlePath tests.xcresult CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST|XCTAssert|PERF" || true
+          wait $PROFILER || true
+          grep -q "TEST SUCCEEDED" test.log
+
+      - name: Perfil de rendimiento
+        if: always()
+        run: |
+          cat xctrace.log 2>/dev/null || echo "Sin perfil"
+          if [ -d perf.trace ]; then
+            xcrun xctrace export --input perf.trace --toc > perf-toc.xml || true
+            xcrun xctrace export --input perf.trace --xpath '/trace-toc/run[@number="1"]/data/table[@schema="time-profile"]' > time-profile.xml || true
+            ls -la time-profile.xml || true
+            python3 tools/perf_summary.py time-profile.xml > perf-summary.txt || true
+            head -200 perf-summary.txt || true
+          fi
+
+      - name: Screenshots on simulator
+        if: always()
+        run: |
+          mkdir -p screenshots
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time "9:41" || true
+          APP=build/Build/Products/Debug-iphonesimulator/NowOrNever.app
+          BID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
+          # Sin desinstalar: las capturas muestran los datos introducidos por las pruebas de interfaz.
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" "$BID"; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/0-onboarding.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          for tab in home training nutrition progress calendar settings; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab "$tab"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          for section in week medals; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab progress -NNProgress "$section"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/progress-$section.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab settings -NNProfile; sleep 5
+          xcrun simctl io "$UDID" screenshot screenshots/profile.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab training -NNSession tue-push-a -NNEditRoutine; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/routine-editor.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -NNMealBuilder; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/meal-builder.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNSplash; sleep 1
+          xcrun simctl io "$UDID" screenshot screenshots/splash-logo.png
+          sleep 4
+          xcrun simctl io "$UDID" screenshot screenshots/splash.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -NNLogMeal; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/log-meal.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -NNMenus; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/menus.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          for flag in NNCustomMeal NNSwapMeal; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab nutrition -$flag; sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/$flag.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          for session in tue-push-a sat-run; do
+            xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNTab training -NNSession "$session"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+
+          # Vídeo del telón de inicio (NOW baja, NEVER sube, OR se enfoca y el telón se abre).
+          xcrun simctl io "$UDID" recordVideo --codec h264 --force screenshots/curtain.mp4 &
+          REC=$!
+          sleep 1
+          xcrun simctl launch "$UDID" "$BID" -NNSkipOnboarding -NNCurtain; sleep 5
+          kill -INT $REC; wait $REC || true
+          xcrun simctl terminate "$UDID" "$BID" || true
+
+          # Capturas de las pruebas (final de cada pestaña).
+          xcrun xcresulttool export attachments --path tests.xcresult --output-path screenshots/tests || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: NowOrNever/screenshots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-log
+          path: |
+            NowOrNever/test.log
+            NowOrNever/perf-summary.txt
+            NowOrNever/xctrace.log
+            NowOrNever/perf-toc.xml

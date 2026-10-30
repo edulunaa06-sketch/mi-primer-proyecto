@@ -1,0 +1,120 @@
+name: iOS build (Now or Never)
+
+on:
+  push:
+    paths:
+      - "Atlas/**"
+      - ".github/workflows/atlas-build.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: macos-15
+    # La suite completa (14 recorridos de interfaz, uno de ellos con 8 meses de datos de prueba)
+    # pasa de la hora en el simulador del runner. 60 minutos la cortaban por tiempo.
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: Atlas
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build for iOS device (sin firma)
+        run: |
+          set -o pipefail
+          xcodebuild -project Atlas.xcodeproj -scheme Atlas -destination 'generic/platform=iOS' -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO build | tee build-device.log | grep -E "error:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build-device.log
+
+      - name: Build IPA (Release, firma ad-hoc)
+        run: |
+          set -o pipefail
+          xcodebuild -project Atlas.xcodeproj -scheme Atlas -destination 'generic/platform=iOS' -configuration Release \
+            -derivedDataPath build-release CODE_SIGNING_ALLOWED=NO build | tee build-release.log | grep -E "error:|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build-release.log
+          APP=build-release/Build/Products/Release-iphoneos/Atlas.app
+          codesign --force --sign - --entitlements Config/Atlas.entitlements --timestamp=none "$APP"
+          codesign --verify "$APP"
+          rm -rf ipa && mkdir -p ipa/Payload && cp -R "$APP" ipa/Payload/
+          (cd ipa && zip -qry ../Atlas.ipa Payload)
+          ls -la Atlas.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Atlas-ipa
+          path: Atlas/Atlas.ipa
+
+      - name: Tests on simulator
+        run: |
+          set -o pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcodebuild -project Atlas.xcodeproj -scheme Atlas -destination "id=$UDID" -derivedDataPath build \
+            -resultBundlePath tests.xcresult CODE_SIGNING_ALLOWED=NO test | tee test.log | grep -E "error:|Test Case.*(passed|failed)|Executed|TEST" || true
+          grep -q "TEST SUCCEEDED" test.log
+
+      - name: Screenshots and intro video
+        if: always()
+        run: |
+          mkdir -p screenshots
+          xcrun xcresulttool export attachments --path tests.xcresult --output-path screenshots/tests || true
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl status_bar "$UDID" override --time "9:41" || true
+          APP=build/Build/Products/Debug-iphonesimulator/Atlas.app
+          BID=$(/usr/libexec/PlistBuddy -c "Print CFBundleIdentifier" "$APP/Info.plist")
+          # Sin desinstalar: las capturas muestran los datos que han dejado las pruebas de interfaz.
+          xcrun simctl install "$UDID" "$APP"
+          # La intro en vídeo.
+          xcrun simctl io "$UDID" recordVideo --codec h264 --force screenshots/intro.mp4 &
+          REC=$!
+          sleep 1
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasIntro; sleep 6
+          kill -INT $REC; wait $REC || true
+          xcrun simctl terminate "$UDID" "$BID" || true
+          # Cada sección.
+          for tab in home nutrition training progress calendar settings; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab "$tab"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/$tab.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          for section in week medals body; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab progress -AtlasProgress "$section"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/progress-$section.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab settings -AtlasProfile; sleep 5
+          xcrun simctl io "$UDID" screenshot screenshots/profile.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          # Entreno: la sesión (con sus series) y el editor de la rutina.
+          for session in tue-push-a sat-run; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab training -AtlasSession "$session"; sleep 5
+            xcrun simctl io "$UDID" screenshot "screenshots/session-$session.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab training -AtlasSession tue-push-a -AtlasEditRoutine; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/routine-editor.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          # Comer: asistente, apuntar lo que comes y cambiar una comida.
+          xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab nutrition -AtlasMealBuilder; sleep 6
+          xcrun simctl io "$UDID" screenshot screenshots/meal-builder.png
+          xcrun simctl terminate "$UDID" "$BID" || true
+          for flag in AtlasCustomMeal AtlasSwapMeal; do
+            xcrun simctl launch "$UDID" "$BID" -AtlasSkipOnboarding -AtlasTab nutrition -$flag; sleep 6
+            xcrun simctl io "$UDID" screenshot "screenshots/$flag.png"
+            xcrun simctl terminate "$UDID" "$BID" || true
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atlas-screenshots
+          path: Atlas/screenshots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: atlas-test-log
+          path: |
+            Atlas/test.log
+            Atlas/build-device.log
