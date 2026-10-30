@@ -56,10 +56,9 @@ struct WeekPlannerView: View {
         }
     }
 
-    @ViewBuilder
     private func sessionRow(_ base: SessionDefinition) -> some View {
         let resolved = base.resolved(with: [], titles: titles, kinds: kinds)
-        VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 10) {
             TextField("Nombre del día", text: Binding(
                 get: { names[base.id] ?? resolved.title },
                 set: { names[base.id] = $0 }

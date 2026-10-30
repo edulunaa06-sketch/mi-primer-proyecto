@@ -151,8 +151,8 @@ final class WeekPlanTests: XCTestCase {
 
     /// Una copia hecha ANTES de que existiera esto no trae el campo. Tiene que poder leerse igual.
     func testUnaCopiaAntiguaSinTiposDeDiaSeSigueLeyendo() throws {
-        var file = BackupFile(createdAt: Date(), appVersion: "1.0",
-                              settings: BackupService.makeBackup(context).settings)
+        var file = try BackupFile(createdAt: Date(), appVersion: "1.0",
+                                  settings: BackupService.makeBackup(context).settings)
         file.sessionKinds = nil
         let data = try file.encoded()
 
