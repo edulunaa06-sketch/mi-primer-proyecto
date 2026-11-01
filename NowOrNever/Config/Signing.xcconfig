@@ -1,0 +1,9 @@
+// Configuración de firma e identificador de la app.
+//
+// 1. Cambia BUNDLE_ID_PREFIX por un prefijo propio y único (p. ej. com.tunombre).
+//    El identificador final será $(BUNDLE_ID_PREFIX).nowornever
+// 2. El equipo de desarrollo (DEVELOPMENT_TEAM) se elige en Xcode:
+//    target NowOrNever › Signing & Capabilities › Team. También puedes escribirlo aquí.
+
+BUNDLE_ID_PREFIX = com.example
+// DEVELOPMENT_TEAM = XXXXXXXXXX

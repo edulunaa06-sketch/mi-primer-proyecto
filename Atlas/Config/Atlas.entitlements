@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Carpeta compartida con el widget. Según la tabla de capacidades de Apple, los App
+	     Groups están disponibles también con una cuenta de Apple gratuita.
+	     La app NO guarda aquí su base de datos: el almacén de SwiftData sigue donde estaba.
+	     Aquí solo se escribe el resumen que lee el widget, así que si este permiso no llega
+	     a concederse la app funciona exactamente igual y solo se queda sin widget. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.example.atlas</string>
+	</array>
+</dict>
+</plist>
