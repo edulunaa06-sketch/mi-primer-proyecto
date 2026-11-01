@@ -86,11 +86,15 @@ extension TrackingSnapshot {
     /// Firma barata de los datos de seguimiento. Las vistas solo recalculan racha, calendario y medallas
     /// cuando cambia (no en cada redibujado de la pantalla).
     static func signature(meals: [MealRecord], logs: [WorkoutSessionLog], steps: [DailySteps],
-                          marks: [DayMarkRecord], stepGoal: Int, trackingStart: Date) -> String {
+                          marks: [DayMarkRecord], stepGoal: Int, trackingStart: Date,
+                          kinds: [SessionKindChoice] = []) -> String {
         let completed = logs.reduce(0) { $0 + ($1.isCompleted ? 1 : 0) }
         let stepSum = steps.reduce(0) { $0 + $1.steps }
         let markList = marks.map { $0.dayKey + $0.markRaw }.sorted().joined()
-        return "\(meals.count)|\(completed)|\(steps.count)|\(stepSum)|\(markList)|\(stepGoal)|\(trackingStart.timeIntervalSince1970)|\(DateUtils.dayKey(Date()))"
+        // Los tipos de día entran en la firma: si cambias un día a descanso, el calendario
+        // y la racha tienen que recalcularse.
+        let kindList = kinds.map { $0.sessionID + $0.kindRaw }.sorted().joined()
+        return "\(meals.count)|\(completed)|\(steps.count)|\(stepSum)|\(markList)|\(kindList)|\(stepGoal)|\(trackingStart.timeIntervalSince1970)|\(DateUtils.dayKey(Date()))"
     }
 }
 
@@ -104,9 +108,12 @@ struct TrackingSnapshot {
     private let completedLogKeys: Set<String>
     private let stepsByDay: [String: DailySteps]
     private let marksByDay: [String: DayMark]
+    /// La semana tal y como la tiene montada el usuario, para saber qué días tocaba entrenar.
+    private let week: [SessionDefinition]
 
     init(meals: [MealRecord], logs: [WorkoutSessionLog], steps: [DailySteps], marks: [DayMarkRecord],
-         stepGoal: Int, trackingStart: Date, today: Date = Date()) {
+         stepGoal: Int, trackingStart: Date, kinds: [SessionKindChoice] = [], today: Date = Date()) {
+        self.week = WeeklyRoutine.week(kinds: kinds)
         self.today = today
         self.trackingStart = trackingStart
         self.currentStepGoal = stepGoal
@@ -125,7 +132,10 @@ struct TrackingSnapshot {
 
     func input(for date: Date) -> DayInput {
         let key = DateUtils.dayKey(date)
-        let scheduled = WeeklyRoutine.sessions(forWeekday: DateUtils.weekdayMondayBased(date)).filter { $0.kind != .rest }
+        // Con los días del usuario: uno que él ha puesto en descanso no puede contar como
+        // entreno fallado.
+        let weekday = DateUtils.weekdayMondayBased(date)
+        let scheduled = week.filter { $0.weekday == weekday && $0.kind != .rest }
         let weekStart = DateUtils.startOfWeek(date)
         let completed = scheduled.filter {
             completedLogKeys.contains(WorkoutSessionLog.makeKey(weekStart: weekStart, sessionID: $0.id))

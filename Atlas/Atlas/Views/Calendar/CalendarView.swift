@@ -9,6 +9,7 @@ struct CalendarView: View {
     @Query private var logs: [WorkoutSessionLog]
     @Query private var dailySteps: [DailySteps]
     @Query private var marks: [DayMarkRecord]
+    @Query private var sessionKinds: [SessionKindChoice]
     @Query private var settingsList: [UserSettings]
 
     @State private var month = CalendarView.startOfMonth(Date())
@@ -31,7 +32,8 @@ struct CalendarView: View {
 
     private var signature: String {
         TrackingSnapshot.signature(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                   kinds: sessionKinds)
     }
 
     private var monthDays: [Date] {
@@ -69,7 +71,8 @@ struct CalendarView: View {
             .onAppear { trackingStart = DataStore.trackingStart(context) }
             .task(id: signature) {
                 let snap = TrackingSnapshot(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                                            stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                            stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                   kinds: sessionKinds)
                 streak = snap.streak
                 snapshot = snap
             }

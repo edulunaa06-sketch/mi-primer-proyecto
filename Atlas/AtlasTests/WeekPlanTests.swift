@@ -119,13 +119,93 @@ final class WeekPlanTests: XCTestCase {
         XCTAssertEqual(choices.first?.kind, .rest)
     }
 
-    func testEmpezarDesdeCeroOlvidaLosTiposElegidos() {
-        DataStore.setKind(.rest, for: tuesdayStrength.id, in: context)
-        XCTAssertEqual(DataStore.kindChoices(in: context).count, 1)
-
+    func testEmpezarDesdeCeroDejaLaSemanaEnteraEnDescanso() {
+        DataStore.setKind(.strength, for: mondayRun.id, in: context)
         DataStore.startRoutineFromScratch(in: context)
-        XCTAssertTrue(DataStore.kindChoices(in: context).isEmpty,
-                      "«Desde cero» tiene que dejar la semana como recién instalada")
+
+        // Ningún día puede quedar como entreno pendiente: la semana arranca en blanco.
+        let kinds = DataStore.kindChoices(in: context)
+        XCTAssertTrue(WeeklyRoutine.week(kinds: kinds).allSatisfy { $0.kind == .rest },
+                      "Al empezar no puede venir ninguna rutina puesta")
+        XCTAssertTrue(WeeklyRoutine.trainable(kinds: kinds).isEmpty)
+    }
+
+    func testEmpezarDesdeCeroDejaCadaDiaConSuNombre() {
+        DataStore.startRoutineFromScratch(in: context)
+        let titles = (try? context.fetch(FetchDescriptor<SessionTitle>())) ?? []
+        XCTAssertEqual(mondayRun.renamed(titles).title, "Lunes")
+        XCTAssertEqual(tuesdayStrength.renamed(titles).title, "Martes")
+    }
+
+    // MARK: Deportes
+
+    func testLosTresPrimerosSonCarreraGimnasioYDescanso() {
+        XCTAssertEqual(SessionKind.basics, [.run, .strength, .rest])
+        XCTAssertEqual(SessionKind.basics.map(\.label), ["Carrera", "Gimnasio", "Descanso"])
+        // Y los deportes son todo lo demás, sin solaparse.
+        XCTAssertTrue(SessionKind.sports.allSatisfy { !SessionKind.basics.contains($0) })
+        XCTAssertEqual(SessionKind.basics.count + SessionKind.sports.count, SessionKind.allCases.count)
+    }
+
+    func testUnDeporteSeComportaComoLaCarreraPeroConSuNombre() {
+        for k in SessionKind.sports {
+            XCTAssertTrue(k.isSport, "\(k.label) debería gestionarse como un deporte")
+        }
+        XCTAssertTrue(SessionKind.run.isSport)
+        XCTAssertFalse(SessionKind.strength.isSport)
+        XCTAssertFalse(SessionKind.rest.isSport)
+    }
+
+    /// Los tipos de Strava tienen que ser los de su lista oficial, o no se importaría nada.
+    func testLosTiposDeStravaSonLosReales() {
+        XCTAssertEqual(SessionKind.cycling.manualStravaType, "Ride", "Ordenar el conjunto daría EBikeRide")
+        XCTAssertTrue(SessionKind.cycling.stravaTypes.contains("Ride"))
+        XCTAssertTrue(SessionKind.swimming.stravaTypes.contains("Swim"))
+        XCTAssertTrue(SessionKind.football.stravaTypes.contains("Soccer"))
+        XCTAssertTrue(SessionKind.padel.stravaTypes.contains("Padel"))
+        XCTAssertTrue(SessionKind.run.stravaTypes.contains("TrailRun"))
+    }
+
+    /// MMA y boxeo no existen en Strava. Mapearlos a «Workout» colaría como MMA cualquier
+    /// entreno suelto importado, así que van vacíos y solo se apuntan a mano.
+    func testMMAyBoxeoNoSeImportanDeStrava() {
+        XCTAssertTrue(SessionKind.mma.stravaTypes.isEmpty)
+        XCTAssertTrue(SessionKind.boxing.stravaTypes.isEmpty)
+        XCTAssertEqual(SessionKind.mma.manualStravaType, "MMA")
+        XCTAssertEqual(SessionKind.boxing.manualStravaType, "Boxing")
+    }
+
+    func testCadaDeporteSoloVeLoSuyo() {
+        // Lo que se apunta a mano de un deporte no puede aparecer en otro.
+        XCTAssertTrue(SessionKind.mma.activityTypes.contains("MMA"))
+        XCTAssertFalse(SessionKind.run.activityTypes.contains("MMA"))
+        XCTAssertFalse(SessionKind.cycling.activityTypes.contains("Run"))
+        XCTAssertTrue(SessionKind.run.activityTypes.contains("Run"))
+    }
+
+    func testSoloSePidenKilometrosDondeTienenSentido() {
+        XCTAssertTrue(SessionKind.run.hasDistance)
+        XCTAssertTrue(SessionKind.cycling.hasDistance)
+        XCTAssertTrue(SessionKind.swimming.hasDistance)
+        XCTAssertFalse(SessionKind.mma.hasDistance, "De un entreno de MMA se apunta el tiempo")
+        XCTAssertFalse(SessionKind.football.hasDistance)
+        XCTAssertFalse(SessionKind.strength.hasDistance)
+    }
+
+    func testTodoTipoTieneNombreEIcono() {
+        for k in SessionKind.allCases {
+            XCTAssertFalse(k.label.isEmpty, "\(k.rawValue) sin nombre")
+            XCTAssertFalse(k.symbol.isEmpty, "\(k.rawValue) sin icono")
+        }
+    }
+
+    func testUnDiaPuestoEnFutbolCuentaComoEntreno() {
+        let choice = SessionKindChoice(sessionID: WeeklyRoutine.fridayRest.id, kind: .football)
+        let semana = WeeklyRoutine.week(kinds: [choice])
+        let viernes = semana.first { $0.id == WeeklyRoutine.fridayRest.id }
+
+        XCTAssertEqual(viernes?.kind, .football)
+        XCTAssertTrue(WeeklyRoutine.trainable(kinds: [choice]).contains { $0.id == WeeklyRoutine.fridayRest.id })
     }
 
     /// La copia de seguridad tiene que llevarse la semana montada. Si no, al restaurar

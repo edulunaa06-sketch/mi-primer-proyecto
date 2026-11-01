@@ -1,33 +1,49 @@
 import SwiftData
 import SwiftUI
 
-struct RunSessionView: View {
+/// Un día de deporte: carrera, ciclismo, fútbol, MMA… Todos funcionan igual que funcionaba
+/// la carrera (lo grabas en Strava y aquí se importa, o lo apuntas a mano), cambiando el
+/// nombre y qué actividades se consideran de ese deporte.
+///
+/// Strava NO publica enlaces profundos por deporte, así que el botón abre Strava y ya; la
+/// sección del deporte es esta pantalla, que enseña solo lo suyo.
+struct SportSessionView: View {
     let session: SessionDefinition
     let weekStart: Date
 
     @Environment(\.modelContext) private var context
     @Environment(StravaService.self) private var strava
     @State private var log: WorkoutSessionLog?
-    @State private var showManualRun = false
+    @State private var showManual = false
     @State private var pendingDelete: StravaActivityRecord?
-    @Query(sort: \StravaActivityRecord.startDate, order: .reverse) private var runs: [StravaActivityRecord]
+    @Query(sort: \StravaActivityRecord.startDate, order: .reverse) private var activities: [StravaActivityRecord]
+
+    private var kind: SessionKind { session.kind }
+
+    /// Solo lo de este deporte: lo importado de Strava con sus tipos y lo apuntado a mano
+    /// con su etiqueta.
+    private var mine: [StravaActivityRecord] {
+        let types = kind.activityTypes
+        return activities.filter { types.contains($0.sportType) }
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Label(session.title, systemImage: "figure.run")
+                    Label(session.title, systemImage: kind.symbol)
                         .font(.title3.bold())
-                    Text(session.detail)
-                        .foregroundStyle(Theme.textSecondary)
-                    StravaLaunchButton()
+                    if !session.detail.isEmpty {
+                        Text(session.detail).foregroundStyle(Theme.textSecondary)
+                    }
+                    StravaLaunchButton(title: "Abrir Strava y registrar \(kind.activityName)")
                 }
                 .card()
 
                 VStack(alignment: .leading, spacing: 8) {
-                    SectionHeader(title: "Cómo registrar la carrera")
+                    SectionHeader(title: "Cómo registrarlo en Strava")
                     step(1, "Pulsa el botón para abrir Strava.")
-                    step(2, "En Strava, pulsa “Grabar” y elige Carrera.")
+                    step(2, "En Strava, pulsa “Grabar” y elige \(stravaNombre).")
                     step(3, "Al terminar, detén y GUARDA la actividad en Strava.")
                     step(4, "Vuelve aquí y marca la sesión como completada.")
                 }
@@ -35,7 +51,7 @@ struct RunSessionView: View {
 
                 if let log { completion(log) }
 
-                recentRuns
+                historial
             }
             .padding(16)
         }
@@ -45,8 +61,8 @@ struct RunSessionView: View {
         .onAppear {
             log = DataStore.fetchOrCreateLog(for: session, weekStart: weekStart, in: context)
         }
-        .sheet(isPresented: $showManualRun) { ManualRunSheet() }
-        .confirmationDialog("¿Borrar esta carrera apuntada a mano?",
+        .sheet(isPresented: $showManual) { ManualActivitySheet(kind: kind) }
+        .confirmationDialog("¿Borrar esto que apuntaste a mano?",
                             isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
                             titleVisibility: .visible) {
             Button("Borrar", role: .destructive) {
@@ -54,6 +70,11 @@ struct RunSessionView: View {
                 pendingDelete = nil
             }
         }
+    }
+
+    /// Cómo se llama ese deporte dentro de Strava, para que la instrucción sea fiel.
+    private var stravaNombre: String {
+        kind.stravaTypes.isEmpty ? "el tipo que más se parezca" : kind.label
     }
 
     private func step(_ n: Int, _ text: String) -> some View {
@@ -77,7 +98,7 @@ struct RunSessionView: View {
                 }
                 try? context.save()
             } label: {
-                Label(log.isCompleted ? "Carrera completada · Deshacer" : "Marcar carrera completada",
+                Label(log.isCompleted ? "Sesión completada · Deshacer" : "Marcar sesión completada",
                       systemImage: log.isCompleted ? "checkmark.seal.fill" : "flag.checkered")
             }
             .buttonStyle(ActionButtonStyle(filled: !log.isCompleted))
@@ -88,34 +109,42 @@ struct RunSessionView: View {
     }
 
     @ViewBuilder
-    private var recentRuns: some View {
+    private var historial: some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "Tus carreras", subtitle: "Cuentan para los km del resumen semanal y las medallas")
-            Button { showManualRun = true } label: {
-                Label("Apuntar carrera a mano", systemImage: "square.and.pencil")
+            SectionHeader(title: "Tu \(kind.activityName)",
+                          subtitle: kind == .run ? "Cuenta para los km del resumen semanal y las medallas" : nil)
+            Button { showManual = true } label: {
+                Label("Apuntarlo a mano", systemImage: "square.and.pencil")
             }
             .buttonStyle(ActionButtonStyle(filled: false))
-            switch strava.status {
-            case .notConfigured:
-                InfoBanner(text: "Para importar tus carreras de Strava, configúralo una vez en Ajustes › Strava (hay una guía paso a paso). Mientras, puedes apuntarlas a mano.")
-            case .disconnected:
-                InfoBanner(text: "Strava no está conectado. Conéctalo en Ajustes para importar distancia, tiempo y ritmo, o apunta la carrera a mano.", symbol: "link")
-            case .connected:
-                EmptyView()
-            }
-            if runs.isEmpty {
-                Text("Aún no hay carreras registradas.").font(.footnote).foregroundStyle(Theme.textSecondary)
+
+            if kind.stravaTypes.isEmpty {
+                InfoBanner(text: "Strava no distingue \(kind.label), así que esto no se importa solo: apúntalo a mano y se guarda aquí.",
+                           symbol: "info.circle.fill")
             } else {
-                ForEach(runs.prefix(5)) { run in
-                    RunRow(run: run)
+                switch strava.status {
+                case .notConfigured:
+                    InfoBanner(text: "Para importar de Strava, configúralo una vez en Ajustes › Strava (hay una guía paso a paso). Mientras, puedes apuntarlo a mano.")
+                case .disconnected:
+                    InfoBanner(text: "Strava no está conectado. Conéctalo en Ajustes para importar distancia y tiempo, o apúntalo a mano.", symbol: "link")
+                case .connected:
+                    EmptyView()
+                }
+            }
+
+            if mine.isEmpty {
+                Text("Todavía no hay nada apuntado.").font(.footnote).foregroundStyle(Theme.textSecondary)
+            } else {
+                ForEach(mine.prefix(5)) { run in
+                    ActivityRow(run: run, showsDistance: kind.hasDistance)
                         .contextMenu {
                             if run.isManual {
                                 Button("Borrar", systemImage: "trash", role: .destructive) { pendingDelete = run }
                             }
                         }
                 }
-                if runs.contains(where: \.isManual) {
-                    Text("Mantén pulsada una carrera apuntada a mano para borrarla.").font(.caption2).foregroundStyle(Theme.textTertiary)
+                if mine.contains(where: \.isManual) {
+                    Text("Mantén pulsado lo que apuntaste a mano para borrarlo.").font(.caption2).foregroundStyle(Theme.textTertiary)
                 }
             }
         }
@@ -123,8 +152,11 @@ struct RunSessionView: View {
     }
 }
 
-/// Apuntar una carrera sin Strava: fecha, distancia y tiempo.
-struct ManualRunSheet: View {
+/// Apuntar una actividad sin Strava. En los deportes que se miden en kilómetros pide
+/// distancia y tiempo; en los demás, solo el tiempo.
+struct ManualActivitySheet: View {
+    let kind: SessionKind
+
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     @State private var date = Date()
@@ -138,10 +170,12 @@ struct ManualRunSheet: View {
             Form {
                 Section {
                     DatePicker("Fecha", selection: $date, in: ...Date(), displayedComponents: [.date, .hourAndMinute])
-                    HStack {
-                        Text("Distancia (km)")
-                        Spacer()
-                        DecimalField(placeholder: "0,0", value: $km, width: 100)
+                    if kind.hasDistance {
+                        HStack {
+                            Text("Distancia (km)")
+                            Spacer()
+                            DecimalField(placeholder: "0,0", value: $km, width: 100)
+                        }
                     }
                     HStack {
                         Text("Tiempo")
@@ -150,22 +184,22 @@ struct ManualRunSheet: View {
                         Text(":")
                         IntField(placeholder: "s", value: $seconds, width: 56)
                     }
-                    if let km, km > 0, let total = totalSeconds, total > 0 {
+                    if kind.hasDistance, let km, km > 0, let total = totalSeconds, total > 0 {
                         LabeledContent("Ritmo medio", value: RunMath.formatPace(RunMath.paceSecondsPerKm(distanceMeters: km * 1000, seconds: total)))
                     }
                 } footer: {
-                    Text("Usa los datos de tu reloj o de la app con la que corriste. Se guarda solo en este iPhone.")
+                    Text("Usa los datos de tu reloj o de la app con la que lo hiciste. Se guarda solo en este iPhone.")
                 }
                 if let errorMessage {
                     Section { Text(errorMessage).foregroundStyle(Theme.danger) }
                 }
             }
             .screenBackground()
-            .navigationTitle("Apuntar carrera")
+            .navigationTitle("Apuntar \(kind.activityName)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancelar") { dismiss() } }
-                ToolbarItem(placement: .confirmationAction) { Button("Guardar") { save() }.disabled(km == nil) }
+                ToolbarItem(placement: .confirmationAction) { Button("Guardar") { save() }.disabled(!puedeGuardar) }
             }
         }
     }
@@ -175,10 +209,18 @@ struct ManualRunSheet: View {
         return (minutes ?? 0) * 60 + (seconds ?? 0)
     }
 
+    private var puedeGuardar: Bool {
+        kind.hasDistance ? km != nil : totalSeconds != nil
+    }
+
     private func save() {
-        guard let km, (0.1...300).contains(km) else {
-            errorMessage = "Introduce una distancia entre 0,1 y 300 km."
-            return
+        var metros: Double = 0
+        if kind.hasDistance {
+            guard let km, (0.1...300).contains(km) else {
+                errorMessage = "Introduce una distancia entre 0,1 y 300 km."
+                return
+            }
+            metros = km * 1000
         }
         guard let total = totalSeconds, total >= 60, (seconds ?? 0) < 60 else {
             errorMessage = "Introduce el tiempo en minutos y segundos (los segundos, de 0 a 59)."
@@ -186,16 +228,24 @@ struct ManualRunSheet: View {
         }
         // Id negativo: así nunca choca con una actividad importada de Strava.
         let id = -Int64(Date().timeIntervalSince1970 * 1000)
-        context.insert(StravaActivityRecord(stravaID: id, name: "Carrera apuntada a mano", sportType: "Run", startDate: date,
-                                            distanceMeters: km * 1000, movingTimeSeconds: total, elapsedTimeSeconds: total,
+        context.insert(StravaActivityRecord(stravaID: id,
+                                            name: "\(kind.label) apuntado a mano",
+                                            sportType: kind.manualStravaType,
+                                            startDate: date,
+                                            distanceMeters: metros,
+                                            movingTimeSeconds: total,
+                                            elapsedTimeSeconds: total,
                                             elevationGainMeters: nil))
         try? context.save()
         dismiss()
     }
 }
 
-struct RunRow: View {
+struct ActivityRow: View {
     let run: StravaActivityRecord
+    /// En los deportes sin kilómetros no se enseña distancia ni ritmo: serían siempre cero.
+    var showsDistance = true
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -204,13 +254,15 @@ struct RunRow: View {
                 Text(DateUtils.shortDate(run.startDate)).font(.caption).foregroundStyle(Theme.textSecondary)
             }
             HStack(spacing: 14) {
-                stat("Distancia", RunMath.formatKm(run.distanceMeters))
+                if showsDistance { stat("Distancia", RunMath.formatKm(run.distanceMeters)) }
                 stat("Movimiento", RunMath.formatDuration(run.movingTimeSeconds))
                 stat("Total", RunMath.formatDuration(run.elapsedTimeSeconds))
             }
-            HStack(spacing: 14) {
-                stat("Ritmo medio", RunMath.formatPace(run.paceSecondsPerKm))
-                stat("Desnivel", run.elevationGainMeters.map { "\(Int($0.rounded())) m" } ?? "—")
+            if showsDistance {
+                HStack(spacing: 14) {
+                    stat("Ritmo medio", RunMath.formatPace(run.paceSecondsPerKm))
+                    stat("Desnivel", run.elevationGainMeters.map { "\(Int($0.rounded())) m" } ?? "—")
+                }
             }
         }
         .padding(10)

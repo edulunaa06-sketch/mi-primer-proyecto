@@ -3,28 +3,157 @@ import Foundation
 /// Rutina semanal fija definida por el usuario.
 /// IMPORTANTE: no modificar ejercicios, orden, series ni rangos sin autorización del usuario.
 
+/// Qué se hace un día: gimnasio, descanso o algún deporte.
+///
+/// Los tres primeros son los de siempre y salen primero en los selectores. El resto son
+/// deportes: se comportan como la carrera (abres Strava, lo grabas allí y la actividad se
+/// importa) pero con su nombre.
+///
+/// `stravaTypes` son los valores REALES de `sport_type` de Strava, sacados de su lista
+/// oficial. Los deportes que Strava no distingue (MMA, boxeo) van con la lista vacía a
+/// propósito: se apuntan a mano y no se importa nada, antes que colarte como MMA cualquier
+/// entrenamiento genérico.
 enum SessionKind: String, Codable, CaseIterable, Identifiable {
-    case strength
+    // Los tres de siempre, en este orden.
     case run
+    case strength
     case rest
+    // Deportes.
+    case cycling
+    case swimming
+    case football
+    case basketball
+    case padel
+    case tennis
+    case volleyball
+    case mma
+    case boxing
+    case walking
+    case climbing
+    case yoga
+    case rowing
+    case otherSport
 
     var id: String { rawValue }
 
+    /// Los tres que salen arriba del todo en los selectores.
+    static let basics: [SessionKind] = [.run, .strength, .rest]
+    /// El resto, para la segunda parte del menú.
+    static var sports: [SessionKind] { allCases.filter { !basics.contains($0) } }
+
     var label: String {
         switch self {
-        case .strength: return "Fuerza"
         case .run: return "Carrera"
+        case .strength: return "Gimnasio"
         case .rest: return "Descanso"
+        case .cycling: return "Ciclismo"
+        case .swimming: return "Natación"
+        case .football: return "Fútbol"
+        case .basketball: return "Baloncesto"
+        case .padel: return "Pádel"
+        case .tennis: return "Tenis"
+        case .volleyball: return "Voleibol"
+        case .mma: return "MMA"
+        case .boxing: return "Boxeo"
+        case .walking: return "Caminar"
+        case .climbing: return "Escalada"
+        case .yoga: return "Yoga"
+        case .rowing: return "Remo"
+        case .otherSport: return "Otro deporte"
         }
     }
 
     var symbol: String {
         switch self {
-        case .strength: return "dumbbell.fill"
         case .run: return "figure.run"
+        case .strength: return "dumbbell.fill"
         case .rest: return "moon.zzz.fill"
+        case .cycling: return "figure.outdoor.cycle"
+        case .swimming: return "figure.pool.swim"
+        case .football: return "figure.soccer"
+        case .basketball: return "figure.basketball"
+        case .padel, .tennis: return "figure.tennis"
+        case .volleyball: return "figure.volleyball"
+        case .mma: return "figure.martial.arts"
+        case .boxing: return "figure.boxing"
+        case .walking: return "figure.walk"
+        case .climbing: return "figure.climbing"
+        case .yoga: return "figure.yoga"
+        case .rowing: return "figure.rower"
+        case .otherSport: return "figure.mixed.cardio"
         }
     }
+
+    /// Un día de deporte: ni gimnasio ni descanso. Se gestiona con la pantalla de carrera.
+    var isSport: Bool { self != .strength && self != .rest }
+
+    /// Los `sport_type` de Strava que cuentan como este deporte. Vacío = Strava no lo
+    /// distingue, así que solo se puede apuntar a mano.
+    var stravaTypes: Set<String> {
+        switch self {
+        case .run: return StravaAPI.runSportTypes
+        case .cycling: return ["Ride", "VirtualRide", "MountainBikeRide", "GravelRide", "EBikeRide", "EMountainBikeRide"]
+        case .swimming: return ["Swim"]
+        case .football: return ["Soccer"]
+        case .basketball: return ["Basketball"]
+        case .padel: return ["Padel"]
+        case .tennis: return ["Tennis"]
+        case .volleyball: return ["Volleyball"]
+        case .walking: return ["Walk", "Hike"]
+        case .climbing: return ["RockClimbing"]
+        case .yoga: return ["Yoga", "Pilates"]
+        case .rowing: return ["Rowing", "VirtualRow"]
+        case .strength: return ["WeightTraining", "Crossfit"]
+        // Strava no tiene MMA ni boxeo, y «Workout» es un cajón de sastre: meterlo aquí
+        // haría pasar por MMA cualquier entrenamiento suelto.
+        case .mma, .boxing, .otherSport, .rest: return []
+        }
+    }
+
+    /// El `sport_type` con el que se guarda una actividad apuntada a mano. Se escribe a mano
+    /// y no se saca de `stravaTypes`: ordenar ese conjunto daría «EBikeRide» para ciclismo.
+    /// Para MMA y boxeo se usa una etiqueta propia, que Strava nunca manda, así que lo que
+    /// apuntes como MMA no se puede confundir con una actividad importada.
+    var manualStravaType: String {
+        switch self {
+        case .run: return "Run"
+        case .strength: return "WeightTraining"
+        case .cycling: return "Ride"
+        case .swimming: return "Swim"
+        case .football: return "Soccer"
+        case .basketball: return "Basketball"
+        case .padel: return "Padel"
+        case .tennis: return "Tennis"
+        case .volleyball: return "Volleyball"
+        case .walking: return "Walk"
+        case .climbing: return "RockClimbing"
+        case .yoga: return "Yoga"
+        case .rowing: return "Rowing"
+        case .mma: return "MMA"
+        case .boxing: return "Boxing"
+        case .otherSport: return "Workout"
+        case .rest: return ""
+        }
+    }
+
+    /// Las actividades que se miden en kilómetros. En las demás pedir distancia no tiene
+    /// sentido: de un entreno de MMA se apunta el tiempo.
+    var hasDistance: Bool {
+        switch self {
+        case .run, .cycling, .swimming, .walking, .rowing: return true
+        default: return false
+        }
+    }
+
+    /// Todo lo que cuenta como este deporte: lo que importa Strava y lo que apuntas a mano.
+    var activityTypes: Set<String> {
+        var t = stravaTypes
+        if !manualStravaType.isEmpty { t.insert(manualStravaType) }
+        return t
+    }
+
+    /// Cómo se nombra la actividad en los textos: «la carrera», «el ciclismo»…
+    var activityName: String { self == .run ? "carrera" : label.lowercased() }
 }
 
 struct ExerciseDefinition: Identifiable, Hashable {

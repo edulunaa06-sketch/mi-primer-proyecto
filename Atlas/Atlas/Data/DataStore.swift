@@ -259,14 +259,17 @@ enum DataStore {
         (try? context.fetch(FetchDescriptor<SessionKindChoice>())) ?? []
     }
 
-    /// Rutina desde cero: las sesiones de fuerza se quedan sin ejercicios y con un nombre genérico
-    /// («Fuerza · martes»), para que cada persona ponga los suyos. El historial no se toca.
+    /// La semana en blanco: los siete días en descanso, sin ejercicios y con el nombre del día.
+    /// A partir de ahí cada persona decide qué es cada día. El historial no se toca.
     @MainActor
     static func startRoutineFromScratch(in context: ModelContext) {
         kindChoices(in: context).forEach { context.delete($0) }
-        for session in WeeklyRoutine.allSessions where session.kind == .strength {
+        for session in WeeklyRoutine.allSessions {
             routine(for: session.id, in: context).forEach { context.delete($0) }
-            renameSession(session.id, to: "Fuerza · \(WeeklyRoutine.weekdayName(session.weekday).lowercased())", in: context)
+            renameSession(session.id, to: WeeklyRoutine.weekdayName(session.weekday), in: context)
+            if session.kind != .rest {
+                context.insert(SessionKindChoice(sessionID: session.id, kind: .rest))
+            }
         }
         try? context.save()
     }

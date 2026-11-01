@@ -20,7 +20,8 @@ struct WeeklySummaryView: View {
 
     private var signature: String {
         TrackingSnapshot.signature(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                        kinds: sessionKinds)
     }
 
     private var weekEnd: Date { DateUtils.calendar.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart }
@@ -28,12 +29,13 @@ struct WeeklySummaryView: View {
 
     var body: some View {
         let snap = snapshot ?? TrackingSnapshot(meals: [], logs: [], steps: [], marks: [],
-                                                         stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                                         stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                        kinds: sessionKinds)
         let days = snap.days(from: weekStart, through: weekEnd.addingTimeInterval(-1))
         let outcomes = days.map(snap.outcome(for:))
         let summary = WeeklySummary.make(
             stepsByDay: days.compactMap(snap.steps),
-            runs: runs.filter { StravaAPI.runSportTypes.contains($0.sportType) || $0.isManual }.map(\.sample),
+            runs: runs.filter { StravaAPI.runSportTypes.contains($0.sportType) }.map(\.sample),
             weights: weights.map { WeightStats.Point(date: $0.date, kg: $0.weightKg) },
             outcomes: outcomes, weekStart: weekStart, weekEnd: weekEnd)
         let weekLogs = logs.filter { $0.weekStart == weekStart && $0.isCompleted }
@@ -81,7 +83,8 @@ struct WeeklySummaryView: View {
         .onAppear { trackingStart = DataStore.trackingStart(context) }
         .task(id: signature) {
             snapshot = TrackingSnapshot(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                        kinds: sessionKinds)
         }
     }
 

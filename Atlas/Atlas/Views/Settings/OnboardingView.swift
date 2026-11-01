@@ -13,7 +13,6 @@ struct OnboardingView: View {
     @State private var weight: Double?
     @State private var startDate = Date()
     @State private var message: String?
-    @State private var fromScratch = false
 
     static let suggestedWeight = 85.1
     static var suggestedDate: Date {
@@ -49,15 +48,10 @@ struct OnboardingView: View {
                     .card()
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("Tu rutina").font(.headline)
-                        Picker("Rutina", selection: $fromScratch) {
-                            Text("Predeterminada").tag(false)
-                            Text("Desde cero").tag(true)
-                        }
-                        .pickerStyle(.segmented)
-                        Text(fromScratch
-                             ? "Las sesiones de fuerza empiezan vacías y con nombre genérico. En Entrenos pones el nombre (por ejemplo «Glúteo») y los ejercicios que quieras."
-                             : "Empiezas con la rutina Push / Pull / Pierna. Puedes cambiar el nombre de cada sesión y sus ejercicios cuando quieras.")
+                        Text("Tu semana").font(.headline)
+                        Text("Empiezas con la semana en blanco: los siete días en descanso. En Entrenar "
+                             + "decides cuáles son de gimnasio, cuáles de carrera o de otro deporte, cómo se "
+                             + "llaman y qué ejercicios llevan.")
                             .font(.caption).foregroundStyle(Theme.textSecondary)
                     }
                     .card()
@@ -69,7 +63,7 @@ struct OnboardingView: View {
                         Text(message).font(.footnote).foregroundStyle(Theme.danger)
                     }
 
-                    Button("Guardar y empezar") { save() }
+                    Button("Siguiente") { save() }
                         .buttonStyle(ActionButtonStyle())
                         .disabled(weight == nil)
                     Button("Omitir por ahora") { finish(saveStart: false) }
@@ -98,7 +92,8 @@ struct OnboardingView: View {
     private func finish(saveStart: Bool) {
         let settings = settingsList.first ?? DataStore.settings(context)
         if saveStart { settings.trackingStartDate = DateUtils.startOfDay(startDate) }
-        if fromScratch { DataStore.startRoutineFromScratch(in: context) }
+        // Sin rutina de serie: la semana empieza en blanco y la monta el usuario.
+        DataStore.startRoutineFromScratch(in: context)
         settings.onboardingCompleted = true
         try? context.save()
         onFinish()

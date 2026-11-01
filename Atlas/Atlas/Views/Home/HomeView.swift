@@ -152,12 +152,12 @@ struct HomeView: View {
                 SectionHeader(title: "Entrenamiento de hoy", subtitle: WeeklyRoutine.weekdayName(DateUtils.weekdayMondayBased(today)))
                 ForEach(todaySessions) { session in
                     HStack {
-                        Image(systemName: icon(for: session.kind))
+                        Image(systemName: session.kind.symbol)
                             .foregroundStyle(session.kind == .rest ? Theme.rest : isCompleted(session) ? Theme.accent : Theme.textSecondary)
                             .frame(width: 24)
                         VStack(alignment: .leading) {
                             Text(session.title).font(.subheadline.weight(.semibold))
-                            Text(session.kind == .strength ? "\(session.exercises.count) ejercicios" : session.detail)
+                            Text(subtitle(session))
                                 .font(.caption)
                                 .foregroundStyle(Theme.textSecondary)
                                 .lineLimit(2)
@@ -176,13 +176,14 @@ struct HomeView: View {
         text.prefix(1).uppercased() + text.dropFirst()
     }
 
-    private func icon(for kind: SessionKind) -> String {
-        switch kind {
-        case .run: return "figure.run"
-        case .strength: return "dumbbell.fill"
-        case .rest: return "bed.double.fill"
-        }
+    /// Qué poner debajo del nombre del día: los ejercicios si es gimnasio, la descripción
+    /// si la trae, y si no el deporte que sea.
+    private func subtitle(_ session: SessionDefinition) -> String {
+        if session.kind == .strength { return "\(session.exercises.count) ejercicios" }
+        if !session.detail.isEmpty { return session.detail }
+        return session.kind.label
     }
+
 }
 
 /// Cumplimiento del día. Lee los pasos en vivo, así que va aparte de la pantalla principal.
@@ -348,7 +349,8 @@ private struct HomeStreakCard: View {
 
     private var signature: String {
         TrackingSnapshot.signature(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
-                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                        kinds: sessionKinds)
     }
 
     var body: some View {
@@ -396,7 +398,8 @@ private struct HomeStreakCard: View {
         .task(id: signature) {
             let today = Date()
             let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
-                                            stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                            stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                        kinds: sessionKinds)
             let result = snapshot.streak
             mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
             celebrateIfNeeded(result)

@@ -186,7 +186,7 @@ final class PersistenceTests: XCTestCase {
         XCTAssertTrue(try context.fetch(FetchDescriptor<RoutineExercise>()).isEmpty, "Sesiones vacías")
         let titles = try context.fetch(FetchDescriptor<SessionTitle>())
         let push = try XCTUnwrap(WeeklyRoutine.session(id: "tue-push-a"))
-        XCTAssertEqual(push.renamed(titles).title, "Fuerza · martes")
+        XCTAssertEqual(push.renamed(titles).title, "Martes", "La semana en blanco deja cada día con su nombre")
         DataStore.addExercise(to: push.id, name: "Hip thrust", sets: 4, repMin: 8, repMax: 12, in: context)
         DataStore.renameSession(push.id, to: "Glúteo", in: context)
         XCTAssertEqual(push.resolved(with: try context.fetch(FetchDescriptor<RoutineExercise>()),

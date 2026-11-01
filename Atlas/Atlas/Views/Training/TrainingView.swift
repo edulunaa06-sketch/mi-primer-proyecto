@@ -164,7 +164,11 @@ struct TrainingView: View {
     }
 
     private func dayCard(_ weekday: Int) -> some View {
-        let sessions = WeeklyRoutine.sessions(forWeekday: weekday)
+        // Si el día está entero en descanso basta con enseñarlo una vez: el sábado trae dos
+        // sesiones de serie y en una semana en blanco saldría «Descanso» dos veces.
+        let todas = WeeklyRoutine.sessions(forWeekday: weekday)
+        let resueltas = todas.map { $0.resolved(with: routine, titles: titles, kinds: kinds) }
+        let sessions = resueltas.allSatisfy { $0.kind == .rest } ? Array(todas.prefix(1)) : todas
         let date = DateUtils.date(forWeekday: weekday, inWeekOf: weekStart)
         return VStack(alignment: .leading, spacing: 10) {
             HStack {
@@ -203,7 +207,7 @@ struct TrainingView: View {
         let done = session.kind != .rest && log?.isCompleted == true
         let tint = done ? Theme.accent : session.kind == .rest ? Theme.rest : Theme.textSecondary
         return HStack(spacing: 12) {
-            Image(systemName: session.kind == .run ? "figure.run" : session.kind == .rest ? "bed.double.fill" : "dumbbell.fill")
+            Image(systemName: session.kind.symbol)
                 .foregroundStyle(tint)
                 .frame(width: 28, height: 28)
                 .background(done ? Theme.accentDim : tint.opacity(0.14), in: RoundedRectangle(cornerRadius: 8))
@@ -252,6 +256,20 @@ struct TrainingView: View {
                 newTitle = base.renamed(titles).title
                 renaming = base
             } label: { Label("Cambiar nombre", systemImage: "pencil") }
+            Divider()
+            // Los tres de siempre arriba; el resto de deportes, en un submenú.
+            ForEach(SessionKind.basics) { k in
+                Button { DataStore.setKind(k, for: base.id, in: context) } label: {
+                    Label(k.label, systemImage: k.symbol)
+                }
+            }
+            Menu {
+                ForEach(SessionKind.sports) { k in
+                    Button { DataStore.setKind(k, for: base.id, in: context) } label: {
+                        Label(k.label, systemImage: k.symbol)
+                    }
+                }
+            } label: { Label("Otro deporte", systemImage: "figure.mixed.cardio") }
         }
         .accessibilityIdentifier("session.\(base.id)")
         .accessibilityLabel(session.kind == .rest ? session.title : "\(session.title), \(done ? "hecha" : "pendiente")")
@@ -271,10 +289,13 @@ struct TrainingView: View {
 
     private func subtitle(_ session: SessionDefinition, progress: SessionProgress) -> String {
         switch session.kind {
-        case .rest: return "Recuperación"
-        case .run: return session.detail
+        case .rest:
+            return "Recuperación"
         case .strength:
             return "\(progress.completedExercises)/\(progress.totalExercises) ejercicios · \(NumberFormat.percent(progress.fraction))"
+        default:
+            // Carrera y el resto de deportes: la descripción si la traen, y si no el deporte.
+            return session.detail.isEmpty ? session.kind.label : session.detail
         }
     }
 }
@@ -341,8 +362,8 @@ struct SessionDestination: View {
         Group {
             switch named.kind {
             case .strength: StrengthSessionView(session: named, weekStart: weekStart)
-            case .run: RunSessionView(session: named, weekStart: weekStart)
             case .rest: RestDayView(session: named)
+            default: SportSessionView(session: named, weekStart: weekStart)
             }
         }
         .toolbar {

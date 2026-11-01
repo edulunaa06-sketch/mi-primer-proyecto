@@ -6,6 +6,7 @@ import UIKit
 struct MedalsView: View {
     @Environment(\.modelContext) private var context
     @Query private var meals: [MealRecord]
+    @Query private var sessionKinds: [SessionKindChoice]
     @Query private var logs: [WorkoutSessionLog]
     @Query private var dailySteps: [DailySteps]
     @Query private var marks: [DayMarkRecord]
@@ -27,18 +28,20 @@ struct MedalsView: View {
 
     private var signature: String {
         TrackingSnapshot.signature(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                   stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                        kinds: sessionKinds)
             + "|\(weights.count)|\(runs.count)|\(photos.count)"
     }
 
     private func computeMedals() -> [Medal] {
         let snapshot = TrackingSnapshot(meals: meals, logs: logs, steps: dailySteps, marks: marks,
-                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart)
+                                        stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
+                                        kinds: sessionKinds)
         var photoMonths: [String: Set<String>] = [:]
         for p in photos { photoMonths["\(p.year)-\(p.month)", default: []].insert(p.viewRaw) }
         let strength = logs.filter { $0.isCompleted && WeeklyRoutine.session(id: $0.sessionID)?.kind == .strength }
         let input = MedalInput(
-            runs: runs.filter { StravaAPI.runSportTypes.contains($0.sportType) || $0.isManual }.map(\.sample),
+            runs: runs.filter { StravaAPI.runSportTypes.contains($0.sportType) }.map(\.sample),
             dailySteps: snapshot.allDailySteps,
             bestStreak: snapshot.streak.best,
             strengthSessions: strength.count,

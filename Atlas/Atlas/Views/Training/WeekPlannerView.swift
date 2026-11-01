@@ -66,16 +66,38 @@ struct WeekPlannerView: View {
             .font(.body.weight(.semibold))
             .accessibilityIdentifier("planner.name.\(base.id)")
 
-            Picker("Qué haces este día", selection: Binding(
-                get: { resolved.kind },
-                set: { DataStore.setKind($0, for: base.id, in: context) }
-            )) {
-                ForEach(SessionKind.allCases) { kind in
-                    Text(kind.label).tag(kind)
+            // Los tres de siempre a la vista; los demás deportes, detrás de un botón.
+            // Un segmentado con diecisiete opciones no se podría ni tocar.
+            HStack(spacing: 7) {
+                ForEach(SessionKind.basics) { k in
+                    Button {
+                        DataStore.setKind(k, for: base.id, in: context)
+                    } label: {
+                        Label(k.label, systemImage: k.symbol)
+                            .font(.footnote.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 8)
+                    }
+                    .buttonStyle(.plain)
+                    .background(resolved.kind == k ? Theme.accentDim : Theme.cardRaised,
+                                in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .foregroundStyle(resolved.kind == k ? Theme.accent : Theme.textSecondary)
                 }
             }
-            .pickerStyle(.segmented)
             .accessibilityIdentifier("planner.kind.\(base.id)")
+
+            Menu {
+                ForEach(SessionKind.sports) { k in
+                    Button { DataStore.setKind(k, for: base.id, in: context) } label: {
+                        Label(k.label, systemImage: k.symbol)
+                    }
+                }
+            } label: {
+                Label(resolved.kind.isSport && resolved.kind != .run ? "Deporte: \(resolved.kind.label)" : "Otro deporte",
+                      systemImage: resolved.kind.isSport && resolved.kind != .run ? resolved.kind.symbol : "figure.mixed.cardio")
+                    .font(.footnote.weight(.semibold))
+            }
+            .accessibilityIdentifier("planner.sport.\(base.id)")
 
             if resolved.kind == .strength {
                 Button {
