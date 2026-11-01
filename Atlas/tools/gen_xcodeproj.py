@@ -5,7 +5,10 @@ APPSRCGROUP TESTSRCGROUP MAINGROUP CONFIGGROUP PRODUCTSGROUP APPSOURCES APPFRAME
 TESTSOURCES TESTFRAMEWORKS TESTRESOURCES TESTPROXY TESTDEPENDENCY PROJECTCONFIGLIST APPCONFIGLIST TESTCONFIGLIST
 PROJDEBUG PROJRELEASE APPDEBUG APPRELEASE TESTDEBUG TESTRELEASE
 UITESTTARGET UITESTPRODUCT UITESTSRCGROUP UITESTSOURCES UITESTFRAMEWORKS UITESTRESOURCES UITESTPROXY
-UITESTDEPENDENCY UITESTCONFIGLIST UITESTDEBUG UITESTRELEASE""".split()}
+UITESTDEPENDENCY UITESTCONFIGLIST UITESTDEBUG UITESTRELEASE
+WIDGETTARGET WIDGETPRODUCT WIDGETSRCGROUP WIDGETSOURCES WIDGETFRAMEWORKS WIDGETRESOURCES
+WIDGETCONFIGLIST WIDGETDEBUG WIDGETRELEASE WIDGETDEPENDENCY WIDGETPROXY WIDGETEMBED
+WIDGETEMBEDFILE WIDGETINFOPLIST WIDGETENTITLEMENTS""".split()}
 assert len(set(ids.values()))==len(ids)
 def S(n): return ids[n]
 
@@ -129,6 +132,30 @@ uitest = """				CODE_SIGN_STYLE = Automatic;
 				TARGETED_DEVICE_FAMILY = 1;
 				TEST_TARGET_NAME = Atlas;
 """
+# La extensión del widget. SKIP_INSTALL e INSTALL_PATH son lo que hace que acabe dentro de
+# la app (en PlugIns) y no suelta en el archivo.
+widget = """				CODE_SIGN_ENTITLEMENTS = Config/AtlasWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/AtlasWidgets-Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Now or Never";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID_PREFIX).atlas.widgets";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+"""
+
 def bc(key, name, settings, base=None):
     b = f"\t\t\tbaseConfigurationReference = {S('XCCONFIG')} /* Signing.xcconfig */;\n" if base else ""
     return f"""		{S(key)} /* {name} */ = {{
@@ -166,7 +193,18 @@ out = f"""// !$*UTF8*$!
 	objectVersion = 77;
 	objects = {{
 
+/* Begin PBXBuildFile section */
+		{S('WIDGETEMBEDFILE')} /* AtlasWidgets.appex in Embed Foundation Extensions */ = {{isa = PBXBuildFile; fileRef = {S('WIDGETPRODUCT')} /* AtlasWidgets.appex */; settings = {{ATTRIBUTES = (RemoveHeadersOnCopy, ); }}; }};
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
+		{S('WIDGETPROXY')} /* PBXContainerItemProxy */ = {{
+			isa = PBXContainerItemProxy;
+			containerPortal = {S('PROJECT')} /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = {S('WIDGETTARGET')};
+			remoteInfo = AtlasWidgets;
+		}};
 		{S('TESTPROXY')} /* PBXContainerItemProxy */ = {{
 			isa = PBXContainerItemProxy;
 			containerPortal = {S('PROJECT')} /* Project object */;
@@ -183,6 +221,20 @@ out = f"""// !$*UTF8*$!
 		}};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		{S('WIDGETEMBED')} /* Embed Foundation Extensions */ = {{
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				{S('WIDGETEMBEDFILE')} /* AtlasWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		}};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		{S('APPPRODUCT')} /* Atlas.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Atlas.app; sourceTree = BUILT_PRODUCTS_DIR; }};
 		{S('TESTPRODUCT')} /* AtlasTests.xctest */ = {{isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AtlasTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; }};
@@ -190,6 +242,9 @@ out = f"""// !$*UTF8*$!
 		{S('INFOPLIST')} /* Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; }};
 		{S('ENTITLEMENTS')} /* Atlas.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Atlas.entitlements; sourceTree = "<group>"; }};
 		{S('XCCONFIG')} /* Signing.xcconfig */ = {{isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; }};
+		{S('WIDGETPRODUCT')} /* AtlasWidgets.appex */ = {{isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AtlasWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; }};
+		{S('WIDGETINFOPLIST')} /* AtlasWidgets-Info.plist */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "AtlasWidgets-Info.plist"; sourceTree = "<group>"; }};
+		{S('WIDGETENTITLEMENTS')} /* AtlasWidgets.entitlements */ = {{isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AtlasWidgets.entitlements; sourceTree = "<group>"; }};
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -208,10 +263,15 @@ out = f"""// !$*UTF8*$!
 			path = AtlasUITests;
 			sourceTree = "<group>";
 		}};
+		{S('WIDGETSRCGROUP')} /* AtlasWidgets */ = {{
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AtlasWidgets;
+			sourceTree = "<group>";
+		}};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-{phase('APPFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('TESTFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('UITESTFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}/* End PBXFrameworksBuildPhase section */
+{phase('APPFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('TESTFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('UITESTFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}{phase('WIDGETFRAMEWORKS','PBXFrameworksBuildPhase','Frameworks')}/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		{S('MAINGROUP')} = {{
@@ -220,6 +280,7 @@ out = f"""// !$*UTF8*$!
 				{S('APPSRCGROUP')} /* Atlas */,
 				{S('TESTSRCGROUP')} /* AtlasTests */,
 				{S('UITESTSRCGROUP')} /* AtlasUITests */,
+				{S('WIDGETSRCGROUP')} /* AtlasWidgets */,
 				{S('CONFIGGROUP')} /* Config */,
 				{S('PRODUCTSGROUP')} /* Products */,
 			);
@@ -231,6 +292,8 @@ out = f"""// !$*UTF8*$!
 				{S('INFOPLIST')} /* Info.plist */,
 				{S('ENTITLEMENTS')} /* Atlas.entitlements */,
 				{S('XCCONFIG')} /* Signing.xcconfig */,
+				{S('WIDGETINFOPLIST')} /* AtlasWidgets-Info.plist */,
+				{S('WIDGETENTITLEMENTS')} /* AtlasWidgets.entitlements */,
 			);
 			path = Config;
 			sourceTree = "<group>";
@@ -241,6 +304,7 @@ out = f"""// !$*UTF8*$!
 				{S('APPPRODUCT')} /* Atlas.app */,
 				{S('TESTPRODUCT')} /* AtlasTests.xctest */,
 				{S('UITESTPRODUCT')} /* AtlasUITests.xctest */,
+				{S('WIDGETPRODUCT')} /* AtlasWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -255,10 +319,12 @@ out = f"""// !$*UTF8*$!
 				{S('APPSOURCES')} /* Sources */,
 				{S('APPFRAMEWORKS')} /* Frameworks */,
 				{S('APPRESOURCES')} /* Resources */,
+				{S('WIDGETEMBED')} /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				{S('WIDGETDEPENDENCY')} /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				{S('APPSRCGROUP')} /* Atlas */,
@@ -316,6 +382,28 @@ out = f"""// !$*UTF8*$!
 			productReference = {S('UITESTPRODUCT')} /* AtlasUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		}};
+		{S('WIDGETTARGET')} /* AtlasWidgets */ = {{
+			isa = PBXNativeTarget;
+			buildConfigurationList = {S('WIDGETCONFIGLIST')} /* Build configuration list for PBXNativeTarget "AtlasWidgets" */;
+			buildPhases = (
+				{S('WIDGETSOURCES')} /* Sources */,
+				{S('WIDGETFRAMEWORKS')} /* Frameworks */,
+				{S('WIDGETRESOURCES')} /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				{S('WIDGETSRCGROUP')} /* AtlasWidgets */,
+			);
+			name = AtlasWidgets;
+			packageProductDependencies = (
+			);
+			productName = AtlasWidgets;
+			productReference = {S('WIDGETPRODUCT')} /* AtlasWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		}};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -356,15 +444,16 @@ out = f"""// !$*UTF8*$!
 				{S('APPTARGET')} /* Atlas */,
 				{S('TESTTARGET')} /* AtlasTests */,
 				{S('UITESTTARGET')} /* AtlasUITests */,
+				{S('WIDGETTARGET')} /* AtlasWidgets */,
 			);
 		}};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-{phase('APPRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('TESTRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('UITESTRESOURCES','PBXResourcesBuildPhase','Resources')}/* End PBXResourcesBuildPhase section */
+{phase('APPRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('TESTRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('UITESTRESOURCES','PBXResourcesBuildPhase','Resources')}{phase('WIDGETRESOURCES','PBXResourcesBuildPhase','Resources')}/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-{phase('APPSOURCES','PBXSourcesBuildPhase','Sources')}{phase('TESTSOURCES','PBXSourcesBuildPhase','Sources')}{phase('UITESTSOURCES','PBXSourcesBuildPhase','Sources')}/* End PBXSourcesBuildPhase section */
+{phase('APPSOURCES','PBXSourcesBuildPhase','Sources')}{phase('TESTSOURCES','PBXSourcesBuildPhase','Sources')}{phase('UITESTSOURCES','PBXSourcesBuildPhase','Sources')}{phase('WIDGETSOURCES','PBXSourcesBuildPhase','Sources')}/* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
 		{S('TESTDEPENDENCY')} /* PBXTargetDependency */ = {{
@@ -377,13 +466,18 @@ out = f"""// !$*UTF8*$!
 			target = {S('APPTARGET')} /* Atlas */;
 			targetProxy = {S('UITESTPROXY')} /* PBXContainerItemProxy */;
 		}};
+		{S('WIDGETDEPENDENCY')} /* PBXTargetDependency */ = {{
+			isa = PBXTargetDependency;
+			target = {S('WIDGETTARGET')} /* AtlasWidgets */;
+			targetProxy = {S('WIDGETPROXY')} /* PBXContainerItemProxy */;
+		}};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-{bc('PROJDEBUG','Debug',project_debug)}{bc('PROJRELEASE','Release',project_release)}{bc('APPDEBUG','Debug',app,True)}{bc('APPRELEASE','Release',app,True)}{bc('TESTDEBUG','Debug',test,True)}{bc('TESTRELEASE','Release',test,True)}{bc('UITESTDEBUG','Debug',uitest,True)}{bc('UITESTRELEASE','Release',uitest,True)}/* End XCBuildConfiguration section */
+{bc('PROJDEBUG','Debug',project_debug)}{bc('PROJRELEASE','Release',project_release)}{bc('APPDEBUG','Debug',app,True)}{bc('APPRELEASE','Release',app,True)}{bc('TESTDEBUG','Debug',test,True)}{bc('TESTRELEASE','Release',test,True)}{bc('UITESTDEBUG','Debug',uitest,True)}{bc('UITESTRELEASE','Release',uitest,True)}{bc('WIDGETDEBUG','Debug',widget,True)}{bc('WIDGETRELEASE','Release',widget,True)}/* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-{cl('PROJECTCONFIGLIST','PBXProject "Atlas"','PROJDEBUG','PROJRELEASE')}{cl('APPCONFIGLIST','PBXNativeTarget "Atlas"','APPDEBUG','APPRELEASE')}{cl('TESTCONFIGLIST','PBXNativeTarget "AtlasTests"','TESTDEBUG','TESTRELEASE')}{cl('UITESTCONFIGLIST','PBXNativeTarget "AtlasUITests"','UITESTDEBUG','UITESTRELEASE')}/* End XCConfigurationList section */
+{cl('PROJECTCONFIGLIST','PBXProject "Atlas"','PROJDEBUG','PROJRELEASE')}{cl('APPCONFIGLIST','PBXNativeTarget "Atlas"','APPDEBUG','APPRELEASE')}{cl('TESTCONFIGLIST','PBXNativeTarget "AtlasTests"','TESTDEBUG','TESTRELEASE')}{cl('UITESTCONFIGLIST','PBXNativeTarget "AtlasUITests"','UITESTDEBUG','UITESTRELEASE')}{cl('WIDGETCONFIGLIST','PBXNativeTarget "AtlasWidgets"','WIDGETDEBUG','WIDGETRELEASE')}/* End XCConfigurationList section */
 	}};
 	rootObject = {S('PROJECT')} /* Project object */;
 }}

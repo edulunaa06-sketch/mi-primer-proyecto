@@ -33,8 +33,16 @@ jobs:
             -derivedDataPath build-release CODE_SIGNING_ALLOWED=NO build | tee build-release.log | grep -E "error:|BUILD" || true
           grep -q "BUILD SUCCEEDED" build-release.log
           APP=build-release/Build/Products/Release-iphoneos/Atlas.app
+          # La extensión del widget va DENTRO de la app y se firma primero: iOS valida el
+          # código anidado, y firmar solo el bundle de fuera deja la extensión sin firma.
+          for EXT in "$APP"/PlugIns/*.appex; do
+            [ -e "$EXT" ] || continue
+            echo "Firmando extensión: $EXT"
+            codesign --force --sign - --entitlements Config/AtlasWidgets.entitlements --timestamp=none "$EXT"
+            codesign --verify "$EXT"
+          done
           codesign --force --sign - --entitlements Config/Atlas.entitlements --timestamp=none "$APP"
-          codesign --verify "$APP"
+          codesign --verify --deep "$APP"
           rm -rf ipa && mkdir -p ipa/Payload && cp -R "$APP" ipa/Payload/
           (cd ipa && zip -qry ../Atlas.ipa Payload)
           ls -la Atlas.ipa

@@ -107,6 +107,8 @@ struct RootView: View {
                 #endif
                 // Después de preparar los datos: así la carga inicial no cuenta como bloqueo.
                 HangDetector.shared.start()
+                // El widget de la pantalla de inicio lee esta foto; se refresca al abrir y al salir.
+                WidgetBridge.publicarHoy(context: context)
                 await notifications.refreshStatus()
                 await refreshPhotoRemindersIfNeeded(settings)
                 await syncTracking()
@@ -137,6 +139,7 @@ struct RootView: View {
                         DataStore.saveSteps(today, for: Date(), goal: DataStore.settings(context).stepGoal, in: context)
                     }
                     steps.stop()
+                    if bootstrapped { WidgetBridge.publicarHoy(context: context) }
                     // Al salir de la app se rehacen los avisos con los últimos pasos y pesajes.
                     if bootstrapped {
                         Task { await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: steps.todaySteps) }
@@ -265,6 +268,7 @@ struct RootView: View {
         }
         try? context.save()
         DataStore.updateAdaptiveStepGoal(context)
+        WidgetBridge.publicarHoy(context: context)
         let today = steps.todaySteps ?? history.last(where: { DateUtils.calendar.isDateInToday($0.date) })?.steps
         await ReminderCoordinator.refresh(context: context, notifications: notifications, todaySteps: today)
         await strava.autoSyncIfNeeded(into: context)
