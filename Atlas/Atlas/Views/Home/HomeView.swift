@@ -336,6 +336,7 @@ private struct HomeStreakCard: View {
     @Query private var allLogs: [WorkoutSessionLog]
     @Query private var dailySteps: [DailySteps]
     @Query private var marks: [DayMarkRecord]
+    @Query private var sessionKinds: [SessionKindChoice]
     @Query private var settingsList: [UserSettings]
     @State private var trackingStart = DateUtils.startOfDay(Date())
     @State private var streak = Streak.Result(current: 0, best: 0)
@@ -350,7 +351,7 @@ private struct HomeStreakCard: View {
     private var signature: String {
         TrackingSnapshot.signature(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
                                    stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
-                                        kinds: sessionKinds)
+                                   kinds: sessionKinds)
     }
 
     var body: some View {
@@ -399,7 +400,7 @@ private struct HomeStreakCard: View {
             let today = Date()
             let snapshot = TrackingSnapshot(meals: allMeals, logs: allLogs, steps: dailySteps, marks: marks,
                                             stepGoal: settingsList.first?.stepGoal ?? 8000, trackingStart: trackingStart,
-                                        kinds: sessionKinds)
+                                   kinds: sessionKinds)
             let result = snapshot.streak
             mark = DayMark.effective(explicit: snapshot.explicitMark(today), weekday: DateUtils.weekdayMondayBased(today))
             celebrateIfNeeded(result)
